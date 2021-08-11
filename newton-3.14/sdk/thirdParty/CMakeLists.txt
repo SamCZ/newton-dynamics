@@ -14,7 +14,9 @@ add_subdirectory(tinyxml)
 
 if (NEWTON_BUILD_SANDBOX_DEMOS)
 	if (MSVC OR MINGW)
-        add_subdirectory(glfw)
+		if(NOT TARGET glfw)
+        	add_subdirectory(glfw)
+		endif()
 	endif(MSVC OR MINGW)
 
     add_subdirectory(imgui)
