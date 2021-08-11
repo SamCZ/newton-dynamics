@@ -490,7 +490,7 @@ void dAabbPolygonSoup::CalculateAdjacendy ()
 	dVector p0;
 	dVector p1;
 	GetAABB (p0, p1);
-	dFastAabbInfo box (p0, p1);
+	dFastAabb box (p0, p1);
 
 	dPolyhedra adjacenyMesh;
 	adjacenyMesh.BeginFace();
@@ -1390,11 +1390,11 @@ dVector dAabbPolygonSoup::ForAllSectorsSupportVectex (const dVector& dir) const
 	return supportVertex;
 }
 
-void dAabbPolygonSoup::ForAllSectorsRayHit (const dFastRayTest& raySrc, dFloat32 maxParam, dRayIntersectCallback callback, void* const context) const
+void dAabbPolygonSoup::ForAllSectorsRayHit (const dFastRay& raySrc, dFloat32 maxParam, dRayIntersectCallback callback, void* const context) const
 {
 	const dNode *stackPool[DG_STACK_DEPTH];
 	dFloat32 distance[DG_STACK_DEPTH];
-	dFastRayTest ray (raySrc);
+	dFastRay ray (raySrc);
 
 	dInt32 stack = 1;
 	const dTriplex* const vertexArray = (dTriplex*) m_localVertex;
@@ -1490,7 +1490,7 @@ void dAabbPolygonSoup::ForAllSectorsRayHit (const dFastRayTest& raySrc, dFloat32
 	}
 }
 
-void dAabbPolygonSoup::ForAllSectors (const dFastAabbInfo& obbAabbInfo, const dVector& boxDistanceTravel, dFloat32, dAaabbIntersectCallback callback, void* const context) const
+void dAabbPolygonSoup::ForAllSectors (const dFastAabb& obbAabbInfo, const dVector& boxDistanceTravel, dFloat32, dAaabbIntersectCallback callback, void* const context) const
 {
 	dAssert (dAbs(dAbs(obbAabbInfo[0][0]) - obbAabbInfo.m_absDir[0][0]) < dFloat32 (1.0e-4f));
 	dAssert (dAbs(dAbs(obbAabbInfo[1][1]) - obbAabbInfo.m_absDir[1][1]) < dFloat32 (1.0e-4f));
@@ -1627,8 +1627,8 @@ void dAabbPolygonSoup::ForAllSectors (const dFastAabbInfo& obbAabbInfo, const dV
 		} 
 		else 
 		{
-			dFastRayTest ray (dVector::m_zero, boxDistanceTravel);
-			dFastRayTest obbRay (dVector::m_zero, obbAabbInfo.UnrotateVector(boxDistanceTravel));
+			dFastRay ray (dVector::m_zero, boxDistanceTravel);
+			dFastRay obbRay (dVector::m_zero, obbAabbInfo.UnrotateVector(boxDistanceTravel));
 			dInt32 stack = 1;
 			stackPool[0] = m_aabb;
 			distance [0] = m_aabb->BoxIntersect (ray, obbRay, obbAabbInfo, vertexArray);
@@ -1724,7 +1724,7 @@ void dAabbPolygonSoup::ForAllSectors (const dFastAabbInfo& obbAabbInfo, const dV
 	}
 }
 
-void dAabbPolygonSoup::ForThisSector(const dAabbPolygonSoup::dNode* const node, const dFastAabbInfo& obbAabbInfo, const dVector& boxDistanceTravel, dFloat32, dAaabbIntersectCallback callback, void* const context) const
+void dAabbPolygonSoup::ForThisSector(const dAabbPolygonSoup::dNode* const node, const dFastAabb& obbAabbInfo, const dVector& boxDistanceTravel, dFloat32, dAaabbIntersectCallback callback, void* const context) const
 {
 	dAssert(dAbs(dAbs(obbAabbInfo[0][0]) - obbAabbInfo.m_absDir[0][0]) < dFloat32(1.0e-4f));
 	dAssert(dAbs(dAbs(obbAabbInfo[1][1]) - obbAabbInfo.m_absDir[1][1]) < dFloat32(1.0e-4f));
@@ -1793,8 +1793,8 @@ void dAabbPolygonSoup::ForThisSector(const dAabbPolygonSoup::dNode* const node, 
 		else
 		{
 			dAssert(0);
-			//dFastRayTest ray(dVector(dFloat32(0.0f)), boxDistanceTravel);
-			//dFastRayTest obbRay(dVector(dFloat32(0.0f)), obbAabbInfo.UnrotateVector(boxDistanceTravel));
+			//dFastRay ray(dVector(dFloat32(0.0f)), boxDistanceTravel);
+			//dFastRay obbRay(dVector(dFloat32(0.0f)), obbAabbInfo.UnrotateVector(boxDistanceTravel));
 			//dInt32 stack = 1;
 			//stackPool[0] = m_aabb;
 			//distance[0] = m_aabb->BoxIntersect(ray, obbRay, obbAabbInfo, vertexArray);

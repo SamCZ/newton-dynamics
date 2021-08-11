@@ -65,6 +65,7 @@
 #include <ndJointDoubleHinge.h>
 #include <ndJointFixDistance.h>
 #include <ndMultiBodyVehicle.h>
+#include <ndCharacterIdlePose.h>
 #include <ndCharacterRootNode.h>
 #include <ndSkeletonContainer.h>
 #include <ndDynamicsUpdateSoa.h>
@@ -77,6 +78,7 @@
 #include <ndJointPid6dofActuator.h>
 #include <ndMultiBodyVehicleMotor.h>
 #include <ndCharacterEffectorNode.h>
+#include <ndCharacterPoseGenerator.h>
 #include <ndCharacterPoseController.h>
 #include <ndMultiBodyVehicleGearBox.h>
 #include <ndJointDryRollingFriction.h>
@@ -85,6 +87,7 @@
 #include <ndMultiBodyVehicleTorsionBar.h>
 #include <ndCharacterForwardDynamicNode.h>
 #include <ndCharacterInverseDynamicNode.h>
+#include <ndCharacterWalkCycleGenerator.h>
 #include <ndMultiBodyVehicleDifferential.h>
 #include <ndCharacterBipedPoseController.h>
 #include <ndMultiBodyVehicleDifferentialAxle.h>

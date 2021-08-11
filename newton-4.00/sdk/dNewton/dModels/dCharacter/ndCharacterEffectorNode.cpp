@@ -29,7 +29,6 @@
 ndCharacterEffectorNode::ndCharacterEffectorNode(const dMatrix& matrixInGlobalScape, ndCharacterLimbNode* const child, ndCharacterLimbNode* const referenceNode)
 	:ndCharacterLimbNode(child)
 	,m_referenceNode(referenceNode)
-	//,m_globalPose(dGetIdentityMatrix())
 {
 	ndBodyDynamic* const body0 = child->GetBody();
 	ndBodyDynamic* const body1 = referenceNode->GetBody();
@@ -43,6 +42,11 @@ ndCharacterEffectorNode::~ndCharacterEffectorNode()
 void ndCharacterEffectorNode::SetTargetMatrix(const dVector& posit)
 {
 	m_effector->SetTargetPosition(posit);
+}
+
+dMatrix ndCharacterEffectorNode::CalculateGlobalTargetMatrix() const
+{
+	return m_effector->CalculateGlobalTargetMatrix();
 }
 
 void ndCharacterEffectorNode::UpdateGlobalPose(ndWorld* const, dFloat32)

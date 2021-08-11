@@ -19,33 +19,18 @@
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
-#include "dCoreStdafx.h"
+#ifndef __D_CHARACTER_POSE_GENERATOR_H__
+#define __D_CHARACTER_POSE_GENERATOR_H__
+
 #include "ndNewtonStdafx.h"
-#include "ndCharacter.h"
-#include "ndBodyDynamic.h"
-#include "ndCharacterRootNode.h"
 
-ndCharacterRootNode::ndCharacterRootNode(ndCharacter* const owner, ndBodyDynamic* const body)
-	:ndCharacterLimbNode(nullptr)
-	,m_localFrame(dGetIdentityMatrix())
-	,m_gravityDir(dFloat32 (0.0f), dFloat32(-1.0f), dFloat32(0.0f), dFloat32(0.0f))
-	,m_owner(owner)
-	,m_body(body)
+class ndCharacterPoseGenerator
 {
-	SetLocalFrame(m_body->GetMatrix());
-}
+	public:
+	ndCharacterPoseGenerator()
+	{
+	}
 
-ndCharacterRootNode::~ndCharacterRootNode()
-{
-}
-
-void ndCharacterRootNode::SetLocalFrame(const dMatrix& frameInGlobalSpace)
-{
-	dMatrix matrix(m_body->GetMatrix());
-	m_localFrame = frameInGlobalSpace * matrix.Inverse();
-}
-
-void ndCharacterRootNode::UpdateGlobalPose(ndWorld* const, dFloat32)
-{
-	// for now just; 
-}
+	virtual void Update(dFloat32 timestep) = 0;
+};
+#endif

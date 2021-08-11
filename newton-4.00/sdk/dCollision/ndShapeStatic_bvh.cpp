@@ -35,11 +35,11 @@ class ndCollisionBvhShowPolyContext
 };
 
 D_MSV_NEWTON_ALIGN_32 
-class ndBvhRay: public dFastRayTest 
+class ndBvhRay: public dFastRay 
 {
 	public:
 	ndBvhRay(const dVector& l0, const dVector& l1)
-		:dFastRayTest (l0, l1)
+		:dFastRay (l0, l1)
 	{
 	}
 
@@ -72,7 +72,7 @@ ndShapeStatic_bvh::ndShapeStatic_bvh(const dPolygonSoupBuilder& builder)
 	data.m_maxIndexCount = 1000000000;
 	data.m_triangleCount = 0;
 	dVector zero(dVector::m_zero);
-	dFastAabbInfo box(dGetIdentityMatrix(), dVector(dFloat32(1.0e15f)));
+	dFastAabb box(dGetIdentityMatrix(), dVector(dFloat32(1.0e15f)));
 	ForAllSectors(box, zero, dFloat32(1.0f), GetTriangleCount, &data);
 	m_trianglesCount = data.m_triangleCount;
 }
@@ -100,7 +100,7 @@ ndShapeStatic_bvh::ndShapeStatic_bvh(const nd::TiXmlNode* const xmlNode, const c
 	data.m_maxIndexCount = 1000000000;
 	data.m_triangleCount = 0;
 	dVector zero(dVector::m_zero);
-	dFastAabbInfo box(dGetIdentityMatrix(), dVector(dFloat32(1.0e15f)));
+	dFastAabb box(dGetIdentityMatrix(), dVector(dFloat32(1.0e15f)));
 	ForAllSectors(box, zero, dFloat32(1.0f), GetTriangleCount, &data);
 	m_trianglesCount = data.m_triangleCount;
 }
@@ -175,7 +175,7 @@ void ndShapeStatic_bvh::DebugShape(const dMatrix& matrix, ndShapeDebugCallback& 
 	context.m_userData = (void*)this;
 	context.m_callback = &debugCallback;
 
-	dFastAabbInfo box(dGetIdentityMatrix(), dVector(1.0e15f));
+	dFastAabb box(dGetIdentityMatrix(), dVector(1.0e15f));
 	ForAllSectors(box, dVector::m_zero, dFloat32(1.0f), ShowDebugPolygon, &context);
 }
 

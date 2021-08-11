@@ -19,33 +19,32 @@
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
-#include "dCoreStdafx.h"
+#ifndef __D_CHARACTER_IDLE_POSE_H__
+#define __D_CHARACTER_IDLE_POSE_H__
+
 #include "ndNewtonStdafx.h"
-#include "ndCharacter.h"
-#include "ndBodyDynamic.h"
-#include "ndCharacterRootNode.h"
+#include "ndCharacterPoseGenerator.h"
 
-ndCharacterRootNode::ndCharacterRootNode(ndCharacter* const owner, ndBodyDynamic* const body)
-	:ndCharacterLimbNode(nullptr)
-	,m_localFrame(dGetIdentityMatrix())
-	,m_gravityDir(dFloat32 (0.0f), dFloat32(-1.0f), dFloat32(0.0f), dFloat32(0.0f))
-	,m_owner(owner)
-	,m_body(body)
-{
-	SetLocalFrame(m_body->GetMatrix());
-}
+class ndCharacterEffectorNode;
+class ndCharacterBipedPoseController;
 
-ndCharacterRootNode::~ndCharacterRootNode()
+class ndCharacterIdlePose : public ndCharacterPoseGenerator
 {
-}
+	public:
+	ndCharacterIdlePose(ndCharacterBipedPoseController* const owner);
 
-void ndCharacterRootNode::SetLocalFrame(const dMatrix& frameInGlobalSpace)
-{
-	dMatrix matrix(m_body->GetMatrix());
-	m_localFrame = frameInGlobalSpace * matrix.Inverse();
-}
+	protected:
+	void Update(dFloat32 timestep);
+	void BalanceCentreOfMass(dFloat32 timestep);
+	void MoveFoot(ndCharacterEffectorNode* const footEffector, dFloat32 angle);
 
-void ndCharacterRootNode::UpdateGlobalPose(ndWorld* const, dFloat32)
-{
-	// for now just; 
-}
+	dFloat32 m_high;
+	dFloat32 m_angle;
+	dFloat32 m_stride;
+	ndCharacterBipedPoseController* m_owner;
+
+	friend class ndCharacterBipedPoseController;
+};
+
+
+#endif

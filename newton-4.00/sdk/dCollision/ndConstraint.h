@@ -51,7 +51,7 @@ class ndConstraintDebugCallback: public dClassAlloc
 	{
 	}
 
-	virtual void DrawLine(const dVector& p0, const dVector& p1, const dVector& color) = 0;
+	virtual void DrawLine(const dVector& p0, const dVector& p1, const dVector& color, dFloat32 thickness = dFloat32 (1.0f)) = 0;
 
 	virtual void SetScale(dFloat32 scale)
 	{
@@ -233,22 +233,21 @@ class ndConstraint
 
 	virtual ~ndConstraint();
 
-	virtual ndContact* GetAsContact() { return nullptr; }
-	virtual ndJointBilateralConstraint* GetAsBilateral() { return nullptr; }
+	virtual ndContact* GetAsContact();
+	virtual ndJointBilateralConstraint* GetAsBilateral();
 
-	bool IsActive() const { return m_active; }
-	void SetActive(bool state) { m_active = state;}
-	virtual bool IsBilateral() const { return false; }
+	bool IsActive() const;
+	void SetActive(bool state);
+	virtual bool IsBilateral() const;
 
 	virtual dUnsigned32 GetRowsCount() const = 0;
-	virtual ndBodyKinematic* GetBody0() const { return nullptr; }
-	virtual ndBodyKinematic* GetBody1() const { return nullptr; }
+	virtual ndBodyKinematic* GetBody0() const;
+	virtual ndBodyKinematic* GetBody1() const;
 	virtual void JacobianDerivative(ndConstraintDescritor& desc) = 0;
 	virtual void JointAccelerations(ndJointAccelerationDecriptor* const desc) = 0;
 	
+	virtual void DebugJoint(ndConstraintDebugCallback&) const;
 	void InitPointParam(dgPointParam& param, dFloat32 stiffness, const dVector& p0Global, const dVector& p1Global) const;
-
-	virtual void DebugJoint(ndConstraintDebugCallback&) const {}
 
 	dFloat32 m_preconditioner0;
 	dFloat32 m_preconditioner1;
@@ -262,6 +261,45 @@ class ndConstraint
 } D_GCC_NEWTON_ALIGN_32 ;
 
 inline ndConstraint::~ndConstraint()
+{
+}
+
+inline ndContact* ndConstraint::GetAsContact()
+{ 
+	return nullptr; 
+}
+
+inline ndJointBilateralConstraint* ndConstraint::GetAsBilateral()
+{ 
+	return nullptr; 
+}
+
+inline bool ndConstraint::IsActive() const
+{ 
+	return m_active; 
+}
+
+inline void ndConstraint::SetActive(bool state)
+{ 
+	m_active = state; 
+}
+
+inline bool ndConstraint::IsBilateral() const
+{ 
+	return false; 
+}
+
+inline ndBodyKinematic* ndConstraint::GetBody0() const
+{ 
+	return nullptr; 
+}
+
+inline ndBodyKinematic* ndConstraint::GetBody1() const
+{ 
+	return nullptr; 
+}
+
+inline void ndConstraint::DebugJoint(ndConstraintDebugCallback&) const
 {
 }
 

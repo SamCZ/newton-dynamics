@@ -21,181 +21,13 @@
 
 #include "dCoreStdafx.h"
 #include "dTypes.h"
+#include "dSort.h"
 #include "dMemory.h"
 #include "dVector.h"
 #include "dPlane.h"
 #include "dGoogol.h"
+#include "dFastRay.h"
 #include "dIntersections.h"
-
-#define D_USE_FLOAT_VERSION
-#define D_RAY_TOL_ERROR (dFloat32 (-1.0e-3f))
-#define D_RAY_TOL_ADAPTIVE_ERROR (dFloat32 (1.0e-1f))
-
-void dFastAabbInfo::MakeBox1(dInt32 indexCount, const dInt32* const indexArray, dInt32 stride, const dFloat32* const vertexArray, dVector& minBox, dVector& maxBox) const
-{
-	dVector faceBoxP0(&vertexArray[indexArray[0] * stride]);
-	faceBoxP0 = faceBoxP0 & dVector::m_triplexMask;
-	dVector faceBoxP1(faceBoxP0);
-	for (dInt32 i = 1; i < indexCount; i++)
-	{
-		dVector p(&vertexArray[indexArray[i] * stride]);
-		p = p & dVector::m_triplexMask;
-		faceBoxP0 = faceBoxP0.GetMin(p);
-		faceBoxP1 = faceBoxP1.GetMax(p);
-	}
-
-	minBox = faceBoxP0 - m_p1;
-	maxBox = faceBoxP1 - m_p0;
-}
-
-void dFastAabbInfo::MakeBox2(const dMatrix& faceMatrix, dInt32 indexCount, const dInt32* const indexArray, dInt32 stride, const dFloat32* const vertexArray, dVector& minBox, dVector& maxBox) const
-{
-	dVector faceBoxP0(faceMatrix.TransformVector(dVector(&vertexArray[indexArray[0] * stride]) & dVector::m_triplexMask));
-	dVector faceBoxP1(faceBoxP0);
-	for (dInt32 i = 1; i < indexCount; i++)
-	{
-		dVector p(faceMatrix.TransformVector(dVector(&vertexArray[indexArray[i] * stride]) & dVector::m_triplexMask));
-		faceBoxP0 = faceBoxP0.GetMin(p);
-		faceBoxP1 = faceBoxP1.GetMax(p);
-	}
-	faceBoxP0 = faceBoxP0 & dVector::m_triplexMask;
-	faceBoxP1 = faceBoxP1 & dVector::m_triplexMask;
-
-	dMatrix matrix = *this * faceMatrix;
-	dVector size(matrix[0].Abs().Scale(m_size.m_x) + matrix[1].Abs().Scale(m_size.m_y) + matrix[2].Abs().Scale(m_size.m_z));
-	dVector boxP0((matrix.m_posit - size) & dVector::m_triplexMask);
-	dVector boxP1((matrix.m_posit + size) & dVector::m_triplexMask);
-
-	minBox = faceBoxP0 - boxP1;
-	maxBox = faceBoxP1 - boxP0;
-}
-
-dMatrix dFastAabbInfo::MakeFaceMatrix(const dVector& faceNormal, dInt32, const dInt32* const indexArray, dInt32 stride, const dFloat32* const vertexArray) const
-{
-	dMatrix faceMatrix;
-	dVector origin(&vertexArray[indexArray[0] * stride]);
-	dVector pin(&vertexArray[indexArray[0] * stride]);
-	pin = pin & dVector::m_triplexMask;
-	origin = origin & dVector::m_triplexMask;
-
-	dVector pin1(&vertexArray[indexArray[1] * stride]);
-	pin1 = pin1 & dVector::m_triplexMask;
-
-	faceMatrix[0] = faceNormal;
-	faceMatrix[1] = pin1 - origin;
-	faceMatrix[1] = faceMatrix[1].Normalize();
-	faceMatrix[2] = faceMatrix[0].CrossProduct(faceMatrix[1]);
-	faceMatrix[3] = origin | dVector::m_wOne;
-	return faceMatrix.Inverse();
-}
-
-dFloat32 dFastAabbInfo::PolygonBoxRayDistance(const dVector& faceNormal, dInt32 indexCount, const dInt32* const indexArray, dInt32 stride, const dFloat32* const vertexArray, const dFastRayTest& ray) const
-{
-	dVector minBox;
-	dVector maxBox;
-	MakeBox1(indexCount, indexArray, stride, vertexArray, minBox, maxBox);
-	dFloat32 dist0 = ray.BoxIntersect(minBox, maxBox);
-	if (dist0 < dFloat32(1.0f))
-	{
-		dMatrix faceMatrix(MakeFaceMatrix(faceNormal, indexCount, indexArray, stride, vertexArray));
-
-		MakeBox2(faceMatrix, indexCount, indexArray, stride, vertexArray, minBox, maxBox);
-		dVector veloc(faceMatrix.RotateVector(ray.m_diff) & dVector::m_triplexMask);
-		dFastRayTest localRay(dVector(dFloat32(0.0f)), veloc);
-		dFloat32 dist1 = localRay.BoxIntersect(minBox, maxBox);
-		dist0 = dMax(dist1, dist0);
-	}
-	return dist0;
-}
-
-dFloat32 dFastAabbInfo::PolygonBoxDistance(const dVector& faceNormal, dInt32 indexCount, const dInt32* const indexArray, dInt32 stride, const dFloat32* const vertexArray) const
-{
-	dVector minBox;
-	dVector maxBox;
-	MakeBox1(indexCount, indexArray, stride, vertexArray, minBox, maxBox);
-
-	dVector mask(minBox * maxBox < dVector(dFloat32(0.0f)));
-	dVector dist(maxBox.GetMin(minBox.Abs()) & mask);
-	dist = dist.GetMin(dist.ShiftTripleRight());
-	dist = dist.GetMin(dist.ShiftTripleRight());
-	dFloat32 dist0 = dist.GetScalar();
-	if (dist0 > dFloat32(0.0f))
-	{
-		dMatrix faceMatrix(MakeFaceMatrix(faceNormal, indexCount, indexArray, stride, vertexArray));
-		MakeBox2(faceMatrix, indexCount, indexArray, stride, vertexArray, minBox, maxBox);
-
-		dVector mask2(minBox * maxBox < dVector(dFloat32(0.0f)));
-		dVector dist2(maxBox.GetMin(minBox.Abs()) & mask2);
-		dist2 = dist2.GetMin(dist2.ShiftTripleRight());
-		dist2 = dist2.GetMin(dist2.ShiftTripleRight());
-		dFloat32 dist1 = dist2.GetScalar();
-		dist0 = (dist1 > dFloat32(0.0f)) ? dMax(dist0, dist1) : dFloat32(0.0f);
-		if (dist0 <= dFloat32(0.0f))
-		{
-			// some how clang crashes in relese and release with debug, 
-			// but not Visual studio, Intel or Gcc
-			// I do can't determine why because Clang inline teh code without debug 
-			//dVector p1p0((minBox.Abs()).GetMin(maxBox.Abs()).AndNot(mask2));
-			const dVector box0(minBox.Abs());
-			const dVector box1(maxBox.Abs());
-			const dVector p1p0((box0.GetMin(box1)).AndNot(mask2));
-			dist2 = p1p0.DotProduct(p1p0);
-			dist2 = dist2.Sqrt() * dVector::m_negOne;
-			dist0 = dist2.GetScalar();
-		}
-	}
-	else
-	{
-		//dVector p1p0((minBox.Abs()).GetMin(maxBox.Abs()).AndNot(mask));
-		const dVector box0(minBox.Abs());
-		const dVector box1(maxBox.Abs());
-		const dVector p1p0(box0.GetMin(box1).AndNot(mask));
-		dist = p1p0.DotProduct(p1p0);
-		dist = dist.Sqrt() * dVector::m_negOne;
-		dist0 = dist.GetScalar();
-	}
-	return	dist0;
-}
-
-dFloat32 dFastRayTest::PolygonIntersect (const dVector& faceNormal, dFloat32 maxT, const dFloat32* const polygon, dInt32 strideInBytes, const dInt32* const indexArray, dInt32 indexCount) const
-{
-	dAssert (m_p0.m_w == dFloat32 (0.0f));
-	dAssert (m_p1.m_w == dFloat32 (0.0f));
-
-	if (faceNormal.DotProduct(m_unitDir).GetScalar() < dFloat32 (0.0f)) 
-	{
-		dInt32 stride = dInt32(strideInBytes / sizeof (dFloat32));
-		dBigVector v0(dVector(&polygon[indexArray[indexCount - 1] * stride]) & dVector::m_triplexMask);
-		dBigVector p0(m_p0);
-		dBigVector p0v0(v0 - p0);
-
-		dBigVector diff(m_diff);
-		dBigVector normal(faceNormal);
-		dFloat64 tOut = normal.DotProduct(p0v0).GetScalar() / normal.DotProduct(diff).GetScalar();
-		if ((tOut >= dFloat64(0.0f)) && (tOut <= maxT)) 
-		{
-			dBigVector p (p0 + diff.Scale (tOut));
-			dBigVector unitDir(m_unitDir);
-			for (dInt32 i = 0; i < indexCount; i++) {
-				dInt32 i2 = indexArray[i] * stride;
-				dBigVector v1(dVector(&polygon[i2]) & dVector::m_triplexMask);
-
-				dBigVector edge0(p - v0);
-				dBigVector edge1(v1 - v0);
-				dFloat64 area = unitDir.DotProduct (edge0.CrossProduct(edge1)).GetScalar();
-				if (area < dFloat32 (0.0f)) 
-				{
-					return dFloat32 (1.2f);
-				}
-				v0 = v1;
-			}
-
-			return dFloat32(tOut);
-		}
-	}
-
-	return dFloat32 (1.2f);
-}
 
 bool dRayBoxClip (dVector& p0, dVector& p1, const dVector& boxP0, const dVector& boxP1) 
 {	
@@ -256,7 +88,7 @@ bool dRayBoxClip (dVector& p0, dVector& p1, const dVector& boxP0, const dVector&
 	return true;
 }
 
-dBigVector dPointToRayDistance (const dBigVector& point, const dBigVector& ray_p0, const dBigVector& ray_p1)
+dBigVector dPointToRayDistance(const dBigVector& point, const dBigVector& ray_p0, const dBigVector& ray_p1)
 {
 	dBigVector dp (ray_p1 - ray_p0);
 	dAssert (dp.m_w == dFloat32 (0.0f));
@@ -361,105 +193,6 @@ dBigVector dPointToTetrahedrumDistance (const dBigVector& point, const dBigVecto
 	return p0;
 }
 
-void dRayToRayDistance (const dVector& ray_p0, const dVector& ray_p1, const dVector& ray_q0, const dVector& ray_q1, dVector& pOut, dVector& qOut)
-{
-	dFloat32 sN;
-	dFloat32 tN;
-
-	dVector u (ray_p1 - ray_p0);
-	dVector v (ray_q1 - ray_q0);
-	dVector w (ray_p0 - ray_q0);
-	dAssert (u.m_w == dFloat32 (0.0f));
-	dAssert (v.m_w == dFloat32 (0.0f));
-	dAssert (w.m_w == dFloat32 (0.0f));
-
-	dFloat32 a = u.DotProduct(u).GetScalar();        
-	dFloat32 b = u.DotProduct(v).GetScalar();
-	dFloat32 c = v.DotProduct(v).GetScalar();        
-	dFloat32 d = u.DotProduct(w).GetScalar();
-	dFloat32 e = v.DotProduct(w).GetScalar();
-	dFloat32 D = a*c - b*b;   
-	dFloat32 sD = D;			
-	dFloat32 tD = D;			
-
-	// compute the line parameters of the two closest points
-	if (D < dFloat32 (1.0e-8f)) 
-	{ 
-		sN = dFloat32 (0.0f);        
-		sD = dFloat32 (1.0f);        
-		tN = e;
-		tD = c;
-	} 
-	else 
-	{
-		// get the closest points on the infinite lines
-		sN = (b*e - c*d);
-		tN = (a*e - b*d);
-		if (sN < dFloat32 (0.0f)) 
-		{
-			// sc < 0 => the s=0 edge is visible
-			sN = dFloat32 (0.0f);
-			tN = e;
-			tD = c;
-		} 
-		else if (sN > sD) 
-		{
-			// sc > 1 => the s=1 edge is visible
-			sN = sD;
-			tN = e + b;
-			tD = c;
-		}
-	}
-
-	if (tN < dFloat32 (0.0f)) 
-	{
-		// tc < 0 => the t=0 edge is visible
-		tN = dFloat32 (0.0f);
-		// recompute sc for this edge
-		if (-d < dFloat32 (0.0f)) 
-		{
-			sN = dFloat32 (0.0f);
-		} 
-		else if (-d > a) 
-		{
-			sN = sD;
-		} 
-		else 
-		{
-			sN = -d;
-			sD = a;
-		}
-	} 
-	else if (tN > tD) 
-	{
-		// tc > 1 => the t=1 edge is visible
-		tN = tD;
-		// recompute sc for this edge
-		if ((-d + b) < dFloat32 (0.0f)) 
-		{
-			sN = dFloat32 (0.0f);
-		} 
-		else if ((-d + b) > a) 
-		{
-			sN = sD;
-		} 
-		else 
-		{
-			sN = (-d + b);
-			sD = a;
-		}
-	}
-
-	// finally do the division to get sc and tc
-	dFloat32 sc = (dAbs(sN) < dFloat32(1.0e-8f) ? dFloat32 (0.0f) : sN / sD);
-	dFloat32 tc = (dAbs(tN) < dFloat32(1.0e-8f) ? dFloat32 (0.0f) : tN / tD);
-
-	dAssert (u.m_w == dFloat32 (0.0f));
-	dAssert (v.m_w == dFloat32 (0.0f));
-	pOut = ray_p0 + u.Scale (sc);
-	qOut = ray_q0 + v.Scale (tc);
-}
-
 dFloat32 dRayCastSphere (const dVector& p0, const dVector& p1, const dVector& origin, dFloat32 radius)
 {
 	dVector p0Origin (p0 - origin);
@@ -505,101 +238,258 @@ dFloat32 dRayCastSphere (const dVector& p0, const dVector& p1, const dVector& or
 	else 
 	{
 		dBigVector p0Origin1 (p0Origin);
-		dBigVector dp (p1 - p0);
-		dAssert (dp.m_w == dFloat32 (0.0f));
-		dFloat64 a = dp.DotProduct(dp).GetScalar();
-		dFloat64 b = dFloat32 (2.0f) * p0Origin1.DotProduct(dp).GetScalar();
-		dFloat64 c = p0Origin1.DotProduct(p0Origin1).GetScalar() - dFloat64(radius) * radius;
-		dFloat64 desc = b * b - dFloat32 (4.0f) * a * c;
-		if (desc >= 0.0f) 
+dBigVector dp(p1 - p0);
+dAssert(dp.m_w == dFloat32(0.0f));
+dFloat64 a = dp.DotProduct(dp).GetScalar();
+dFloat64 b = dFloat32(2.0f) * p0Origin1.DotProduct(dp).GetScalar();
+dFloat64 c = p0Origin1.DotProduct(p0Origin1).GetScalar() - dFloat64(radius) * radius;
+dFloat64 desc = b * b - dFloat32(4.0f) * a * c;
+if (desc >= 0.0f)
+{
+	desc = sqrt(desc);
+	dFloat64 den = dFloat32(0.5f) / a;
+	dFloat64 t0 = (-b + desc) * den;
+	dFloat64 t1 = (-b - desc) * den;
+	if ((t0 >= dFloat32(0.0f)) && (t1 >= dFloat32(0.0f)))
+	{
+		t0 = dMin(t0, t1);
+		if (t0 <= dFloat32(1.0f))
 		{
-			desc = sqrt (desc);
-			dFloat64 den = dFloat32 (0.5f) / a;
-			dFloat64 t0 = (-b + desc) * den;
-			dFloat64 t1 = (-b - desc) * den;
-			if ((t0 >= dFloat32 (0.0f)) && (t1 >= dFloat32 (0.0f))) 
-			{
-				t0 =  dMin(t0, t1);
-				if (t0 <= dFloat32 (1.0f)) 
-				{
-					return dFloat32 (t0);
-				}
-			} 
-			else if (t0 >= dFloat32 (0.0f)) 
-			{
-				if (t0 <= dFloat32 (1.0f)) 
-				{
-					return dFloat32 (t0);
-				}
-			} 
-			else 
-			{
-				if ((t1 >= dFloat32 (0.0f)) && (t1 <= dFloat32 (1.0f))) 
-				{
-					return dFloat32 (t1);
-				}
-			}
+			return dFloat32(t0);
 		}
 	}
-	return dFloat32 (1.2f);
+	else if (t0 >= dFloat32(0.0f))
+	{
+		if (t0 <= dFloat32(1.0f))
+		{
+			return dFloat32(t0);
+		}
+	}
+	else
+	{
+		if ((t1 >= dFloat32(0.0f)) && (t1 <= dFloat32(1.0f)))
+		{
+			return dFloat32(t1);
+		}
+	}
+}
+	}
+	return dFloat32(1.2f);
 }
 
-dFloat32 dRayCastBox (const dVector& p0, const dVector& p1, const dVector& boxP0, const dVector& boxP1, dVector& normalOut)
+dFloat32 dRayCastBox(const dVector& p0, const dVector& p1, const dVector& boxP0, const dVector& boxP1, dVector& normalOut)
 {
 	dInt32 index = 0;
-	dFloat32 signDir = dFloat32 (0.0f);
-	dFloat32 tmin = dFloat32 (0.0f);
-	dFloat32 tmax = dFloat32 (1.0f);
+	dFloat32 signDir = dFloat32(0.0f);
+	dFloat32 tmin = dFloat32(0.0f);
+	dFloat32 tmax = dFloat32(1.0f);
 
 	//dVector size (boxP1 - boxP0);
-	for (dInt32 i = 0; i < 3; i++) 
+	for (dInt32 i = 0; i < 3; i++)
 	{
 		dFloat32 dp = p1[i] - p0[i];
-		if (dAbs (dp) < dFloat32 (1.0e-8f)) 
+		if (dAbs(dp) < dFloat32(1.0e-8f))
 		{
-			if (p0[i] <= boxP0[i] || p0[i] >= boxP1[i]) 
+			if (p0[i] <= boxP0[i] || p0[i] >= boxP1[i])
 			{
-				return dFloat32 (1.2f);
+				return dFloat32(1.2f);
 			}
-		} 
-		else 
+		}
+		else
 		{
-			dp = dFloat32 (1.0f) / dp; 
+			dp = dFloat32(1.0f) / dp;
 			dFloat32 t1 = (boxP0[i] - p0[i]) * dp;
 			dFloat32 t2 = (boxP1[i] - p0[i]) * dp;
 
-			dFloat32 sign = dFloat32 (-1.0f);
-			if (t1 > t2) 
+			dFloat32 sign = dFloat32(-1.0f);
+			if (t1 > t2)
 			{
 				sign = 1;
 				dSwap(t1, t2);
 			}
-			if (t1 > tmin) 
+			if (t1 > tmin)
 			{
 				signDir = sign;
 				index = i;
 				tmin = t1;
 			}
-			if (t2 < tmax) 
+			if (t2 < tmax)
 			{
 				tmax = t2;
 			}
-			if (tmin > tmax) 
+			if (tmin > tmax)
 			{
-				return dFloat32 (1.2f);
+				return dFloat32(1.2f);
 			}
 		}
 	}
 
-	if (tmin > dFloat32 (0.0f)) 
+	if (tmin > dFloat32(0.0f))
 	{
-		dAssert (tmin < 1.0f);
-		normalOut = dVector (dFloat32 (0.0f));
+		dAssert(tmin < 1.0f);
+		normalOut = dVector(dFloat32(0.0f));
 		normalOut[index] = signDir;
-	} 
-	else 
+	}
+	else
 	{
-		tmin = dFloat32 (1.2f);
+		tmin = dFloat32(1.2f);
 	}
 	return tmin;
+}
+
+static dInt32 CompareVector32(const dVector* const A, const dVector* const B, void* const )
+{
+	if (A->m_x < B->m_x)
+	{
+		return -1;
+	}
+	if (A->m_x > B->m_x)
+	{
+		return 1;
+	}
+
+	return 0;
+}
+
+static dFloat32 TestHullWinding(const dVector& p0, const dVector& p1, const dVector& p2)
+{
+	dVector edge10(p1 - p0);
+	dVector edge20(p2 - p0);
+	dFloat32 planeSide = edge10.m_y * edge20.m_x - edge10.m_x * edge20.m_y;
+	return planeSide;
+}
+
+dInt32 dConvexHull2d(dInt32 count, dVector* const pointArray)
+{
+	if (count <= 3)
+	{
+		return count;
+	}
+
+	dVector origin(dVector::m_zero);
+	for (dInt32 i = 0; i < count; i++)
+	{
+		origin += pointArray[i];
+	}
+	dVector scale(dFloat32(1.0f) / count);
+	origin = origin * scale;
+	origin.m_w = dFloat32(1.0f);
+
+	dMatrix covariance(dGetZeroMatrix());
+	for (dInt32 i = 0; i < count; i++)
+	{
+		dVector p((pointArray[i] - origin) & dVector::m_triplexMask);
+		dAssert(p.m_w == dFloat32(0.0f));
+		dMatrix matrix(p, p);
+		covariance.m_front += matrix.m_front;
+		covariance.m_up += matrix.m_up;
+		covariance.m_right += matrix.m_right;
+	}
+
+	for (dInt32 i = 0; i < 3; i++)
+	{
+		if (dAbs(covariance[i][i]) < (1.0e-6f))
+		{
+			for (dInt32 j = 0; j < 3; j++)
+			{
+				covariance[i][j] = dFloat32(0.0f);
+				covariance[j][i] = dFloat32(0.0f);
+			}
+		}
+	}
+
+	dVector eigen(covariance.EigenVectors());
+	covariance.m_posit = origin;
+	if (eigen[1] < eigen[2])
+	{
+		dSwap(eigen[1], eigen[2]);
+		dSwap(covariance[1], covariance[2]);
+	}
+	if (eigen[0] < eigen[1])
+	{
+		dSwap(eigen[0], eigen[1]);
+		dSwap(covariance[0], covariance[1]);
+	}
+	if (eigen[1] < eigen[2])
+	{
+		dSwap(eigen[1], eigen[2]);
+		dSwap(covariance[1], covariance[2]);
+	}
+
+	const dFloat32 eigenValueError = dFloat32(1.0e-4f);
+	if (eigen[1] > eigenValueError)
+	{
+		dVector* const array2d = dAlloca(dVector, count);
+		for (dInt32 i = 0; i < count; i++)
+		{
+			array2d[i] = covariance.UntransformVector(pointArray[i]);
+		}
+
+		dSort(array2d, count, CompareVector32);
+
+		dVector* const convexHull = dAlloca(dVector, count);
+
+		// build upper hull in the plane
+		dInt32 hullCount = 0;
+		for (dInt32 i = 0; i < count; i++)
+		{
+			while ((hullCount >= 2) && (TestHullWinding(convexHull[hullCount - 2], convexHull[hullCount - 1], array2d[i]) <= dFloat32 (0.0f)))
+			{
+				hullCount--;
+			}
+			convexHull[hullCount] = array2d[i];
+			hullCount++;
+		}
+
+		// build lower hull in the plane
+		dInt32 base = hullCount + 1;
+		for (dInt32 i = count - 1; i > 0; i--)
+		{
+			while ((hullCount >= base) && (TestHullWinding(convexHull[hullCount - 2], convexHull[hullCount - 1], array2d[i-1]) <= dFloat32(0.0f)))
+			{
+				hullCount--;
+			}
+			convexHull[hullCount] = array2d[i-1];
+			hullCount++;
+		}
+
+		for (dInt32 i = 0; i < hullCount; i++)
+		{
+			pointArray[i] = covariance.TransformVector(convexHull[i]);
+		}
+		count = hullCount;
+	}
+	else if (eigen[0] > eigenValueError)
+	{
+		// is a line or a point convex hull
+		dFloat32 maxValue = dFloat32(-1.0e10f);
+		dFloat32 minValue = dFloat32(-1.0e10f);
+		dInt32 j0 = 0;
+		dInt32 j1 = 0;
+		for (dInt32 i = 0; i < count; i++)
+		{
+			dFloat32 dist = pointArray[i].DotProduct(covariance.m_front).GetScalar();
+			if (dist > maxValue)
+			{
+				j0 = i;
+				maxValue = dist;
+			}
+			if (-dist > minValue)
+			{
+				j1 = i;
+				minValue = -dist;
+			}
+		}
+		const dVector c0(pointArray[j0]);
+		const dVector c1(pointArray[j1]);
+		pointArray[0] = c0;
+		pointArray[1] = c1;
+		count = 2;
+	}
+	else
+	{
+		count = 1;
+	}
+
+	return count;
 }

@@ -63,15 +63,9 @@ void ndJointPid6dofActuator::SubmitLinearLimits(const dMatrix& matrix0, const dM
 		const dMatrix basis(step.Normalize());
 		
 		// move alone the diagonal;
+		AddLinearRowJacobian(desc, matrix1.m_posit, matrix1.m_posit, basis[2]);
+		AddLinearRowJacobian(desc, matrix1.m_posit, matrix1.m_posit, basis[1]);
 		AddLinearRowJacobian(desc, matrix0.m_posit, matrix1.m_posit, basis[0]);
 		SetMassSpringDamperAcceleration(desc, m_linearRegularizer, m_linearSpring, m_linearDamper);
-
-		AddLinearRowJacobian(desc, matrix1.m_posit, matrix1.m_posit, basis[1]);
-		AddLinearRowJacobian(desc, matrix1.m_posit, matrix1.m_posit, basis[2]);
 	}
-}
-
-void ndJointPid6dofActuator::JacobianDerivative(ndConstraintDescritor& desc)
-{
-	ndJointPid3dofActuator::JacobianDerivative(desc);
 }

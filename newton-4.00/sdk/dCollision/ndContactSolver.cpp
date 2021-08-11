@@ -950,6 +950,7 @@ dInt32 ndContactSolver::CalculateContacts(const dVector& point0, const dVector& 
 				dFloat32 dot = q10.DotProduct(p10).GetScalar();
 				if (dAbs(dot) > dFloat32(0.998f)) 
 				{
+					// segment are collinear, the contact points is the overlapping segment
 					dFloat32 pl0 = p0.DotProduct(p10).GetScalar();
 					dFloat32 pl1 = p1.DotProduct(p10).GetScalar();
 					dFloat32 ql0 = q0.DotProduct(p10).GetScalar();
@@ -976,11 +977,11 @@ dInt32 ndContactSolver::CalculateContacts(const dVector& point0, const dVector& 
 				}
 				else 
 				{
+					// only on contact at the closest distance segment
 					count = 1;
-					dVector c0;
-					dVector c1;
-					dRayToRayDistance(p0, p1, q0, q1, c0, c1);
-					contactsOut[0] = (c0 + c1).Scale(dFloat32(0.5f));
+					const dFastRay ray(p0, p1);
+					const dRay intesect(ray.RayDistance(q0, q1));
+					contactsOut[0] = (intesect.m_p0 + intesect.m_p1).Scale(dFloat32(0.5f));
 				}
 			}
 			else 
@@ -1558,7 +1559,6 @@ dInt32 ndContactSolver::Prune3dContacts(const dMatrix& matrix, dInt32 count, ndC
 dInt32 ndContactSolver::PruneContacts(dInt32 count, dInt32 maxCount) const
 {
 	ndContactPoint* const contactArray = m_contactBuffer;
-	//dFloat32 distTolerenace = m_contact->GetPruningTolerance();
 	dVector origin(dVector::m_zero);
 	for (dInt32 i = 0; i < count; i++) 
 	{
@@ -3606,7 +3606,7 @@ dInt32 ndContactSolver::ConvexToCompoundContactsContinue()
 	dVector boxP1;
 	convexInstance->CalculateAabb(matrix, boxP0, boxP1);
 	const dVector relVeloc(matrix.UnrotateVector(convexBody->GetVelocity() - compoundBody->GetVelocity()));
-	dFastRayTest ray(dVector::m_zero, relVeloc);
+	dFastRay ray(dVector::m_zero, relVeloc);
 
 	const dVector rootMinBox(compoundShape->m_root->m_p0 - boxP1);
 	const dVector rootMaxBox(compoundShape->m_root->m_p1 - boxP0);
