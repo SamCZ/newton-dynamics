@@ -129,12 +129,10 @@ else()
 	target_include_directories(${projectName} PUBLIC dNewton/dModels/dCharacter)
     
 	if (MSVC)
-		if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-		#if(CMAKE_VS_MSBUILD_COMMAND OR CMAKE_VS_DEVENV_COMMAND)
+		if(NOT $ENV{CLION_IDE})
 			set_target_properties(${projectName} PROPERTIES COMPILE_FLAGS "/YudCoreStdAfx.h")
 			set_source_files_properties(dCore/dCoreStdAfx.cpp PROPERTIES COMPILE_FLAGS "/YcdCoreStdAfx.h")
 		endif()
-
 		if (NEWTON_BUILD_TEST AND NEWTON_BUILD_SHARED_LIBS)
 			add_custom_command(
 				TARGET ${projectName} POST_BUILD
