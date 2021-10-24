@@ -59,8 +59,8 @@ ndBodySphFluid::ndBodySphFluid()
 {
 }
 
-ndBodySphFluid::ndBodySphFluid(const nd::TiXmlNode* const xmlNode, const dTree<const ndShape*, dUnsigned32>& shapesCache)
-	:ndBodyParticleSet(xmlNode->FirstChild("ndBodyKinematic"), shapesCache)
+ndBodySphFluid::ndBodySphFluid(const dLoadSaveBase::dLoadDescriptor& desc)
+	:ndBodyParticleSet(desc)
 	,m_box0(dFloat32(-1e10f))
 	,m_box1(dFloat32(1e10f))
 	,m_hashGridMap()
@@ -74,11 +74,12 @@ ndBodySphFluid::~ndBodySphFluid()
 {
 }
 
-void ndBodySphFluid::Save(nd::TiXmlElement* const rootNode, const char* const assetPath, dInt32 nodeid, const dTree<dUnsigned32, const ndShape*>& shapesCache) const
+//void ndBodySphFluid::Save(const dLoadSaveBase::dSaveDescriptor& desc) const
+void ndBodySphFluid::Save(const dLoadSaveBase::dSaveDescriptor&) const
 {
 	dAssert(0);
-	nd::TiXmlElement* const paramNode = CreateRootElement(rootNode, "ndBodySphFluid", nodeid);
-	ndBodyParticleSet::Save(paramNode, assetPath, nodeid, shapesCache);
+	//nd::TiXmlElement* const paramNode = CreateRootElement(rootNode, "ndBodySphFluid", nodeid);
+	//ndBodyParticleSet::Save(paramNode, assetPath, nodeid, shapesCache);
 }
 
 void ndBodySphFluid::AddParticle(const dFloat32, const dVector& position, const dVector&)

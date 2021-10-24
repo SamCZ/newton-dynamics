@@ -28,7 +28,8 @@ D_MSV_NEWTON_ALIGN_32
 class ndShapeBox: public ndShapeConvex
 {
 	public:
-	D_COLLISION_API ndShapeBox(const nd::TiXmlNode* const xmlNode);
+	D_CLASS_REFLECTION(ndShapeBox);
+	D_COLLISION_API ndShapeBox(const dLoadSaveBase::dLoadDescriptor& desc);
 	D_COLLISION_API ndShapeBox(dFloat32 size_x, dFloat32 size_y, dFloat32 size_z);
 	D_COLLISION_API virtual ~ndShapeBox();
 
@@ -47,7 +48,7 @@ class ndShapeBox: public ndShapeConvex
 
 	const ndConvexSimplexEdge** GetVertexToEdgeMapping() const;
 	virtual dInt32 CalculatePlaneIntersection(const dVector& normal, const dVector& point, dVector* const contactsOut) const;
-	D_COLLISION_API virtual void Save(nd::TiXmlElement* const xmlNode, const char* const assetPath, dInt32 nodeid) const;
+	D_COLLISION_API virtual void Save(const dLoadSaveBase::dSaveDescriptor& desc) const;
 
 	dVector m_size[2];
 	dVector m_vertex[8];

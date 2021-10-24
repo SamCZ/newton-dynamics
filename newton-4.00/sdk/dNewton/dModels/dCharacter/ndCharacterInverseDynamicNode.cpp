@@ -26,13 +26,61 @@
 #include "ndJointBallAndSocket.h"
 #include "ndCharacterInverseDynamicNode.h"
 
-ndCharacterInverseDynamicNode::ndCharacterInverseDynamicNode(const dMatrix& matrixInGlobalScape, ndBodyDynamic* const body, ndCharacterLimbNode* const parent)
-	:ndCharacterLimbNode(parent)
+D_CLASS_REFLECTION_IMPLEMENT_LOADER(ndCharacterInverseDynamicNode)
+
+ndCharacterInverseDynamicNode::ndCharacterInverseDynamicNode(const dMatrix& matrixInGlobalSpace, ndBodyDynamic* const body, ndCharacterNode* const parent)
+	:ndCharacterNode(parent)
 	,m_body(body)
-	,m_joint(new ndJointBallAndSocket(matrixInGlobalScape, body, parent->GetBody()))
+	,m_joint(new ndJointBallAndSocket(matrixInGlobalSpace, body, parent->GetBody()))
 {
+	m_localPose = m_body->GetMatrix() * parent->GetBody()->GetMatrix().Inverse();
+}
+
+ndCharacterInverseDynamicNode::ndCharacterInverseDynamicNode(const ndCharacterLoadDescriptor& desc)
+	:ndCharacterNode(desc)
+{
+	const nd::TiXmlNode* const xmlNode = desc.m_rootNode;
+	const char* const name = xmlGetString(xmlNode, "name");
+	SetName(name);
+	m_localPose = xmlGetMatrix(xmlNode, "localPose");
+	dInt32 bodyHash = xmlGetInt(xmlNode, "bodyHash");
+	dInt32 jointHash = xmlGetInt(xmlNode, "jointHash");
+
+	const ndBody* const body = desc.m_bodyMap->Find(bodyHash)->GetInfo();
+	const ndJointBilateralConstraint* const joint = desc.m_jointMap->Find(jointHash)->GetInfo();
+	m_body = (ndBodyDynamic*)body;
+	m_joint = (ndJointBilateralConstraint*)joint;
 }
 
 ndCharacterInverseDynamicNode::~ndCharacterInverseDynamicNode()
 {
+	delete m_joint;
+	delete m_body;
+}
+
+void ndCharacterInverseDynamicNode::Save(const ndCharacterSaveDescriptor& desc) const
+{
+	nd::TiXmlElement* const childNode = new nd::TiXmlElement(ClassName());
+	desc.m_rootNode->LinkEndChild(childNode);
+	childNode->SetAttribute("hashId", desc.m_limbMap->GetCount());
+	ndCharacterNode::Save(ndCharacterSaveDescriptor(desc, childNode));
+
+	dTree<dInt32, const ndJointBilateralConstraint*>::dNode* jointNode = desc.m_jointMap->Find(m_joint);
+	if (!jointNode)
+	{
+		jointNode = desc.m_jointMap->Insert(desc.m_jointMap->GetCount(), m_joint);
+	}
+
+	dTree<dInt32, const ndBodyKinematic*>::dNode* bodyNode = desc.m_bodyMap->Find(m_body);
+	if (!bodyNode)
+	{
+		bodyNode = desc.m_bodyMap->Insert(desc.m_bodyMap->GetCount(), m_body);
+	}
+	dAssert(jointNode);
+	dAssert(bodyNode);
+
+	xmlSaveParam(childNode, "name", GetName().GetStr());
+	xmlSaveParam(childNode, "localPose", m_localPose);
+	xmlSaveParam(childNode, "bodyHash", dInt32(bodyNode->GetInfo()));
+	xmlSaveParam(childNode, "jointHash", dInt32(jointNode->GetInfo()));
 }

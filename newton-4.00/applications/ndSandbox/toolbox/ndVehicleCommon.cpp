@@ -14,6 +14,8 @@
 #include "ndPhysicsWorld.h"
 #include "ndVehicleCommon.h"
 
+D_CLASS_REFLECTION_IMPLEMENT_LOADER(ndVehicleSelector)
+
 ndVehicleDectriptor::ndEngineTorqueCurve::ndEngineTorqueCurve()
 {
 	// take from the data sheet of a 2005 dodge viper, 
@@ -191,6 +193,20 @@ ndVehicleSelector::ndVehicleSelector()
 {
 }
 
+ndVehicleSelector::ndVehicleSelector(const dLoadSaveBase::dLoadDescriptor& desc)
+	:ndModel(dLoadSaveBase::dLoadDescriptor(desc))
+	,m_changeVehicle()
+{
+}
+
+void ndVehicleSelector::Save(const dLoadSaveBase::dSaveDescriptor& desc) const
+{
+	nd::TiXmlElement* const childNode = new nd::TiXmlElement(ClassName());
+	desc.m_rootNode->LinkEndChild(childNode);
+	childNode->SetAttribute("hashId", desc.m_nodeNodeHash);
+	ndModel::Save(dLoadSaveBase::dSaveDescriptor(desc, childNode));
+}
+
 void ndVehicleSelector::PostUpdate(ndWorld* const world, dFloat32)
 {
 	dFixSizeArray<char, 32> buttons;
@@ -299,7 +315,6 @@ ndBodyDynamic* ndBasicVehicle::CreateTireBody(ndDemoEntityManager* const scene, 
 {
 	dFloat32 width;
 	dFloat32 radius;
-	ndWorld* const world = scene->GetWorld();
 	ndDemoEntity* const parentEntity = (ndDemoEntity*)parentBody->GetNotifyCallback()->GetUserData();
 	CalculateTireDimensions(tireName, width, radius, parentEntity);
 
@@ -317,7 +332,6 @@ ndBodyDynamic* ndBasicVehicle::CreateTireBody(ndDemoEntityManager* const scene, 
 	tireBody->SetCollisionShape(tireCollision);
 	tireBody->SetMassMatrix(definition.m_mass, tireCollision);
 
-	world->AddBody(tireBody);
 	return tireBody;
 }
 

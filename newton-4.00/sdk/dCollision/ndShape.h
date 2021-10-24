@@ -45,10 +45,8 @@ class ndShapeHeightfield;
 class ndShapeConvexPolygon;
 class ndShapeDebugCallback;
 class ndShapeChamferCylinder;
+class ndShapeStaticProceduralMesh;
 
-#ifdef _DEBUG
-//	#define DG_DEBUG_AABB
-#endif
 
 enum ndShapeID
 {
@@ -63,7 +61,9 @@ enum ndShapeID
 
 	// special and non convex collisions.
 	m_compound,
+	m_staticMesh,
 	m_heightField,
+	m_staticProceduralMesh,
 	m_nullCollision,
 	m_pointCollision,
 	m_polygonCollision,
@@ -85,95 +85,103 @@ class ndShapeMaterial
 	}
 
 	dInt64 m_userId;
-	union
+	union nData
 	{
 		void* m_userData;
 		dUnsigned64 m_alignPad;
-	};
-	union
+	} m_data;
+
+	union dExtraData
 	{
 		dUnsigned64 m_intData;
 		dFloat32 m_floatData;
 	} m_userParam[6];
 };
 
+struct ndBoxInfo
+{
+	dFloat32 m_x;
+	dFloat32 m_y;
+	dFloat32 m_z;
+};
+
+struct ndPointInfo
+{
+	dFloat32 m_noUsed;
+};
+
+struct ndSphereInfo
+{
+	dFloat32 m_radius;
+};
+
+struct ndCylinderInfo
+{
+	dFloat32 m_radio0;
+	dFloat32 m_radio1;
+	dFloat32 m_height;
+};
+
+struct ndCapsuleInfo
+{
+	dFloat32 m_radio0;
+	dFloat32 m_radio1;
+	dFloat32 m_height;
+};
+
+struct ndConeInfo
+{
+	dFloat32 m_radius;
+	dFloat32 m_height;
+};
+
+struct ndChamferCylinderInfo
+{
+	dFloat32 m_r;
+	dFloat32 m_height;
+};
+
+struct ndConvexHullInfo
+{
+	dInt32 m_vertexCount;
+	dInt32 m_strideInBytes;
+	dInt32 m_faceCount;
+	dVector* m_vertex;
+};
+
+struct ndCoumpoundInfo
+{
+	dInt32 m_noUsed;
+};
+
+struct ndProceduralInfoInfo
+{
+	dInt32 m_noUsed;
+};
+
+struct ndCollisionBvhInfo
+{
+	dInt32 m_vertexCount;
+	dInt32 m_indexCount;
+};
+
+struct ndHeighfieldInfo
+{
+	dInt32 m_width;
+	dInt32 m_height;
+	dInt32 m_gridsDiagonals;
+	dFloat32 m_verticalScale;
+	dFloat32 m_horizonalScale_x;
+	dFloat32 m_horizonalScale_z;
+	dInt16* m_elevation;
+	dInt8* m_atributes;
+};
+
 D_MSV_NEWTON_ALIGN_32
 class ndShapeInfo
 {
 	public:
-	struct ndBoxInfo
-	{
-		dFloat32 m_x;
-		dFloat32 m_y;
-		dFloat32 m_z;
-	};
 
-	struct ndPointInfo
-	{
-		dFloat32 m_noUsed;
-	};
-
-	struct ndSphereInfo
-	{
-		dFloat32 m_radius;
-	};
-
-	struct ndCylinderInfo
-	{
-		dFloat32 m_radio0;
-		dFloat32 m_radio1;
-		dFloat32 m_height;
-	};
-
-	struct ndCapsuleInfo
-	{
-		dFloat32 m_radio0;
-		dFloat32 m_radio1;
-		dFloat32 m_height;
-	};
-
-	struct ndConeInfo
-	{
-		dFloat32 m_radius;
-		dFloat32 m_height;
-	};
-
-	struct ndChamferCylinderInfo
-	{
-		dFloat32 m_r;
-		dFloat32 m_height;
-	};
-
-	struct ndConvexHullInfo
-	{
-		dInt32 m_vertexCount;
-		dInt32 m_strideInBytes;
-		dInt32 m_faceCount;
-		dVector* m_vertex;
-	};
-
-	struct ndCoumpoundInfo
-	{
-		dInt32 m_noUsed;
-	};
-
-	struct ndCollisionBvhInfo
-	{
-		dInt32 m_vertexCount;
-		dInt32 m_indexCount;
-	};
-
-	struct ndHeighfieldInfo
-	{
-		dInt32 m_width;
-		dInt32 m_height;
-		dInt32 m_gridsDiagonals;
-		dFloat32 m_verticalScale;
-		dFloat32 m_horizonalScale_x;
-		dFloat32 m_horizonalScale_z;
-		dInt16* m_elevation;
-		dInt8* m_atributes;
-	};
 
 	dMatrix m_offsetMatrix;
 	dVector m_scale;
@@ -191,17 +199,18 @@ class ndShapeInfo
 		ndCoumpoundInfo m_compound;
 		ndConvexHullInfo m_convexhull;
 		ndHeighfieldInfo m_heightfield;
+		ndProceduralInfoInfo m_procedural;
 		ndChamferCylinderInfo m_chamferCylinder;
 		
 		dFloat32 m_paramArray[32];
 	};
 } D_GCC_NEWTON_ALIGN_32;
 
-
 D_MSV_NEWTON_ALIGN_32
 class ndShape: public dClassAlloc
 {
 	public:
+	D_CLASS_REFLECTION(ndShape);
 	dInt32 GetRefCount() const;
 	virtual dInt32 Release() const;
 	virtual const ndShape* AddRef() const;
@@ -220,6 +229,7 @@ class ndShape: public dClassAlloc
 	virtual ndShapeHeightfield* GetAsShapeHeightfield() { return nullptr; }
 	virtual ndShapeConvexPolygon* GetAsShapeAsConvexPolygon() { return nullptr; }
 	virtual ndShapeChamferCylinder* GetAsShapeChamferCylinder() { return nullptr; }
+	virtual ndShapeStaticProceduralMesh* GetAsShapeStaticProceduralMesh() { return nullptr; }
 
 	virtual dInt32 GetConvexVertexCount() const;
 
@@ -247,7 +257,7 @@ class ndShape: public dClassAlloc
 	virtual dMatrix CalculateInertiaAndCenterOfMass(const dMatrix& alignMatrix, const dVector& localScale, const dMatrix& matrix) const;
 	virtual dFloat32 CalculateMassProperties(const dMatrix& offset, dVector& inertia, dVector& crossInertia, dVector& centerOfMass) const;
 
-	D_COLLISION_API virtual void Save(nd::TiXmlElement* const xmlNode, const char* const assetPath, dInt32 nodeid) const;
+	D_COLLISION_API virtual void Save(const dLoadSaveBase::dSaveDescriptor& desc) const;
 
 	protected:
 	D_COLLISION_API ndShape(ndShapeID id);
@@ -317,11 +327,6 @@ inline dVector ndShape::GetObbSize() const
 inline dFloat32 ndShape::GetUmbraClipSize() const
 {
 	return dFloat32(3.0f) * GetBoxMaxRadius();
-}
-
-inline void ndShape::Save( nd::TiXmlElement* const, const char* const, dInt32) const
-{
-	dAssert(0);
 }
 
 #endif 

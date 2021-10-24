@@ -23,12 +23,12 @@
 #define _D_BODY_H_
 
 #include "ndCollisionStdafx.h"
-#include "ndSetData.h"
 #include "ndShapeInstance.h"
 
 class ndContact;
 class ndBodyNotify;
 class ndBodyDynamic;
+class ndBodySentinel;
 class ndBodyKinematic;
 class ndRayCastNotify;
 class ndBodySphFluid;
@@ -40,12 +40,14 @@ D_MSV_NEWTON_ALIGN_32
 class ndBody: public dClassAlloc
 {
 	public:
+	D_CLASS_REFLECTION(ndBody);
 	D_COLLISION_API ndBody();
-	D_COLLISION_API ndBody(const nd::TiXmlNode* const xmlNode, const dTree<const ndShape*, dUnsigned32>& shapesCache);
+	D_COLLISION_API ndBody(const dLoadSaveBase::dLoadDescriptor& desc);
 	D_COLLISION_API virtual ~ndBody();
 
 	virtual ndBody* GetAsBody() { return this;}
 	virtual ndBodyDynamic* GetAsBodyDynamic() { return nullptr; }
+	virtual ndBodySentinel* GetAsBodySentinel() { return nullptr; }
 	virtual ndBodyKinematic* GetAsBodyKinematic() { return nullptr; }
 	virtual ndBodyKinematic* GetAsBodyPlayerCapsule() { return nullptr; }
 	virtual ndBodySphFluid* GetAsBodySphFluid() { return nullptr; }
@@ -70,13 +72,13 @@ class ndBody: public dClassAlloc
 	D_COLLISION_API dMatrix GetMatrix() const;
 	D_COLLISION_API void SetMatrix(const dMatrix& matrix);
 	D_COLLISION_API dQuaternion GetRotation() const;
-	D_COLLISION_API virtual void Save(nd::TiXmlElement* const rootNode, const char* const assetPath, dInt32 nodeid, const dTree<dUnsigned32, const ndShape*>& shapesCache) const;
+	D_COLLISION_API virtual void Save(const dLoadSaveBase::dSaveDescriptor& desc) const;
 
 	D_COLLISION_API dVector GetVelocityAtPoint(const dVector& point) const;
 
 	protected:
 	D_COLLISION_API static const nd::TiXmlNode* FindNode(const nd::TiXmlNode* const rootNode, const char* const name);
-	D_COLLISION_API virtual nd::TiXmlElement* CreateRootElement(nd::TiXmlElement* const rootNode, const char* const name, dInt32 nodeid) const;
+
 	virtual void AttachContact(ndContact* const) {}
 	virtual void DetachContact(ndContact* const) {}
 	virtual ndContact* FindContact(const ndBody* const) const { return nullptr; }
@@ -113,8 +115,9 @@ class ndBody: public dClassAlloc
 	};
 
 	dUnsigned32 m_uniqueId;
-	static dUnsigned32 m_uniqueIdCount;
+	D_COLLISION_API static dUnsigned32 m_uniqueIdCount;
 
+	friend class ndWorld;
 	friend class ndScene;
 	friend class ndConstraint;
 	friend class ndBodyPlayerCapsuleImpulseSolver;

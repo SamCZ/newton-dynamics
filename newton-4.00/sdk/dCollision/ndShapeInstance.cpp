@@ -98,7 +98,7 @@ ndShapeInstance::ndShapeInstance(const ndShapeInstance& instance, ndShape* const
 {
 }
 
-ndShapeInstance::ndShapeInstance(const nd::TiXmlNode* const xmlNode, const dTree<const ndShape*, dUnsigned32>& shapesCache)
+ndShapeInstance::ndShapeInstance(const nd::TiXmlNode* const xmlNode, const ndShapeLoaderCache& shapesCache)
 	:dClassAlloc()
 	,m_globalMatrix(dGetIdentityMatrix())
 	,m_localMatrix(dGetIdentityMatrix())
@@ -114,16 +114,18 @@ ndShapeInstance::ndShapeInstance(const nd::TiXmlNode* const xmlNode, const dTree
 	,m_scaleType(m_unit)
 	,m_collisionMode(true)
 {
-	dInt32 index = xmlGetInt(xmlNode, "shapeNodeId");
-	m_shape = shapesCache.Find(index)->GetInfo()->AddRef();
-
+	dInt32 index = xmlGetInt(xmlNode, "shapeHashId");
+	const ndShapeInstance& cacheInstance = shapesCache.Find(index)->GetInfo();
+	//m_shape = shapesCache.Find(index)->GetInfo()->AddRef();
+	m_shape = cacheInstance.GetShape()->AddRef();
+	
 	m_localMatrix = xmlGetMatrix(xmlNode, "localMatrix");
 	m_aligmentMatrix = xmlGetMatrix(xmlNode, "aligmentMatrix");
 	m_skinThickness = xmlGetFloat(xmlNode, "skinThickness");
 	m_collisionMode = xmlGetInt(xmlNode, "collisionMode") ? true : false;
 	m_shapeMaterial.m_userId = xmlGetInt64(xmlNode, "materialID");
-	m_shapeMaterial.m_alignPad = xmlGetInt64(xmlNode, "materialUserData");
-
+	m_shapeMaterial.m_data.m_alignPad = xmlGetInt64(xmlNode, "materialUserData");
+	
 	for (dInt32 i = 0; i < dInt32 (sizeof(m_shapeMaterial.m_userParam) / sizeof(m_shapeMaterial.m_userParam[0])); i++)
 	{
 		char name[64];
@@ -436,7 +438,7 @@ void ndShapeInstance::SetScale(const dVector& scale)
 	else 
 	{
 		m_scaleType = m_nonUniform;
-		m_maxScale = dMax(scaleX, scaleY, scaleZ);
+		m_maxScale = dMax(dMax(scaleX, scaleY), scaleZ);
 		m_scale = dVector(scaleX, scaleY, scaleZ, dFloat32(0.0f));
 		m_invScale = dVector(dFloat32(1.0f) / scaleX, dFloat32(1.0f) / scaleY, dFloat32(1.0f) / scaleZ, dFloat32(0.0f));
 	}
@@ -497,7 +499,7 @@ void ndShapeInstance::SetGlobalScale(const dVector& scale)
 		}
 		m_scaleType = isIdentity ? m_nonUniform : m_global;
 
-		m_maxScale = dMax(m_scale[0], m_scale[1], m_scale[2]);
+		m_maxScale = dMax(dMax(m_scale[0], m_scale[1]), m_scale[2]);
 		m_invScale = dVector(dFloat32(1.0f) / m_scale[0], dFloat32(1.0f) / m_scale[1], dFloat32(1.0f) / m_scale[2], dFloat32(0.0f));
 	}
 }
@@ -510,21 +512,20 @@ dFloat32 ndShapeInstance::CalculateBuoyancyCenterOfPresure(dVector& com, const d
 	return volume;
 }
 
-void ndShapeInstance::Save(nd::TiXmlElement* const rootNode, const dTree<dUnsigned32, const ndShape*>& shapesCache) const
+void ndShapeInstance::Save(const dLoadSaveBase::dSaveDescriptor& desc) const
 {
 	nd::TiXmlElement* const paramNode = new nd::TiXmlElement("ndShapeInstance");
-	rootNode->LinkEndChild(paramNode);
+	desc.m_rootNode->LinkEndChild(paramNode);
 
-	dAssert(shapesCache.Find(m_shape));
+	xmlSaveParam(paramNode, "shapeHashId", desc.m_shapeNodeHash);
 	xmlSaveParam(paramNode, "localMatrix", m_localMatrix);
 	xmlSaveParam(paramNode, "aligmentMatrix", m_aligmentMatrix);
 	xmlSaveParam(paramNode, "scale", m_scale);
-	xmlSaveParam(paramNode, "shapeNodeId", dInt32 (shapesCache.Find(m_shape)->GetInfo()));
-
+	
 	xmlSaveParam(paramNode, "skinThickness", m_skinThickness);
 	xmlSaveParam(paramNode, "collisionMode", m_collisionMode ? 1 : 0);
 	xmlSaveParam(paramNode, "materialID", m_shapeMaterial.m_userId);
-	xmlSaveParam(paramNode, "materialUserData", dInt64(m_shapeMaterial.m_alignPad));
+	xmlSaveParam(paramNode, "materialUserData", dInt64(m_shapeMaterial.m_data.m_alignPad));
 	for (dInt32 i = 0; i < dInt32 (sizeof(m_shapeMaterial.m_userParam) / sizeof(m_shapeMaterial.m_userParam[0])); i++)
 	{
 		char name[64];

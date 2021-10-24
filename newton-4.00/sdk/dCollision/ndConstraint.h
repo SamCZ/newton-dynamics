@@ -92,7 +92,6 @@ class dgPointParam
 	dVector m_r1;
 	dVector m_posit0;
 	dVector m_posit1;
-	dFloat32 m_defaultDiagonalRegularizer;
 } D_GCC_NEWTON_ALIGN_32;
 
 D_MSV_NEWTON_ALIGN_32
@@ -229,7 +228,7 @@ class ndConstraint
 {
 	public:
 	// add some reflexion to the classes
-	D_CLASS_RELECTION(ndConstraint);
+	D_CLASS_REFLECTION(ndConstraint);
 
 	virtual ~ndConstraint();
 
@@ -247,15 +246,17 @@ class ndConstraint
 	virtual void JointAccelerations(ndJointAccelerationDecriptor* const desc) = 0;
 	
 	virtual void DebugJoint(ndConstraintDebugCallback&) const;
-	void InitPointParam(dgPointParam& param, dFloat32 stiffness, const dVector& p0Global, const dVector& p1Global) const;
+	void InitPointParam(dgPointParam& param, const dVector& p0Global, const dVector& p1Global) const;
 
 	dFloat32 m_preconditioner0;
 	dFloat32 m_preconditioner1;
 	dInt32 m_rowCount;
 	dInt32 m_rowStart;
-	bool m_jointFeebackForce;
-	bool m_isInSkeletonLoop;
-	bool m_active;
+	dUnsigned32 m_active : 1;
+	dUnsigned32 m_resting : 1;
+	dUnsigned32 m_isInSkeletonLoop : 1;
+	//dUnsigned32 m_jointFeebackForce : 1;
+	
 	protected:
 	ndConstraint();
 } D_GCC_NEWTON_ALIGN_32 ;
@@ -276,12 +277,12 @@ inline ndJointBilateralConstraint* ndConstraint::GetAsBilateral()
 
 inline bool ndConstraint::IsActive() const
 { 
-	return m_active; 
+	return m_active ? true : false;
 }
 
 inline void ndConstraint::SetActive(bool state)
 { 
-	m_active = state; 
+	m_active = state ? 1 : 0;
 }
 
 inline bool ndConstraint::IsBilateral() const

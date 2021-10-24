@@ -25,7 +25,6 @@ file(GLOB CPP_SOURCE
 	animation/*.cpp 
 )
 
-#source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/" PREFIX source/ FILES ${CPP_SOURCE})
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/" FILES ${CPP_SOURCE})
 
 include_directories(./)
@@ -54,22 +53,29 @@ else()
 	target_link_libraries (${projectName} ndNewton glfw imgui glatter openfbx)
 endif()
 
-if (NEWTON_ENABLE_GPU_SOLVER)
-	if (NEWTON_BUILD_SHARED_LIBS STREQUAL "OFF")
-		if (BUILD_64)
-			message (${CMAKE_CURRENT_SOURCE_DIR})
-			target_link_libraries (${projectName} "${CMAKE_CURRENT_SOURCE_DIR}/../../sdk/dOpencl/CL/lib/x64/OpenCL.lib")
-		else(BUILD_64)
-			target_link_libraries (${projectName} "${CMAKE_CURRENT_SOURCE_DIR}/../../sdk/dOpencl/CL/lib/x64/OpenCL.lib")
-		endif(BUILD_64)			
-	endif()
-endif(NEWTON_ENABLE_GPU_SOLVER)
-
 if (NEWTON_BUILD_PROFILER)
 	target_link_libraries (${projectName} dProfiler)
 endif ()
 
+
 if(MSVC OR MINGW)
+	if(NEWTON_ENABLE_AVX2_SOLVER)
+		if (NOT NEWTON_BUILD_SHARED_LIBS)
+			target_link_libraries (${projectName} ndAvx2Solver)
+		endif()
+	endif()
+
+	if (NEWTON_ENABLE_OPENCL_SOLVER)
+		if (NOT NEWTON_BUILD_SHARED_LIBS)
+			if (PTR_SIZE EQUAL 8)
+				message (${CMAKE_CURRENT_SOURCE_DIR})
+				target_link_libraries (${projectName} "${CMAKE_CURRENT_SOURCE_DIR}/../../sdk/dExtensions/dOpencl/CL/lib/x64/OpenCL.lib")
+			else()
+				target_link_libraries (${projectName} "${CMAKE_CURRENT_SOURCE_DIR}/../../sdk/dExtensions/dOpencl/CL/lib/x64/OpenCL.lib")
+			endif()
+		endif()
+	endif()
+
 	if (PTR_SIZE EQUAL 8)
 		target_link_libraries (${projectName} ${PROJECT_SOURCE_DIR}/thirdParty/openalRuntime/win64sdk/lib/OpenAL_32.lib)
 		add_custom_command(
@@ -86,6 +92,8 @@ if(MSVC OR MINGW)
 
     target_link_libraries (${projectName} glu32 opengl32)
 
+	target_link_options(${projectName} PUBLIC "/DEBUG") 
+
     if(CMAKE_VS_MSBUILD_COMMAND OR CMAKE_VS_DEVENV_COMMAND)
 		set_target_properties(${projectName} PROPERTIES COMPILE_FLAGS "/YundSandboxStdafx.h")
 		set_source_files_properties(ndSandboxStdafx.cpp PROPERTIES COMPILE_FLAGS "/YcndSandboxStdafx.h")
@@ -94,7 +102,16 @@ if(MSVC OR MINGW)
 endif()
 
 if(UNIX)
-    target_link_libraries (${projectName} GL GLU dl X11 pthread openal)
+	target_link_libraries (${projectName} GL GLU dl X11 pthread openal)
+
+	if(NEWTON_ENABLE_AVX2_SOLVER)
+		target_link_libraries (${projectName} ndSolverAvx2)
+	endif()
+
+	if (NEWTON_ENABLE_OPENCL_SOLVER)
+		target_link_libraries (${projectName} OpenCL ndSolverOpenCL)
+	endif()
+    
     set (source "${CMAKE_SOURCE_DIR}/applications/media")
     set (destination "${PROJECT_BINARY_DIR}/applications/media")
     add_custom_command(

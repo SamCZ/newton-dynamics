@@ -16,12 +16,15 @@
 #include "ndPhysicsUtils.h"
 
 class ndDemoEntity;
+class ndAnimKeyframe;
 class ndShaderPrograms;
 class ndDemoMeshInterface;
 
 class ndDemoEntityNotify: public ndBodyNotify
 {
 	public:
+	D_CLASS_REFLECTION(ndDemoEntityNotify);
+	ndDemoEntityNotify(const dLoadSaveBase::dLoadDescriptor& desc);
 	ndDemoEntityNotify(ndDemoEntityManager* const manager, ndDemoEntity* const entity, ndBodyDynamic* const parentBody = nullptr, dFloat32 gravity = DEMO_GRAVITY);
 	virtual ~ndDemoEntityNotify();
 
@@ -33,6 +36,8 @@ class ndDemoEntityNotify: public ndBodyNotify
 	virtual void OnObjectPick() const;
 	virtual void OnTransform(dInt32 threadIndex, const dMatrix& matrix);
 	virtual void OnApplyExternalForce(dInt32 threadIndex, dFloat32 timestep);
+
+	virtual void Save(const dLoadSaveBase::dSaveDescriptor& desc) const;
 
 	ndDemoEntity* m_entity;
 	ndBodyDynamic* m_parentBody;
@@ -77,6 +82,7 @@ class ndDemoEntity : public dNodeHierarchy<ndDemoEntity>
 
 	dMatrix GetNextMatrix () const;
 	dMatrix GetCurrentMatrix () const;
+	ndAnimKeyframe GetCurrentTransform() const;
 	virtual void SetMatrix(const dQuaternion& rotation, const dVector& position);
 	virtual void SetNextMatrix (const dQuaternion& rotation, const dVector& position);
 	virtual void ResetMatrix(const dMatrix& matrix);
@@ -84,8 +90,9 @@ class ndDemoEntity : public dNodeHierarchy<ndDemoEntity>
 	dMatrix CalculateInterpolatedGlobalMatrix (const ndDemoEntity* const root = nullptr) const;
 
 	void RenderBone() const;
+	ndShapeInstance* CreateCollisionFromchildren() const;
+
 	virtual void Render(dFloat32 timeStep, ndDemoEntityManager* const scene, const dMatrix& matrix) const;
-	ndShapeInstance* CreateCollisionFromchildren(ndWorld* const world) const;
 
 	protected:
 	mutable dMatrix m_matrix;			// interpolated matrix

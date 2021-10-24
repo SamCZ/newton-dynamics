@@ -32,12 +32,16 @@ D_MSV_NEWTON_ALIGN_32
 class ndModel: public dClassAlloc
 {
 	public:
+	D_CLASS_REFLECTION(ndModel);
 	ndModel();
-	D_NEWTON_API ndModel(const nd::TiXmlNode* const xmlNode);
-	virtual ~ndModel ();
+	D_NEWTON_API ndModel(const dLoadSaveBase::dLoadDescriptor& desc);
 
-	D_CLASS_RELECTION(ndModel);
+	virtual ~ndModel ();
+	
 	virtual ndModel* GetAsModel();
+	virtual void AddToWorld(ndWorld* const world);
+	virtual void RemoveFromToWorld(ndWorld* const world);
+
 	virtual ndMultiBodyVehicle* GetAsMultiBodyVehicle();
 
 	virtual void Debug(ndConstraintDebugCallback& context) const;
@@ -47,9 +51,12 @@ class ndModel: public dClassAlloc
 	virtual void PostUpdate(ndWorld* const world, dFloat32 timestep);
 	virtual void PostTransformUpdate(ndWorld* const world, dFloat32 timestep);
 
+	D_NEWTON_API virtual void Save(const dLoadSaveBase::dSaveDescriptor& desc) const;
+
 	ndModelList::dNode* m_node;
 
 	friend class ndWorld;
+	friend class ndLoadSave;
 } D_GCC_NEWTON_ALIGN_32;
 
 inline ndModel::ndModel()
@@ -86,6 +93,14 @@ inline void ndModel::PostUpdate(ndWorld* const, dFloat32)
 }
 
 inline void ndModel::PostTransformUpdate(ndWorld* const, dFloat32)
+{
+}
+
+inline void ndModel::AddToWorld(ndWorld* const)
+{
+}
+
+inline void ndModel::RemoveFromToWorld(ndWorld* const)
 {
 }
 

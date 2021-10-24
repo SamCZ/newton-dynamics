@@ -30,7 +30,8 @@
 class ndMultiBodyVehicleDifferential : public ndJointBilateralConstraint
 {
 	public:
-	D_CLASS_RELECTION(ndMultiBodyVehicleDifferential);
+	D_CLASS_REFLECTION(ndMultiBodyVehicleDifferential);
+	D_NEWTON_API ndMultiBodyVehicleDifferential(const dLoadSaveBase::dLoadDescriptor& desc);
 	D_NEWTON_API ndMultiBodyVehicleDifferential(ndBodyKinematic* const differential, ndBodyKinematic* const chassis, dFloat32 slipOmegaLock);
 
 	dFloat32 GetSlipOmega() const;
@@ -38,8 +39,9 @@ class ndMultiBodyVehicleDifferential : public ndJointBilateralConstraint
 
 	protected:
 	void AlignMatrix();
-	void JacobianDerivative(ndConstraintDescritor& desc);
 	void DebugJoint(ndConstraintDebugCallback&) const {}
+	void JacobianDerivative(ndConstraintDescritor& desc);
+	void Save(const dLoadSaveBase::dSaveDescriptor& desc) const;
 
 	friend class ndMultiBodyVehicle;
 	dFloat32 m_limitedSlipOmega;

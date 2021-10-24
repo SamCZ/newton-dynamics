@@ -16,17 +16,18 @@
 #include "ndPhysicsUtils.h"
 #include "ndDemoEntityManager.h"
 
-class ndArchimedesBuoyancyVolume : public ndBodyTriggerVolume
+class ndArchimedesBuoyancyVolume: public ndBodyTriggerVolume
 {
 	public:
+	D_CLASS_REFLECTION(ndArchimedesBuoyancyVolume);
 	ndArchimedesBuoyancyVolume();
-	ndArchimedesBuoyancyVolume(const nd::TiXmlNode* const xmlNode, const dTree<const ndShape*, dUnsigned32>& shapesCache);
+	ndArchimedesBuoyancyVolume(const dLoadSaveBase::dLoadDescriptor& desc);
 
 	void CalculatePlane(ndBodyKinematic* const body);
 	void OnTriggerEnter(ndBodyKinematic* const body, dFloat32 timestep);
 	void OnTrigger(ndBodyKinematic* const kinBody, dFloat32 timestep);
 	void OnTriggerExit(ndBodyKinematic* const body, dFloat32 timestep);
-	virtual void Save(nd::TiXmlElement* const rootNode, const char* const assetPath, dInt32 nodeid, const dTree<dUnsigned32, const ndShape*>& shapesCache) const;
+	virtual void Save(const dLoadSaveBase::dSaveDescriptor& desc) const;
 
 	dPlane m_plane;
 	dFloat32 m_density;

@@ -24,6 +24,7 @@ class ndAnimationBlendTreeNode;
 class ndBasicPlayerCapsule: public ndBodyPlayerCapsule
 {
 	public:
+	D_CLASS_REFLECTION(ndBasicPlayerCapsule);
 	class PlayerInputs
 	{
 		public:
@@ -47,8 +48,8 @@ class ndBasicPlayerCapsule: public ndBodyPlayerCapsule
 
 	~ndBasicPlayerCapsule();
 
-	ndBasicPlayerCapsule(const nd::TiXmlNode* const xmlNode, const dTree<const ndShape*, dUnsigned32>& shapesCache, ndPhysicsWorld* const world);
-	void Save(nd::TiXmlElement* const rootNode, const char* const assetPath, dInt32 nodeid, const dTree<dUnsigned32, const ndShape*>& shapesCache) const;
+	ndBasicPlayerCapsule(const dLoadSaveBase::dLoadDescriptor& desc);
+	virtual void Save(const dLoadSaveBase::dSaveDescriptor& desc) const;
 
 	void ApplyInputs(dFloat32 timestep);
 	dFloat32 ContactFrictionCallback(const dVector& position, const dVector& normal, dInt32 contactId, const ndBodyKinematic* const otherbody) const;

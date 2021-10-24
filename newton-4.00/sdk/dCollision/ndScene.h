@@ -56,9 +56,7 @@ class ndSceneTreeNotiFy
 } D_GCC_NEWTON_ALIGN_32;
 
 D_MSV_NEWTON_ALIGN_32
-class ndScene
-	:public dClassAlloc
-	,public dThreadPool
+class ndScene : public dThreadPool
 {
 	public: 
 	class ndBaseJob: public dThreadPoolJob
@@ -100,7 +98,7 @@ class ndScene
 	dArray<ndBodyKinematic*>& GetActiveBodyArray();
 	const dArray<ndBodyKinematic*>& GetActiveBodyArray() const;
 
-	template <class T>
+	template <class T> 
 	void SubmitJobs(void* const context = nullptr);
 
 	dFloat32 GetTimestep() const;
@@ -271,7 +269,7 @@ inline void ndScene::SetTimestep(dFloat32 timestep)
 	m_timestep = timestep;
 }
 
-D_INLINE dFloat32 ndScene::CalculateSurfaceArea(const ndSceneNode* const node0, const ndSceneNode* const node1, dVector& minBox, dVector& maxBox) const
+inline dFloat32 ndScene::CalculateSurfaceArea(const ndSceneNode* const node0, const ndSceneNode* const node1, dVector& minBox, dVector& maxBox) const
 {
 	minBox = node0->m_minBox.GetMin(node1->m_minBox);
 	maxBox = node0->m_maxBox.GetMax(node1->m_maxBox);

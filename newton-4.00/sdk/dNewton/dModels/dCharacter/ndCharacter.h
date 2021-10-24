@@ -26,51 +26,70 @@
 #include "ndModel.h"
 
 class ndWorld;
-class ndCharacterLimbNode;
+class ndCharacterNode;
 class ndCharacterRootNode;
-class ndCharacterEffectorNode;
-class ndCharacterPoseController;
+class ndCharacterSkeleton;
+class ndJointKinematicChain;
 class ndCharacterForwardDynamicNode;
 class ndCharacterInverseDynamicNode;
+
+//class ndCharacterCentreOfMassState
+//{
+//	public:
+//	dVector m_centerOfMass;
+//	dVector m_centerOfMassVeloc;
+//	dFloat32 m_mass;
+//};
 
 class ndCharacter: public ndModel
 {
 	public:
-	class ndCentreOfMassState
+	class ndEffetorInfo
 	{
 		public:
-		dVector m_centerOfMass;
-		dVector m_centerOfMassVeloc;
-		dFloat32 m_mass;
+		dMatrix m_bindMatrix;
+		ndCharacterNode* m_controlNode;
+		ndJointKinematicChain* m_effector;
 	};
 
-	D_CLASS_RELECTION(ndCharacter);
-
+	D_CLASS_REFLECTION(ndCharacter);
 	D_NEWTON_API ndCharacter();
-	D_NEWTON_API ndCharacter(const nd::TiXmlNode* const xmlNode);
+	D_NEWTON_API ndCharacter(const dLoadSaveBase::dLoadDescriptor& desc);
 	D_NEWTON_API virtual ~ndCharacter ();
 
+	D_NEWTON_API virtual void AddToWorld(ndWorld* const world);
+	D_NEWTON_API virtual void RemoveFromToWorld(ndWorld* const world);
+
 	D_NEWTON_API ndCharacterRootNode* CreateRoot(ndBodyDynamic* const body);
-	D_NEWTON_API ndCharacterForwardDynamicNode* CreateForwardDynamicLimb(const dMatrix& matrixInGlobalScape, ndBodyDynamic* const body, ndCharacterLimbNode* const parent);
-	D_NEWTON_API ndCharacterInverseDynamicNode* CreateInverseDynamicLimb(const dMatrix& matrixInGlobalScape, ndBodyDynamic* const body, ndCharacterLimbNode* const parent);
-	D_NEWTON_API ndCharacterEffectorNode* CreateInverseDynamicEffector(const dMatrix& matrixInGlobalScape, ndCharacterLimbNode* const child, ndCharacterLimbNode* const parent);
-	
+	D_NEWTON_API ndCharacterForwardDynamicNode* CreateForwardDynamicLimb(const dMatrix& matrixInGlobalSpace, ndBodyDynamic* const body, ndCharacterNode* const parent);
+	D_NEWTON_API ndCharacterInverseDynamicNode* CreateInverseDynamicLimb(const dMatrix& matrixInGlobalSpace, ndBodyDynamic* const body, ndCharacterNode* const parent);
+
 	ndCharacter* GetAsCharacter();
 	ndCharacterRootNode* GetRootNode() const;
-	ndCharacterPoseController* GetController() const;
-	void SetController(ndCharacterPoseController* const controller);
 
-	ndCentreOfMassState CalculateCentreOfMassState() const;
-	void UpdateGlobalPose(ndWorld* const world, dFloat32 timestep);
-	void CalculateLocalPose(ndWorld* const world, dFloat32 timestep);
+	D_NEWTON_API void AddAttachment(ndJointBilateralConstraint* const joint);
+	D_NEWTON_API void RemoveAttachment(ndJointBilateralConstraint* const joint);
+
+	D_NEWTON_API void CreateKinematicChain(const dMatrix& globalOrientation, const ndCharacterNode* const node);
+
+	//ndCharacterPoseController* GetController() const;
+	//void SetController(ndCharacterPoseController* const controller);
+	//ndCharacterCentreOfMassState CalculateCentreOfMassState() const;
+	//void UpdateGlobalPose(ndWorld* const world, dFloat32 timestep);
+	//void CalculateLocalPose(ndWorld* const world, dFloat32 timestep);
+	//D_NEWTON_API ndCharacterSkeleton* CreateSkeleton() const;
+	D_NEWTON_API void SetPose();
 
 	protected:
 	D_NEWTON_API virtual void Debug(ndConstraintDebugCallback& context) const;
 	D_NEWTON_API virtual void Update(ndWorld* const world, dFloat32 timestep);
 	D_NEWTON_API virtual void PostUpdate(ndWorld* const world, dFloat32 timestep);
+	D_NEWTON_API virtual void Save(const dLoadSaveBase::dSaveDescriptor& desc) const;
 	
 	ndCharacterRootNode* m_rootNode;
-	ndCharacterPoseController* m_controller;
+	//ndCharacterPoseController* m_controller;
+	dList<ndEffetorInfo> m_effectors;
+	dList<ndJointBilateralConstraint*> m_extraJointAttachments;
 };
 
 inline ndCharacter* ndCharacter::GetAsCharacter()
@@ -78,15 +97,15 @@ inline ndCharacter* ndCharacter::GetAsCharacter()
 	return this;
 }
 
-inline ndCharacterPoseController* ndCharacter::GetController() const
-{
-	return m_controller;
-}
-
-inline void ndCharacter::SetController(ndCharacterPoseController* const controller)
-{
-	m_controller = controller;
-}
+//inline ndCharacterPoseController* ndCharacter::GetController() const
+//{
+//	return m_controller;
+//}
+//
+//inline void ndCharacter::SetController(ndCharacterPoseController* const controller)
+//{
+//	m_controller = controller;
+//}
 
 inline ndCharacterRootNode* ndCharacter::GetRootNode() const
 {

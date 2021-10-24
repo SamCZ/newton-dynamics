@@ -29,16 +29,22 @@
 #include "ndDynamicsUpdate.h"
 #include "ndBodyParticleSet.h"
 #include "ndDynamicsUpdateSoa.h"
-#include "ndDynamicsUpdateAvx2.h"
-#include "ndDynamicsUpdateOpencl.h"
 #include "ndJointBilateralConstraint.h"
+
+#ifdef _D_USE_AVX2_SOLVER
+	#include "ndDynamicsUpdateAvx2.h"
+#endif
+
+#ifdef _D_NEWTON_OPENCL
+	#include "ndDynamicsUpdateOpencl.h"
+#endif
 
 class ndSkeletonQueue : public dFixSizeArray<ndSkeletonContainer::ndNode*, 1024 * 4>
 {
 	public:
 	ndSkeletonQueue()
 		:dFixSizeArray<ndSkeletonContainer::ndNode*, 1024 * 4>()
-		, m_mod(sizeof(m_array) / sizeof(m_array[0]))
+		,m_mod(sizeof(m_array) / sizeof(m_array[0]))
 	{
 		m_lastIndex = 0;
 		m_firstIndex = 0;
@@ -143,7 +149,8 @@ ndWorld::ndWorld()
 	m_sleepTable[D_SLEEP_ENTRIES - 1].m_maxOmega = 0.1f;
 	m_sleepTable[D_SLEEP_ENTRIES - 1].m_steps = steps;
 
-	m_sentinelBody = new ndBodyDynamic;
+	ndBody::m_uniqueIdCount = 0;
+	m_sentinelBody = new ndBodySentinel;
 }
 
 ndWorld::~ndWorld()
@@ -164,6 +171,13 @@ void ndWorld::CleanUp()
 		m_skeletonList.Remove(m_skeletonList.GetFirst());
 	}
 
+	while (m_modelList.GetFirst())
+	{
+		ndModel* const model = m_modelList.GetFirst()->GetInfo();
+		RemoveModel(model);
+		delete model;
+	}
+
 	while (m_jointList.GetFirst())
 	{
 		ndJointBilateralConstraint* const joint = m_jointList.GetFirst()->GetInfo();
@@ -178,13 +192,6 @@ void ndWorld::CleanUp()
 		delete body;
 	}
 
-	while (m_modelList.GetFirst())
-	{
-		ndModel* const model = m_modelList.GetFirst()->GetInfo();
-		RemoveModel(model);
-		delete model;
-	}
-
 	const ndBodyList& bodyList = GetBodyList();
 	while (bodyList.GetFirst())
 	{
@@ -193,6 +200,7 @@ void ndWorld::CleanUp()
 		delete body;
 	}
 
+	ndBody::m_uniqueIdCount = 1;
 	dAssert(!m_scene->GetContactList().GetCount());
 }
 
@@ -213,12 +221,19 @@ void ndWorld::SelectSolver(ndSolverModes solverMode)
 				m_solverMode = solverMode;
 				m_solver = new ndDynamicsUpdateAvx2(this);
 				break;
-			#endif // D_USE_VECTOR_AVX2_SOLVER
+			#endif
 
-			case ndOpenclSolver:
+			#ifdef _D_NEWTON_OPENCL
+			case ndOpenclSolver1:
 				m_solverMode = solverMode;
-				m_solver = new ndDynamicsUpdateOpencl(this);
+				m_solver = new ndDynamicsUpdateOpencl(this, 0);
 				break;
+
+			case ndOpenclSolver2:
+				m_solverMode = solverMode;
+				m_solver = new ndDynamicsUpdateOpencl(this, 1);
+				break;
+			#endif
 
 			case ndStandardSolver:
 			default:
@@ -236,18 +251,7 @@ const char* ndWorld::GetSolverString() const
 
 void ndWorld::ClearCache()
 {
-	ndContact::FlushFreeList();
-	ndBodyList::FlushFreeList();
-	ndModelList::FlushFreeList();
-	ndJointList::FlushFreeList();
-	ndContactList::FlushFreeList();
-	ndSkeletonList::FlushFreeList();
-	ndContactPointList::FlushFreeList();
-	ndBodyParticleSetList::FlushFreeList();
-	ndScene::ndFitnessList::FlushFreeList();
-	dIsoSurface::dIsoVertexMap::FlushFreeList();
-	ndBodyKinematic::ndContactMap::FlushFreeList();
-	ndSkeletonContainer::ndNodeList::FlushFreeList();
+	dFreeListAlloc::Flush();
 }
 
 void ndWorld::UpdateTransforms()
@@ -320,6 +324,13 @@ void ndWorld::RemoveBody(ndBody* const body)
 	dAssert(kinematicBody != m_sentinelBody);
 	if (kinematicBody)
 	{
+		const ndJointList& jointList = kinematicBody->GetJointList();
+		while (jointList.GetFirst())
+		{
+			ndJointBilateralConstraint* const joint = jointList.GetFirst()->GetInfo();
+			RemoveJoint(joint);
+		}
+
 		m_scene->RemoveBody(kinematicBody);
 	}
 	else if (body->GetAsBodyParticleSet())
@@ -349,39 +360,51 @@ void ndWorld::DeleteBody(ndBody* const body)
 
 void ndWorld::AddJoint(ndJointBilateralConstraint* const joint)
 {
-	dAssert(joint->m_worldNode == nullptr);
-	if (joint->IsSkeleton())
+	// if the second body is nullPtr, replace it the sentinel
+	if (joint->m_body1 == nullptr)
 	{
-		m_skeletonList.m_skelListIsDirty = true;
+		joint->m_body1 = m_sentinelBody;
 	}
-	joint->m_worldNode = m_jointList.Append(joint);
-	joint->m_body0Node = joint->GetBody0()->AttachJoint(joint);
-	joint->m_body1Node = joint->GetBody1()->AttachJoint(joint);
+	if (joint->m_worldNode == nullptr)
+	{
+		dAssert(joint->m_body0Node == nullptr);
+		dAssert(joint->m_body1Node == nullptr);
+		if (joint->IsSkeleton())
+		{
+			m_skeletonList.m_skelListIsDirty = true;
+		}
+		joint->m_worldNode = m_jointList.Append(joint);
+		joint->m_body0Node = joint->GetBody0()->AttachJoint(joint);
+		joint->m_body1Node = joint->GetBody1()->AttachJoint(joint);
+	}
 }
 
 void ndWorld::RemoveJoint(ndJointBilateralConstraint* const joint)
 {
-	dAssert(!m_inUpdate);
-	dAssert(joint->m_worldNode != nullptr);
-	dAssert(joint->m_body0Node != nullptr);
-	dAssert(joint->m_body1Node != nullptr);
-	joint->GetBody0()->DetachJoint(joint->m_body0Node);
-	joint->GetBody1()->DetachJoint(joint->m_body1Node);
-
-	m_jointList.Remove(joint->m_worldNode);
-	if (joint->IsSkeleton())
+	if (joint->m_worldNode != nullptr)
 	{
-		m_skeletonList.m_skelListIsDirty = true;
+		dAssert(!m_inUpdate);
+		dAssert(joint->m_body0Node != nullptr);
+		dAssert(joint->m_body1Node != nullptr);
+		joint->GetBody0()->DetachJoint(joint->m_body0Node);
+		joint->GetBody1()->DetachJoint(joint->m_body1Node);
+
+		m_jointList.Remove(joint->m_worldNode);
+		if (joint->IsSkeleton())
+		{
+			m_skeletonList.m_skelListIsDirty = true;
+		}
+		joint->m_worldNode = nullptr;
+		joint->m_body0Node = nullptr;
+		joint->m_body1Node = nullptr;
 	}
-	joint->m_worldNode = nullptr;
-	joint->m_body0Node = nullptr;
-	joint->m_body1Node = nullptr;
 }
 
 void ndWorld::AddModel(ndModel* const model)
 {
 	if (!model->m_node)
 	{
+		model->AddToWorld(this);
 		model->m_node = m_modelList.Append(model);
 	}
 }
@@ -391,6 +414,7 @@ void ndWorld::RemoveModel(ndModel* const model)
 	dAssert(!m_inUpdate);
 	if (model->m_node)
 	{
+		model->RemoveFromToWorld(this);
 		m_modelList.Remove(model->m_node);
 		model->m_node = nullptr;
 	}
@@ -425,246 +449,9 @@ dInt32 ndWorld::CompareJointByInvMass(const ndJointBilateralConstraint* const jo
 	return 0;
 }
 
-void ndWorld::Save(const char* const path) const
-{
-	char* const oldloc = setlocale(LC_ALL, 0);
-	setlocale(LC_ALL, "C");
-
-	nd::TiXmlDocument asciifile;
-	nd::TiXmlDeclaration* const decl = new nd::TiXmlDeclaration("1.0", "", "");
-	asciifile.LinkEndChild(decl);
-
-	nd::TiXmlElement* const worldNode = new nd::TiXmlElement("ndWorld");
-	asciifile.LinkEndChild(worldNode);
-
-	char assetPath[1024];
-	strcpy(assetPath, path);
-
-	char* name = strrchr(assetPath, '/');
-	if (!name)
-	{
-		name = strrchr(assetPath, '\\');
-	}
-	if (!name)
-	{
-		name = assetPath;
-	}
-
-	char* ext = strrchr(name, '.');
-	if (!ext)
-	{
-		ext = name;
-	}
-	ext[0] = 0;
-#if (defined(WIN32) || defined(_WIN32))
-	_mkdir(assetPath);
-#else
-	mkdir(assetPath, S_IRWXU);
-#endif
-
-	Save(worldNode, assetPath);
-
-	asciifile.SaveFile(path);
-	setlocale(LC_ALL, oldloc);
-}
-
-void ndWorld::Save(nd::TiXmlElement* const worldNode, const char* const assetPath) const
-{
-	nd::TiXmlElement* const config = new nd::TiXmlElement("settings");
-	worldNode->LinkEndChild(config);
-
-	xmlSaveParam(config, "description", "string", "Newton Dynamics 4.00");
-	xmlSaveParam(config, "revision", "string", "1.00");
-	xmlSaveParam(config, "solverSubsteps", m_subSteps);
-	xmlSaveParam(config, "solverIterations", m_solverIterations);
-
-	dInt32 shapesCount = 0;
-	dTree<dUnsigned32, const ndShape*> uniqueShapes;
-	const ndBodyList& bodyList = GetBodyList();
-	for (ndBodyList::dNode* bodyNode = bodyList.GetFirst(); bodyNode; bodyNode = bodyNode->GetNext())
-	{
-		ndBodyKinematic* const body = bodyNode->GetInfo();
-		ndShape* const shape = body->GetCollisionShape().GetShape();
-		if (!uniqueShapes.Find(shape))
-		{
-			uniqueShapes.Insert(shapesCount, shape);
-			shapesCount++;
-		}
-	}
-
-	if (uniqueShapes.GetCount())
-	{
-		nd::TiXmlElement* const shapesNode = new nd::TiXmlElement("ndShapes");
-		worldNode->LinkEndChild(shapesNode);
-
-		dTree<dUnsigned32, const ndShape*>::Iterator it(uniqueShapes);
-		for (it.Begin(); it; it ++)
-		{
-			dInt32 nodeId = *it;
-			const ndShape* const shape = it.GetKey();
-			shape->Save(shapesNode, assetPath, nodeId);
-		}
-	}
-
-	if (bodyList.GetCount())
-	{
-		dInt32 bodyIndex = 0;
-		nd::TiXmlElement* const bodiesNode = new nd::TiXmlElement("ndBodies");
-		worldNode->LinkEndChild(bodiesNode);
-
-		for (ndBodyList::dNode* bodyNode = bodyList.GetFirst(); bodyNode; bodyNode = bodyNode->GetNext())
-		{
-			ndBodyKinematic* const body = bodyNode->GetInfo();
-			body->Save(bodiesNode, assetPath, bodyIndex, uniqueShapes);
-			bodyIndex++;
-		}
-	}
-}
-
-void ndWorld::Load(const char* const path)
-{
-	char* const oldloc = setlocale(LC_ALL, 0);
-	setlocale(LC_ALL, "C");
-
-	nd::TiXmlDocument doc(path);
-	doc.LoadFile();
-	dAssert(!doc.Error());
-
-	const nd::TiXmlElement* const rootNode = doc.RootElement();
-	if (doc.FirstChild("ndWorld"))
-	{
-		char assetPath[1024];
-		strcpy(assetPath, path);
-
-		char* name = strrchr(assetPath, '/');
-		if (!name)
-		{
-			name = strrchr(assetPath, '\\');
-		}
-		if (!name)
-		{
-			name = assetPath;
-		}
-
-		char* ext = strrchr(name, '.');
-		if (!ext)
-		{
-			ext = name;
-		}
-		ext[0] = 0;
-
-		Load(rootNode, assetPath);
-	}
-
-	setlocale(LC_ALL, oldloc);
-}
-
-void ndWorld::LoadSettings(const nd::TiXmlNode* const)
-{
-	//const nd::TiXmlNode* const settings = rootNode->FirstChild("settings");
-	//dAssert(settings);
-}
-
-void ndWorld::LoadShapes(const nd::TiXmlNode* const rootNode, dTree<const ndShape*, dUnsigned32>& shapesCache, const char* const assetPath)
-{
-	const nd::TiXmlNode* const shapes = rootNode->FirstChild("ndShapes");
-	dAssert(shapes);
-
-	for (const nd::TiXmlNode* node = shapes->FirstChild(); node; node = node->NextSibling())
-	{
-		ndShape* shape = nullptr;
-		const char* const name = node->Value();
-		if (!strcmp(name, "ndShapeBox"))
-		{
-			shape = new ndShapeBox(node);
-		}
-		else if (!strcmp(name, "ndShapeSphere"))
-		{
-			shape = new ndShapeSphere(node);
-		}
-		else if (!strcmp(name, "ndShapeCapsule"))
-		{
-			shape = new ndShapeCapsule(node);
-		}
-		else if (!strcmp(name, "ndShapeConvexHull"))
-		{
-			shape = new ndShapeConvexHull(node);
-		}
-		else if (!strcmp(name, "ndShapeStatic_bvh"))
-		{
-			shape = new ndShapeStatic_bvh(node, assetPath);
-		}
-		else
-		{
-			dAssert(0);
-		}
-		if (shape)
-		{
-			dInt32 shapeId;
-			const nd::TiXmlElement* const element = (nd::TiXmlElement*) node;
-			element->Attribute("nodeId", &shapeId);
-			shapesCache.Insert(shape->AddRef(), shapeId);
-		}
-	}
-}
-
-void ndWorld::LoadBodies(const nd::TiXmlNode* const rootNode, dTree<const ndShape*, dUnsigned32>& shapesCache, const char* const assetPath)
-{
-	const nd::TiXmlNode* const shapes = rootNode->FirstChild("ndBodies");
-	dAssert(shapes);
-
-	for (const nd::TiXmlNode* parentNode = shapes->FirstChild(); parentNode; parentNode = parentNode->NextSibling())
-	{
-		ndBody* body = nullptr;
-		const char* const bodyClassName = parentNode->Value();
-		if (!strcmp(bodyClassName, "ndBodyDynamic"))
-		{
-			body = new ndBodyDynamic(parentNode, shapesCache);
-		}
-		else if (!strcmp(bodyClassName, "ndBodyTriggerVolume"))
-		{
-			body = new ndBodyTriggerVolume(parentNode, shapesCache);
-		}
-		else if (!strcmp(bodyClassName, "ndBodyPlayerCapsule"))
-		{
-			body = new ndBodyPlayerCapsule(parentNode, shapesCache);
-		}
-		else
-		{
-			body = LoadUserDefinedBody(parentNode, bodyClassName, shapesCache, assetPath);
-		}
-		if (body)
-		{
-			AddBody(body);
-		}
-	}
-}
-
-ndBody* ndWorld::LoadUserDefinedBody(const nd::TiXmlNode* const, const char* const, dTree<const ndShape*, dUnsigned32>&, const char* const) const
-{
-	dAssert(0);
-	return nullptr;
-}
-
-void ndWorld::Load(const nd::TiXmlElement* const rootNode, const char* const assetPath)
-{
-	dTree<const ndShape*, dUnsigned32> uniqueShapes;
-
-	LoadSettings(rootNode);
-	LoadShapes(rootNode, uniqueShapes, assetPath);
-	LoadBodies(rootNode, uniqueShapes, assetPath);
-
-	while (uniqueShapes.GetRoot())
-	{
-		const ndShape* const shape = uniqueShapes.GetRoot()->GetInfo();
-		shape->Release();
-		uniqueShapes.Remove(uniqueShapes.GetRoot());
-	}
-}
-
 void ndWorld::ThreadFunction()
 {
-	dUnsigned64 timeAcc = dGetTimeInMicrosenconds();
+	dUnsigned64 timeAcc = dGetTimeInMicroseconds();
 	const bool collisionUpdate = m_collisionUpdate;
 	m_inUpdate = true;
 
@@ -701,7 +488,7 @@ void ndWorld::ThreadFunction()
 	}
 	
 	m_frameIndex++;
-	m_lastExecutionTime = (dGetTimeInMicrosenconds() - timeAcc) * dFloat32(1.0e-6f);
+	m_lastExecutionTime = (dGetTimeInMicroseconds() - timeAcc) * dFloat32(1.0e-6f);
 	CalculateAverageUpdateTime();
 }
 
@@ -1114,7 +901,7 @@ void ndWorld::UpdateSkeletons()
 									if (SkeletonJointTest(constraint))
 									{
 										ndBodyKinematic* const childBody = (constraint->GetBody0() == parentBody) ? constraint->GetBody1() : constraint->GetBody0();
-										if (!childBody->m_skeletonMark && (childBody->GetInvMass() != dFloat32(0.0f)))
+										if (!childBody->m_skeletonMark && (childBody->GetInvMass() != dFloat32(0.0f)) && (constraint->GetSolverModel() != m_jointkinematicCloseLoop))
 										{
 											childBody->m_skeletonMark = 1;
 											ndSkeletonContainer::ndNode* const childNode = skeleton->AddChild(constraint, parentNode);

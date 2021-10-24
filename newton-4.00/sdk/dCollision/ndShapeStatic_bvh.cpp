@@ -26,6 +26,8 @@
 #include "ndShapeInstance.h"
 #include "ndShapeStatic_bvh.h"
 
+D_CLASS_REFLECTION_IMPLEMENT_LOADER(ndShapeStatic_bvh)
+
 class ndCollisionBvhShowPolyContext
 {
 	public:
@@ -77,15 +79,15 @@ ndShapeStatic_bvh::ndShapeStatic_bvh(const dPolygonSoupBuilder& builder)
 	m_trianglesCount = data.m_triangleCount;
 }
 
-ndShapeStatic_bvh::ndShapeStatic_bvh(const nd::TiXmlNode* const xmlNode, const char* const assetPath)
+ndShapeStatic_bvh::ndShapeStatic_bvh(const dLoadSaveBase::dLoadDescriptor& desc)
 	:ndShapeStaticMesh(m_boundingBoxHierachy)
 	,dAabbPolygonSoup()
 	,m_trianglesCount(0)
 {
-	D_CORE_API const char* xmlGetString(const nd::TiXmlNode* const rootNode, const char* const name);
+	const nd::TiXmlNode* const xmlNode = desc.m_rootNode;
 	const char* const assetName = xmlGetString(xmlNode, "assetName");
 	char pathCopy[1024];
-	sprintf(pathCopy, "%s/%s", assetPath, assetName);
+	sprintf(pathCopy, "%s/%s", desc.m_assetPath, assetName);
 	Deserialize(pathCopy);
 
 	dVector p0;
@@ -107,21 +109,6 @@ ndShapeStatic_bvh::ndShapeStatic_bvh(const nd::TiXmlNode* const xmlNode, const c
 
 ndShapeStatic_bvh::~ndShapeStatic_bvh(void)
 {
-}
-
-void ndShapeStatic_bvh::Save(nd::TiXmlElement* const xmlNode, const char* const assetPath, dInt32 nodeid) const
-{
-	nd::TiXmlElement* const paramNode = new nd::TiXmlElement("ndShapeStatic_bvh");
-	xmlNode->LinkEndChild(paramNode);
-
-	paramNode->SetAttribute("nodeId", nodeid);
-
-	char pathCopy[1024];
-	sprintf(pathCopy, "%s/asset%d.bin", assetPath, nodeid);
-	Serialize(pathCopy);
-
-	sprintf(pathCopy, "asset%d.bin", nodeid);
-	xmlSaveParam(paramNode, "assetName", "string", pathCopy);
 }
 
 dIntersectStatus ndShapeStatic_bvh::GetTriangleCount(void* const context, const dFloat32* const, dInt32, const dInt32* const, dInt32 indexCount, dFloat32)
@@ -263,3 +250,19 @@ void ndShapeStatic_bvh::GetCollidingFaces(ndPolygonMeshDesc* const data) const
 	ForAllSectors(*data, data->m_boxDistanceTravelInMeshSpace, data->m_maxT, GetPolygon, data);
 }
 
+void ndShapeStatic_bvh::Save(const dLoadSaveBase::dSaveDescriptor& desc) const
+{
+	nd::TiXmlElement* const childNode = new nd::TiXmlElement(ClassName());
+	desc.m_rootNode->LinkEndChild(childNode);
+	childNode->SetAttribute("hashId", desc.m_nodeNodeHash);
+	ndShapeStaticMesh::Save(dLoadSaveBase::dSaveDescriptor(desc, childNode));
+
+	char fileName[1024];
+	sprintf(fileName, "%s_%d.bin", desc.m_assetName, desc.m_assetIndex);
+	xmlSaveParam(childNode, "assetName", "string", fileName);
+
+	char filePathName[2 * 1024];
+	sprintf(filePathName, "%s/%s", desc.m_assetPath, fileName);
+	desc.m_assetIndex++;
+	Serialize(filePathName);
+}

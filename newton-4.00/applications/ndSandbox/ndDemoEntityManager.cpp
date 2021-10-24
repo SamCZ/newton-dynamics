@@ -35,24 +35,25 @@
 
 #define PROJECTILE_INITIAL_SPEED	20.0f
 
-//#define DEFAULT_SCENE	0		// setting basic rigidbody
-//#define DEFAULT_SCENE	1		// setting gpu basic rigidbody
-//#define DEFAULT_SCENE	2		// setting friction ramp
+//#define DEFAULT_SCENE	0		// basic rigidbody
+//#define DEFAULT_SCENE	1		// gpu basic rigidbody
+//#define DEFAULT_SCENE	2		// friction ramp
 //#define DEFAULT_SCENE	3		// conservation of momentum 
-//#define DEFAULT_SCENE	4		// setting basic Stacks
-//#define DEFAULT_SCENE	5		// setting basic Trigger
-//#define DEFAULT_SCENE	6		// setting basic player
-//#define DEFAULT_SCENE	7		// setting particle fluid
+#define DEFAULT_SCENE	4		// basic Stacks
+//#define DEFAULT_SCENE	5		// basic Trigger
+//#define DEFAULT_SCENE	6		// basic player
+//#define DEFAULT_SCENE	7		// particle fluid
 //#define DEFAULT_SCENE	8		// static mesh collision 
-//#define DEFAULT_SCENE	9		// setting basic joints
-//#define DEFAULT_SCENE	10		// setting basic rag doll
-#define DEFAULT_SCENE	11		// setting active rag doll
-//#define DEFAULT_SCENE	12		// setting basic vehicle
-//#define DEFAULT_SCENE	14		// setting heavy vehicle
+//#define DEFAULT_SCENE	9		// static user mesh collision 
+//#define DEFAULT_SCENE	10		// basic joints
+//#define DEFAULT_SCENE	11		// basic rag doll
+//#define DEFAULT_SCENE	12		// active rag doll
+//#define DEFAULT_SCENE	13		// basic vehicle
+//#define DEFAULT_SCENE	14		// heavy vehicle
 //#define DEFAULT_SCENE	15		// simple voronoi fracture
 //#define DEFAULT_SCENE	16		// basic voronoi fracture
 //#define DEFAULT_SCENE	17		// linked voronoi fracture
-//#define DEFAULT_SCENE	17		// skin peel voronoi fracture
+//#define DEFAULT_SCENE	18		// skin peel voronoi fracture
 						 
 // demos forward declaration 
 void ndBasicStacks(ndDemoEntityManager* const scene);
@@ -75,6 +76,7 @@ void ndBasicExplodeConvexShape(ndDemoEntityManager* const scene);
 //void ndBasicFracture_4(ndDemoEntityManager* const scene);
 void ndBasicGpuTest0(ndDemoEntityManager* const scene);
 void ndStaticMeshCollisionDemo(ndDemoEntityManager* const scene);
+void ndStaticUserMeshCollisionDemo(ndDemoEntityManager* const scene);
 
 ndDemoEntityManager::SDKDemos ndDemoEntityManager::m_demosSelection[] = 
 {
@@ -87,6 +89,7 @@ ndDemoEntityManager::SDKDemos ndDemoEntityManager::m_demosSelection[] =
 	{ "basic player", ndPlayerCapsuleDemo },
 	{ "basic particle fluid", ndBasicParticleFluid },
 	{ "static mesh", ndStaticMeshCollisionDemo },
+	{ "static user mesh", ndStaticUserMeshCollisionDemo },
 	{ "basic joints", ndBasicJoints },
 	{ "basic ragdoll", ndBasicRagdoll },
 	{ "active ragdoll", ndActiveRagdoll },
@@ -147,6 +150,7 @@ ndDemoEntityManager::ndDemoEntityManager ()
 	,m_workerThreads(1)
 	,m_debugDisplayMode(0)
 	,m_collisionDisplayMode(0)
+	,m_selectedModel(nullptr)
 	,m_fps(0.0f)
 	,m_timestepAcc(0.0f)
 	,m_currentListenerTimestep(0.0f)
@@ -273,17 +277,18 @@ ndDemoEntityManager::ndDemoEntityManager ()
 	//m_showScene = true;
 	//m_showConcaveEdge = true;
 	//m_autoSleepMode = false;
-	m_solverMode = ndWorld::ndSimdSoaSolver;
-	//m_solverMode = ndWorld::ndOpenclSolver;
+	//m_solverMode = ndWorld::ndOpenclSolver1;
+	m_solverMode = ndWorld::ndOpenclSolver2;
+	//m_solverMode = ndWorld::ndSimdSoaSolver;
 	//m_solverMode = ndWorld::ndSimdAvx2Solver;
 	//m_solverMode = ndWorld::ndStandardSolver;
 	//m_solverPasses = 4;
-	//m_workerThreads = 8;
+	m_workerThreads = 1;
 	//m_solverSubSteps = 2;
 	//m_showRaycastHit = true;
 	//m_showCenterOfMass = false;
 	//m_showNormalForces = true;
-	m_showContactPoints = true;
+	//m_showContactPoints = true;
 	//m_showJointDebugInfo = true;
 	m_showModelsDebugInfo = true;
 	//m_collisionDisplayMode = 2;	
@@ -551,7 +556,7 @@ dInt32 ndDemoEntityManager::GetJoystickButtons(dFixSizeArray<char, 32>& axisbutt
 void ndDemoEntityManager::ResetTimer()
 {
 	dResetTimer();
-	m_microsecunds = dGetTimeInMicrosenconds ();
+	m_microsecunds = dGetTimeInMicroseconds ();
 }
 
 void ndDemoEntityManager::AddEntity(ndDemoEntity* const ent)
@@ -714,7 +719,7 @@ void ndDemoEntityManager::ApplyMenuOptions()
 
 void ndDemoEntityManager::ShowMainMenuBar()
 {
-	dInt32 mainMenu = 0;
+	ndMenuSelection menuSelection = m_none;
 	if (ImGui::BeginMainMenuBar())
 	{
 		if (ImGui::BeginMenu("File")) 
@@ -729,23 +734,27 @@ void ndDemoEntityManager::ShowMainMenuBar()
 
 			if (ImGui::MenuItem("New", "")) 
 			{
-				mainMenu = 1;
+				menuSelection = m_new;
 			}
 			ImGui::Separator();
 
 			if (ImGui::MenuItem("Open", "")) 
 			{
-				mainMenu = 2;
+				menuSelection = m_load;
 			}
 			if (ImGui::MenuItem("Save", "")) 
 			{
-				mainMenu = 3;
+				menuSelection = m_save;
+			}
+			if (ImGui::MenuItem("Save model", ""))
+			{
+				menuSelection = m_saveModel;
 			}
 
 			ImGui::Separator();
 			if (ImGui::MenuItem("import ply file", "")) 
 			{
-				mainMenu = 4;
+				//mainMenu = 4;
 			}
 
 			ImGui::Separator();
@@ -788,21 +797,12 @@ void ndDemoEntityManager::ShowMainMenuBar()
 			dInt32 solverMode(m_solverMode);
 			ImGui::RadioButton("sse soa", &solverMode, ndWorld::ndSimdSoaSolver);
 			ImGui::RadioButton("avx2", &solverMode, ndWorld::ndSimdAvx2Solver);
-			ImGui::RadioButton("opencl", &solverMode, ndWorld::ndOpenclSolver);
+			ImGui::RadioButton("opencl 1", &solverMode, ndWorld::ndOpenclSolver1);
+			ImGui::RadioButton("opencl 2", &solverMode, ndWorld::ndOpenclSolver2);
 			ImGui::RadioButton("default", &solverMode, ndWorld::ndStandardSolver);
 			m_solverMode = ndWorld::ndSolverModes(solverMode);
 			ImGui::Separator();
 
-			//dInt32 index = 0;
-			//ImGui::RadioButton("default solver", &m_currentPlugin, index);
-			//char ids[32][32];
-			//for (void* plugin = NewtonGetFirstPlugin(m_world); plugin; plugin = NewtonGetNextPlugin(m_world, plugin)) {
-			//	index++;
-			//	const char* const id = NewtonGetPluginString(m_world, plugin);
-			//	sprintf (&ids[index][0], "%s", id);
-			//	ImGui::RadioButton(&ids[index][0], &m_currentPlugin, index);
-			//}
-			//ImGui::Separator();
 			ImGui::Text("solver sub steps");
 			ImGui::SliderInt("##solv", &m_solverSubSteps, 2, 8);
 			ImGui::Text("iterative solver passes");
@@ -850,9 +850,9 @@ void ndDemoEntityManager::ShowMainMenuBar()
 		}
 	}
 
-	switch (mainMenu)
+	switch (menuSelection)
 	{
-		case 1:
+		case m_new:
 		{
 			// menu new 
 			Cleanup();
@@ -862,17 +862,35 @@ void ndDemoEntityManager::ShowMainMenuBar()
 			break;
 		}
 
-		case 4:
+		case m_load:
 		{
-			// open Scene
 			m_currentScene = -1;
 			char fileName[1024];
-			Cleanup();
-			if (dGetOpenFileNamePLY(fileName, 1024)) 
+			if (dGetLoadNdFileName(fileName, 1024))
 			{
-				ApplyMenuOptions();
-				ImportPLYfile(fileName);
-				ResetTimer();
+				m_world->LoadScene(fileName);
+			}
+			break;
+		}
+
+		case m_save:
+		{
+			m_currentScene = -1;
+			char fileName[1024];
+			if (dGetSaveNdFileName(fileName, 1024))
+			{
+				m_world->SaveScene(fileName);
+			}
+			break;
+		}
+
+		case m_saveModel:
+		{
+			m_currentScene = -1;
+			char fileName[1024];
+			if (dGetSaveNdFileName(fileName, 1024))
+			{
+				m_world->SaveSceneModel(fileName);
 			}
 			break;
 		}
@@ -882,6 +900,7 @@ void ndDemoEntityManager::ShowMainMenuBar()
 			// load a demo 
 			if (m_currentScene != -1) 
 			{
+				m_selectedModel = nullptr;
 				LoadDemo(m_currentScene);
 				m_lastCurrentScene = m_currentScene;
 				m_currentScene = -1;
@@ -1183,7 +1202,7 @@ void ndDemoEntityManager::UpdatePhysics(dFloat32 timestep)
 
 dFloat32 ndDemoEntityManager::CalculateInteplationParam () const
 {
-	dUnsigned64 timeStep = dGetTimeInMicrosenconds () - m_microsecunds;		
+	dUnsigned64 timeStep = dGetTimeInMicroseconds () - m_microsecunds;		
 	dFloat32 param = (dFloat32 (timeStep) * MAX_PHYSICS_FPS) / 1.0e6f;
 	dAssert (param >= 0.0f);
 	if (param > 1.0f) {

@@ -28,12 +28,13 @@
 #include "ndShapeCompound.h"
 
 #define D_MAX_MIN_VOLUME	dFloat32 (1.0e-3f)
+D_CLASS_REFLECTION_IMPLEMENT_LOADER(ndShapeCompound)
 
 ndShapeCompound::ndNodeBase::~ndNodeBase()
 {
-	if (m_shape) 
+	if (m_shapeInstance) 
 	{
-		delete m_shape;
+		delete m_shapeInstance;
 	}
 	if (m_left) 
 	{
@@ -163,8 +164,8 @@ void ndShapeCompound::ndTreeArray::AddNode(ndNodeBase* const node, dInt32 index,
 {
 	ndTreeArray::dNode* const myNode = Insert(node, index);
 	node->m_myNode = myNode;
-	node->m_shape->m_parent = parent;
-	node->m_shape->m_subCollisionHandle = myNode;
+	node->m_shapeInstance->m_parent = parent;
+	node->m_shapeInstance->m_subCollisionHandle = myNode;
 }
 
 ndShapeCompound::ndShapeCompound()
@@ -237,7 +238,6 @@ ndShapeCompound::ndShapeCompound(const ndShapeCompound& source, const ndShapeIns
 			}
 			else 
 			{
-				//ndNodeBase* const node = m_array.Find (sourceNode->m_shape)->GetInfo();
 				ndNodeBase* const node = m_array.Find(sourceNode->m_myNode->GetKey())->GetInfo();
 				dAssert(node);
 				node->m_parent = parents[stack];
@@ -278,7 +278,7 @@ ndShapeCompound::ndShapeCompound(const ndShapeCompound& source, const ndShapeIns
 	}
 }
 
-ndShapeCompound::ndShapeCompound(const nd::TiXmlNode* const xmlNode)
+ndShapeCompound::ndShapeCompound(const dLoadSaveBase::dLoadDescriptor&)
 	:ndShape(m_compound)
 	,m_array()
 	,m_treeEntropy(dFloat32 (0.0f))
@@ -288,8 +288,9 @@ ndShapeCompound::ndShapeCompound(const nd::TiXmlNode* const xmlNode)
 	,m_myInstance(nullptr)
 	,m_idIndex(0)
 {
-	dAssert(0);
-	xmlGetInt(xmlNode, "xxxx");
+	//do nothing here;
+	//sub shapes will be load in a post process pass,
+	//when all sub shape are converted to instanaced.
 }
 
 ndShapeCompound::~ndShapeCompound()
@@ -821,7 +822,7 @@ ndShapeCompound::ndNodeBase* ndShapeCompound::BuildTopDownBig(ndNodeBase** const
 	for (dInt32 i = 0; i <= count; i++) 
 	{
 		const ndNodeBase* const node = leafArray[firstBox + i];
-		dAssert(node->m_shape);
+		dAssert(node->m_shapeInstance);
 		minP = minP.GetMin(node->m_p0);
 		maxP = maxP.GetMax(node->m_p1);
 	}
@@ -920,7 +921,7 @@ void ndShapeCompound::EndAddRemove()
 		}
 		
 		dAssert(m_root->m_size.m_w == dFloat32(0.0f));
-		m_boxMinRadius = dMin(m_root->m_size.m_x, m_root->m_size.m_y, m_root->m_size.m_z);
+		m_boxMinRadius = dMin(dMin(m_root->m_size.m_x, m_root->m_size.m_y), m_root->m_size.m_z);
 		m_boxMaxRadius = dSqrt(m_root->m_size.DotProduct(m_root->m_size).GetScalar());
 		
 		m_boxSize = m_root->m_size;
@@ -1132,4 +1133,25 @@ dMatrix ndShapeCompound::CalculateInertiaAndCenterOfMass(const dMatrix& alignMat
 	inertia[2][1] = crossInertia[0];
 	inertia[3] = centerOfMass;
 	return inertia;
+}
+
+void ndShapeCompound::Save(const dLoadSaveBase::dSaveDescriptor& desc) const
+{
+	nd::TiXmlElement* const childNode = new nd::TiXmlElement(ClassName());
+	desc.m_rootNode->LinkEndChild(childNode);
+	childNode->SetAttribute("hashId", desc.m_nodeNodeHash);
+	ndShape::Save(dLoadSaveBase::dSaveDescriptor(desc, childNode));
+
+	nd::TiXmlElement* const subShapedNode = new nd::TiXmlElement("ndCompoundsSubShaped");
+	childNode->LinkEndChild(subShapedNode);
+	dLoadSaveBase::dSaveDescriptor subShapeDesc(desc);
+	subShapeDesc.m_rootNode = subShapedNode;
+	ndTreeArray::Iterator iter(m_array);
+	for (iter.Begin(); iter; iter++)
+	{
+		ndNodeBase* const node = iter.GetNode()->GetInfo();
+		ndShapeInstance* const instance = node->GetShape();
+		subShapeDesc.m_shapeNodeHash = subShapeDesc.m_shapeMap->Find(instance->GetShape())->GetInfo();
+		instance->Save(subShapeDesc);
+	}
 }

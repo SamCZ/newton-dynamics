@@ -26,8 +26,9 @@
 #include "dTypes.h"
 #include "dDebug.h"
 #include "dMemory.h"
+#include "dClassAlloc.h"
 
-class dStackBase
+class dStackBase : public dClassAlloc
 {
 	protected:
 	dStackBase (size_t size);
@@ -37,7 +38,8 @@ class dStackBase
 };
 
 inline dStackBase::dStackBase (size_t size)
-	:m_ptr (dMemory::Malloc (size_t (size)))
+	:dClassAlloc()
+	,m_ptr (dMemory::Malloc (size_t (size)))
 {
 }
 
@@ -55,8 +57,8 @@ class dStack: public dStackBase
 	dInt32 GetSizeInBytes() const;
 	dInt32 GetElementsCount() const;
 	
-	D_INLINE T& operator[] (dInt32 entry);
-	D_INLINE const T& operator[] (dInt32 entry) const;
+	inline T& operator[] (dInt32 entry);
+	inline const T& operator[] (dInt32 entry) const;
 
 	private:
 	size_t m_size;
@@ -87,7 +89,7 @@ dInt32 dStack<T>::GetSizeInBytes() const
 }
 
 template<class T>
-D_INLINE T& dStack<T>::operator[] (dInt32 entry) 
+inline T& dStack<T>::operator[] (dInt32 entry) 
 {
 	dAssert (entry >= 0);
 	dAssert ((size_t(entry) < m_size) || ((m_size == 0) && (entry == 0)));
@@ -97,7 +99,7 @@ D_INLINE T& dStack<T>::operator[] (dInt32 entry)
 }
 
 template<class T>
-D_INLINE const T& dStack<T>::operator[] (dInt32 entry) const
+inline const T& dStack<T>::operator[] (dInt32 entry) const
 {
 	dAssert (entry >= 0);
 	dAssert ((entry < m_size) || ((m_size == 0) && (entry == 0)));

@@ -34,6 +34,15 @@ class ndDemoEntityManager: public dList <ndDemoEntity*>
 	typedef void (*RenderGuiHelpCallback) (ndDemoEntityManager* const manager, void* const context);
 	typedef void(*UpdateCameraCallback) (ndDemoEntityManager* const manager, void* const context, dFloat32 timestep);
 
+	enum ndMenuSelection
+	{
+		m_new,
+		m_load,
+		m_save,
+		m_saveModel,
+		m_none,
+	};
+
 	class ndKeyTrigger
 	{
 		public: 
@@ -154,6 +163,7 @@ class ndDemoEntityManager: public dList <ndDemoEntity*>
 	bool GetMousePosition (dFloat32& posX, dFloat32& posY) const;
 	void SetCameraMatrix (const dQuaternion& rotation, const dVector& position);
 	
+	void SetSelectedModel(ndModel* const model);
 	void SetUpdateCameraFunction(UpdateCameraCallback callback, void* const context);
 	void PushTransparentMesh(const ndDemoMeshInterface* const mesh, const dMatrix& modelMatrix);
 	void Set2DDisplayRenderFunction (RenderGuiHelpCallback helpCallback, RenderGuiHelpCallback UIcallback, void* const context);
@@ -237,6 +247,7 @@ class ndDemoEntityManager: public dList <ndDemoEntity*>
 	dInt32 m_workerThreads;
 	dInt32 m_debugDisplayMode;
 	dInt32 m_collisionDisplayMode;
+	ndModel* m_selectedModel;
 
 	dFloat32 m_fps;
 	dFloat32 m_timestepAcc;
@@ -310,6 +321,11 @@ inline const ndShaderPrograms& ndDemoEntityManager::GetShaderCache() const
 inline ndDemoCameraManager* ndDemoEntityManager::GetCameraManager() const
 {
 	return m_cameraManager;
+}
+
+inline void ndDemoEntityManager::SetSelectedModel(ndModel* const model)
+{
+	m_selectedModel = model;
 }
 
 #endif

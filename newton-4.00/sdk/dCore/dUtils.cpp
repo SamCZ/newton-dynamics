@@ -38,7 +38,7 @@ dFloat64 dRoundToFloat(dFloat64 val)
 	return val1;
 }
 
-dUnsigned64 dGetTimeInMicrosenconds()
+dUnsigned64 dGetTimeInMicroseconds()
 {
 	static std::chrono::high_resolution_clock::time_point timeStampBase = std::chrono::high_resolution_clock::now();
 	std::chrono::high_resolution_clock::time_point currentTimeStamp = std::chrono::high_resolution_clock::now();
@@ -59,7 +59,8 @@ dFloatExceptions::dFloatExceptions(dUnsigned32 mask)
 	#ifndef IOS
 		fesetenv(FE_DFL_DISABLE_SSE_DENORMS_ENV);
 	#endif
-#elif (defined(WIN32) || defined(_WIN32))
+//#elif (defined(WIN32) || defined(_WIN32))
+#elif defined (__x86_64) || defined(__x86_64__) || defined(_M_IX86) || defined(_M_X64)
 	_MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
 	dInt32 crs = _mm_getcsr();
 	dInt32 sseDenormalMask = _MM_FLUSH_ZERO_MASK | _MM_MASK_DENORM;
@@ -138,7 +139,7 @@ static dInt32 SortVertices(dFloat64* const vertexList, dInt32 stride, dInt32 com
 	}
 
 	dBigVector del(maxP - minP);
-	dFloat64 minDist = dMin(del.m_x, del.m_y, del.m_z);
+	dFloat64 minDist = dMin(dMin(del.m_x, del.m_y), del.m_z);
 	if (minDist < dFloat64(1.0e-3f)) 
 	{
 		minDist = dFloat64(1.0e-3f);
@@ -424,16 +425,14 @@ dInt32 dVertexListToIndexList(dFloat64* const vertList, dInt32 strideInBytes, dI
 #ifndef D_USE_THREAD_EMULATION
 void dSpinLock::Delay(dInt32& exp)
 {
-	#if (defined(WIN32) || defined(_WIN32))
+	//#if (defined(WIN32) || defined(_WIN32))
+	#if defined (__x86_64) || defined(__x86_64__) || defined(_M_IX86) || defined(_M_X64)
 		// adding exponential pause delay
 		for (dInt32 i = 0; i < exp; i++)
 		{
 			_mm_pause();
 			_mm_pause();
-			//_mm_pause();
-			//_mm_pause();
 		}
-		exp = dMin(exp * 2, 64);
 	#else
 		// use standard thread yield on non x86 platforms 
 		//std::this_thread::yield();
@@ -442,10 +441,8 @@ void dSpinLock::Delay(dInt32& exp)
 		{
 			acc++;
 			acc++;
-			//acc++;
-			//acc++;
 		}
-		exp = dMin(exp * 2, 64);
 	#endif
+		exp = dMin(exp * 2, 64);
 }
 #endif

@@ -24,6 +24,8 @@
 #include "ndWorld.h"
 #include "ndBodyDynamic.h"
 
+D_CLASS_REFLECTION_IMPLEMENT_LOADER(ndBodyDynamic)
+
 ndBodyDynamic::ndBodyDynamic()
 	:ndBodyKinematic()
 	,m_accel(dVector::m_zero)
@@ -40,8 +42,8 @@ ndBodyDynamic::ndBodyDynamic()
 {
 }
 
-ndBodyDynamic::ndBodyDynamic(const nd::TiXmlNode* const xmlNode, const dTree<const ndShape*, dUnsigned32>& shapesCache)
-	:ndBodyKinematic(xmlNode->FirstChild("ndBodyKinematic"), shapesCache)
+ndBodyDynamic::ndBodyDynamic(const dLoadSaveBase::dLoadDescriptor& desc)
+	:ndBodyKinematic(dLoadSaveBase::dLoadDescriptor(desc))
 	,m_accel(dVector::m_zero)
 	,m_alpha(dVector::m_zero)
 	,m_externalForce(dVector::m_zero)
@@ -54,12 +56,25 @@ ndBodyDynamic::ndBodyDynamic(const nd::TiXmlNode* const xmlNode, const dTree<con
 	,m_cachedDampCoef(dVector::m_zero)
 	,m_cachedTimeStep(dFloat32(0.0f))
 {
-	// nothing was saved
-	//dAssert(0);
+	const nd::TiXmlNode* const xmlNode = desc.m_rootNode;
+
+	m_dampCoef = xmlGetVector3(xmlNode, "angularDampCoef");
+	m_dampCoef.m_w = xmlGetFloat(xmlNode, "linearDampCoef");
 }
 
 ndBodyDynamic::~ndBodyDynamic()
 {
+}
+
+void ndBodyDynamic::Save(const dLoadSaveBase::dSaveDescriptor& desc) const
+{
+	nd::TiXmlElement* const childNode = new nd::TiXmlElement(ClassName());
+	desc.m_rootNode->LinkEndChild(childNode);
+	childNode->SetAttribute("hashId", desc.m_nodeNodeHash);
+	ndBodyKinematic::Save(dLoadSaveBase::dSaveDescriptor(desc, childNode));
+
+	xmlSaveParam(childNode, "linearDampCoef", m_dampCoef.m_w);
+	xmlSaveParam(childNode, "angularDampCoef", m_dampCoef);
 }
 
 void ndBodyDynamic::SetForce(const dVector& force)
@@ -152,20 +167,19 @@ void ndBodyDynamic::AddDampingAcceleration(dFloat32 timestep)
 	if (dAbs(m_cachedTimeStep - timestep) > dFloat32(1.0e-6f)) 
 	{
 		m_cachedTimeStep = timestep;
-		const dFloat32 tau = dFloat32(60.0f) * timestep;
+		// assume a nominal 60 frame seconds time step.
+		dFloat32 tau = dFloat32(60.0f) * timestep;
+		// recalculate damping to match the time independent drag
 		m_cachedDampCoef.m_x = dPow(dFloat32(1.0f) - m_dampCoef.m_x, tau);
 		m_cachedDampCoef.m_y = dPow(dFloat32(1.0f) - m_dampCoef.m_y, tau);
 		m_cachedDampCoef.m_z = dPow(dFloat32(1.0f) - m_dampCoef.m_z, tau);
 		m_cachedDampCoef.m_w = dPow(dFloat32(1.0f) - m_dampCoef.m_w, tau);
 	}
-	dVector damp (m_cachedDampCoef);
 
-	//dVector damp(GetDampCoeffcient(timestep));
-	dVector omegaDamp(damp & dVector::m_triplexMask);
-	dVector omega(m_matrix.UnrotateVector(m_omega) * omegaDamp);
-	
-	m_veloc = m_veloc.Scale(damp.m_w);
+	const dVector omegaDamp(m_cachedDampCoef & dVector::m_triplexMask);
+	const dVector omega(m_matrix.UnrotateVector(m_omega) * omegaDamp);
 	m_omega = m_matrix.RotateVector(omega);
+	m_veloc = m_veloc.Scale(m_cachedDampCoef.m_w);
 }
 
 void ndBodyDynamic::IntegrateVelocity(dFloat32 timestep)
@@ -178,16 +192,12 @@ void ndBodyDynamic::IntegrateVelocity(dFloat32 timestep)
 ndJacobian ndBodyDynamic::IntegrateForceAndToque(const dVector& force, const dVector& torque, const dVector& timestep) const
 {
 	ndJacobian velocStep;
-
-	//dVector dtHalf(timestep * dVector::m_half);
-	const dVector dtHalf(timestep);
 	const dMatrix matrix(m_gyroRotation, dVector::m_wOne);
-	
 	const dVector localOmega(matrix.UnrotateVector(m_omega));
-	const dVector localTorque(matrix.UnrotateVector(torque - m_gyroTorque));
+	const dVector localTorque(matrix.UnrotateVector(torque));
 	
 	// derivative at half time step. (similar to midpoint Euler so that it does not loses too much energy)
-	const dVector dw(localOmega * dtHalf);
+	const dVector dw(localOmega * timestep);
 	const dMatrix jacobianMatrix(
 		dVector(m_mass[0], (m_mass[2] - m_mass[1]) * dw[2], (m_mass[2] - m_mass[1]) * dw[1], dFloat32(0.0f)),
 		dVector((m_mass[0] - m_mass[2]) * dw[2], m_mass[1], (m_mass[0] - m_mass[2]) * dw[0], dFloat32(1.0f)),
@@ -230,10 +240,4 @@ void ndBodyDynamic::IntegrateGyroSubstep(const dVector& timestep)
 		m_gyroAlpha = dVector::m_zero;
 		m_gyroTorque = dVector::m_zero;
 	}
-}
-
-void ndBodyDynamic::Save(nd::TiXmlElement* const rootNode, const char* const assetPath, dInt32 nodeid, const dTree<dUnsigned32, const ndShape*>& shapesCache) const
-{
-	nd::TiXmlElement* const paramNode = CreateRootElement(rootNode, "ndBodyDynamic", nodeid);
-	ndBodyKinematic::Save(paramNode, assetPath, nodeid, shapesCache);
 }

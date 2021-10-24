@@ -12,12 +12,24 @@
 #include "ndSandboxStdafx.h"
 #include "ndDemoMesh.h"
 #include "ndDemoEntity.h"
+#include "ndAnimationPose.h"
+
+D_CLASS_REFLECTION_IMPLEMENT_LOADER(ndDemoEntityNotify)
 
 ndDemoEntityNotify::ndDemoEntityNotify(ndDemoEntityManager* const manager, ndDemoEntity* const entity, ndBodyDynamic* const parentBody, dFloat32 gravity)
 	:ndBodyNotify(dVector (dFloat32 (0.0f), gravity, dFloat32(0.0f), dFloat32(0.0f)))
 	,m_entity(entity)
 	,m_parentBody(parentBody)
 	,m_manager(manager)
+{
+}
+
+// member a fill in a post process pass
+ndDemoEntityNotify::ndDemoEntityNotify(const dLoadSaveBase::dLoadDescriptor& desc)
+	:ndBodyNotify(dLoadSaveBase::dLoadDescriptor(desc))
+	,m_entity(nullptr)
+	,m_parentBody(nullptr)
+	,m_manager(nullptr)
 {
 }
 
@@ -28,6 +40,14 @@ ndDemoEntityNotify::~ndDemoEntityNotify()
 		m_manager->RemoveEntity(m_entity);
 		delete m_entity;
 	}
+}
+
+void ndDemoEntityNotify::Save(const dLoadSaveBase::dSaveDescriptor& desc) const
+{
+	nd::TiXmlElement* const childNode = new nd::TiXmlElement(ClassName());
+	desc.m_rootNode->LinkEndChild(childNode);
+	ndBodyNotify::Save(dLoadSaveBase::dSaveDescriptor(desc, childNode));
+	xmlSaveParam(childNode, "comment", "string", "body notification for Newton 4.0 demos");
 }
 
 void ndDemoEntityNotify::OnObjectPick() const
@@ -237,6 +257,11 @@ dMatrix ndDemoEntity::GetCurrentMatrix () const
 	return dMatrix (m_curRotation, m_curPosition);
 }
 
+ndAnimKeyframe ndDemoEntity::GetCurrentTransform() const
+{
+	return ndAnimKeyframe(m_curPosition, m_curRotation);
+}
+
 dMatrix ndDemoEntity::GetNextMatrix () const
 {
 	return dMatrix (m_nextRotation, m_nextPosition);
@@ -357,8 +382,7 @@ void ndDemoEntity::Render(dFloat32 timestep, ndDemoEntityManager* const scene, c
 	}
 }
 
-//ndShapeInstance* ndDemoEntity::CreateCollisionFromchildren(ndWorld* const world) const
-ndShapeInstance* ndDemoEntity::CreateCollisionFromchildren(ndWorld* const) const
+ndShapeInstance* ndDemoEntity::CreateCollisionFromchildren() const
 {
 	dInt32 count = 1;
 	ndShapeInstance* shapeArray[128];

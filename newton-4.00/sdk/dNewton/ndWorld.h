@@ -42,7 +42,6 @@ class ndJointBilateralConstraint;
 
 #define D_SLEEP_ENTRIES			8
 
-
 D_MSV_NEWTON_ALIGN_32
 class ndWorld: public dClassAlloc
 {
@@ -52,7 +51,8 @@ class ndWorld: public dClassAlloc
 		ndStandardSolver,
 		ndSimdSoaSolver,
 		ndSimdAvx2Solver,
-		ndOpenclSolver,
+		ndOpenclSolver1,
+		ndOpenclSolver2,
 	};
 
 	D_NEWTON_API ndWorld();
@@ -89,14 +89,7 @@ class ndWorld: public dClassAlloc
 
 	D_NEWTON_API virtual void AddModel(ndModel* const model);
 	D_NEWTON_API virtual void RemoveModel(ndModel* const model);
-
-	D_NEWTON_API void Load(const char* const path);
-	D_NEWTON_API void Load(const nd::TiXmlElement* const rootNode, const char* const assetPath);
-	D_NEWTON_API virtual ndBody* LoadUserDefinedBody(const nd::TiXmlNode* const parentNode, const char* const bodyClassName, dTree<const ndShape*, dUnsigned32>& shapesCache, const char* const assetPath) const;
-
-	D_NEWTON_API void Save(const char* const path) const;
-	D_NEWTON_API void Save(nd::TiXmlElement* const rootNode, const char* const assetPath) const;
-
+	
 	const ndBodyList& GetBodyList() const;
 	const ndJointList& GetJointList() const;
 	const ndModelList& GetModelList() const;
@@ -159,9 +152,6 @@ class ndWorld: public dClassAlloc
 	void ParticleUpdate();
 	void CalculateAverageUpdateTime();
 	void SubStepUpdate(dFloat32 timestep);
-	void LoadSettings(const nd::TiXmlNode* const rootNode);
-	void LoadBodies(const nd::TiXmlNode* const rootNode, dTree<const ndShape*, dUnsigned32>& shapesCache, const char* const assetPath);
-	void LoadShapes(const nd::TiXmlNode* const rootNode, dTree<const ndShape*, dUnsigned32>& shapesCache, const char* const assetPath);
 
 	bool SkeletonJointTest(ndJointBilateralConstraint* const jointA) const;
 	static dInt32 CompareJointByInvMass(const ndJointBilateralConstraint* const jointA, const ndJointBilateralConstraint* const jointB, void* notUsed);
@@ -200,7 +190,6 @@ class ndWorld: public dClassAlloc
 	friend class ndDynamicsUpdateSoa;
 	friend class ndDynamicsUpdateAvx2;
 	friend class ndDynamicsUpdateOpencl;
-	friend class ndWorldSegregatedScene;
 } D_GCC_NEWTON_ALIGN_32;
 
 inline void ndWorld::Sync() const

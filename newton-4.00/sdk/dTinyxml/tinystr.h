@@ -42,6 +42,29 @@ distribution.
 #include <assert.h>
 #include <string.h>
 
+
+typedef void* (*xmlAlloc) (size_t size);
+typedef void (*xmlFree) (void*);
+
+#if defined(_MSC_VER)
+	#define D_TINYXML_EXPORT __declspec(dllexport)
+	#define D_TINYXML_IMPORT __declspec(dllimport)
+#else
+	#define D_TINYXML_EXPORT __attribute__((visibility("default")))
+	#define D_TINYXML_IMPORT __attribute__((visibility("default")))
+#endif
+
+#ifdef _D_TINY_DLL
+	#ifdef _D_TINYXML_EXPORT_DLL
+		#define D_TINY_API D_TINYXML_EXPORT
+	#else
+		#define D_TINY_API D_TINYXML_IMPORT
+	#endif
+#else
+	#define D_TINY_API
+#endif
+
+
 /*	The support for explicit isn't that universal, and it isn't really
 	required - it is used to check that the TiXmlString class isn't incorrectly
 	used. Be nice to old compilers and macro it here:
@@ -58,6 +81,9 @@ distribution.
 
 namespace nd
 {
+	extern D_TINY_API xmlFree __free__;
+	extern D_TINY_API xmlAlloc __alloc__;
+
 /*
    TiXmlString is an emulation of a subset of the std::string template.
    Its purpose is to allow compiling TinyXML on compilers with no or poor STL support.
@@ -65,7 +91,7 @@ namespace nd
    The buffer allocation is made by a simplistic power of 2 like mechanism : if we increase
    a string and there's no more room, we allocate a buffer twice as big as we need.
 */
-class TiXmlString
+class D_TINY_API TiXmlString
 {
   public :
 	// The size type used
@@ -106,6 +132,11 @@ class TiXmlString
 	{
 		quit();
 	}
+
+	void *operator new (size_t size);
+	void *operator new[](size_t size);
+	void operator delete (void* ptr);
+	void operator delete[](void* ptr);
 
 	// = operator
 	TiXmlString& operator = (const char * copy)
@@ -229,6 +260,9 @@ class TiXmlString
 		char str[1];
 	};
 
+	void* Malloc(size_type size);
+	void Free(void* ptr);
+
 	void init(size_type sz, size_type cap)
 	{
 		if (cap)
@@ -240,7 +274,8 @@ class TiXmlString
 			// that are overly picky about structure alignment.
 			const size_type bytesNeeded = sizeof(Rep) + cap;
 			const size_type intsNeeded = ( bytesNeeded + sizeof(int) - 1 ) / sizeof( int ); 
-			rep_ = reinterpret_cast<Rep*>( new int[ intsNeeded ] );
+			//rep_ = reinterpret_cast<Rep*>( new int[ intsNeeded ] );
+			rep_ = reinterpret_cast<Rep*>(Malloc(intsNeeded * sizeof (int)));
 
 			rep_->str[ rep_->size = sz ] = '\0';
 			rep_->capacity = cap;
@@ -257,7 +292,8 @@ class TiXmlString
 		{
 			// The rep_ is really an array of ints. (see the allocator, above).
 			// Cast it back before delete, so the compiler won't incorrectly call destructors.
-			delete [] ( reinterpret_cast<int*>( rep_ ) );
+			//delete [] ( reinterpret_cast<int*>( rep_ ) );
+			Free(rep_);
 		}
 	}
 

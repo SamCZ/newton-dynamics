@@ -96,3 +96,16 @@ ndShapeInfo ndShape::GetShapeInfo() const
 	info.m_collisionType = m_collisionId;
 	return info;
 }
+
+void ndShape::Save(const dLoadSaveBase::dSaveDescriptor& desc) const
+{
+	nd::TiXmlElement* const childNode = new nd::TiXmlElement(ClassName());
+	desc.m_rootNode->LinkEndChild(childNode);
+	childNode->SetAttribute("hashId", desc.m_nodeNodeHash);
+
+	xmlSaveParam(childNode, "inertia", m_inertia);
+	xmlSaveParam(childNode, "crossInertia", m_crossInertia);
+	xmlSaveParam(childNode, "centerOfMass", m_centerOfMass);
+	xmlSaveParam(childNode, "boxSize", m_boxSize);
+	xmlSaveParam(childNode, "boxOrigin", m_boxOrigin);
+}

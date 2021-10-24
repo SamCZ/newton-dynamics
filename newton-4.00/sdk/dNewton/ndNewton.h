@@ -36,6 +36,7 @@
 #include <ndModel.h>
 #include <ndContact.h>
 #include <ndShapeBox.h>
+#include <ndLoadSave.h>
 #include <ndShapeNull.h>
 #include <ndModelList.h>
 #include <ndSceneNode.h>
@@ -58,28 +59,23 @@
 #include <ndShapeInstance.h>
 #include <ndRayCastNotify.h>
 #include <ndContactNotify.h>
+#include <ndCharacterNode.h>
 #include <ndDynamicsUpdate.h>
-#include <ndBodyParticleSet.h>
+#include <ndJointPdActuator.h>
 #include <ndJointFollowPath.h>
-#include <ndCharacterLimbNode.h>
+#include <ndBodyParticleSet.h>
 #include <ndJointDoubleHinge.h>
 #include <ndJointFixDistance.h>
 #include <ndMultiBodyVehicle.h>
-#include <ndCharacterIdlePose.h>
 #include <ndCharacterRootNode.h>
 #include <ndSkeletonContainer.h>
 #include <ndDynamicsUpdateSoa.h>
 #include <ndJointHingeActuator.h>
-#include <ndDynamicsUpdateAvx2.h>
 #include <ndJointBallAndSocket.h>
+#include <ndJointKinematicChain.h>
 #include <ndBodyParticleSetList.h>
-#include <ndDynamicsUpdateOpencl.h>
-#include <ndJointPid3dofActuator.h>
-#include <ndJointPid6dofActuator.h>
+#include <ndJointAttachmentPoint.h>
 #include <ndMultiBodyVehicleMotor.h>
-#include <ndCharacterEffectorNode.h>
-#include <ndCharacterPoseGenerator.h>
-#include <ndCharacterPoseController.h>
 #include <ndMultiBodyVehicleGearBox.h>
 #include <ndJointDryRollingFriction.h>
 #include <ndJointKinematicController.h>
@@ -87,10 +83,9 @@
 #include <ndMultiBodyVehicleTorsionBar.h>
 #include <ndCharacterForwardDynamicNode.h>
 #include <ndCharacterInverseDynamicNode.h>
-#include <ndCharacterWalkCycleGenerator.h>
 #include <ndMultiBodyVehicleDifferential.h>
-#include <ndCharacterBipedPoseController.h>
 #include <ndMultiBodyVehicleDifferentialAxle.h>
+
 
 #endif 
 

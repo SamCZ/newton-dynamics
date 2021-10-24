@@ -24,6 +24,8 @@
 #define PLAYER_WALK_SPEED				8.0f
 #define PLAYER_JUMP_SPEED				5.0f
 
+D_CLASS_REFLECTION_IMPLEMENT_LOADER(ndBasicPlayerCapsule)
+
 //#define PLAYER_FIRST_PERSON	
 
 #ifdef PLAYER_FIRST_PERSON	
@@ -50,6 +52,7 @@ class ndBasicPlayerCapsuleNotify : public ndDemoEntityNotify
 		dFloat32 timestep = word->GetScene()->GetTimestep();
 		//timestep *= 0.25f;
 		//timestep = 1.0f/(30.0f * 4.0f);
+		timestep *= 0.05f;
 		player->m_animBlendTree->Evaluate(player->m_output, timestep);
 
 		for (int i = 0; i < player->m_output.GetCount(); i++)
@@ -74,7 +77,8 @@ ndBasicPlayerCapsule::ndBasicPlayerCapsule(
 	dMatrix matrix(location);
 	ndPhysicsWorld* const world = scene->GetWorld();
 	dVector floor(FindFloor(*world, matrix.m_posit + dVector(0.0f, 100.0f, 0.0f, 0.0f), 200.0f));
-	matrix.m_posit.m_y = floor.m_y + 1.0f;
+	//matrix.m_posit.m_y = floor.m_y + 1.0f;
+	matrix.m_posit.m_y = floor.m_y;
 	
 	ndDemoEntity* const entity = (ndDemoEntity*)modelEntity->CreateClone();
 	entity->ResetMatrix(matrix);
@@ -116,6 +120,7 @@ ndBasicPlayerCapsule::ndBasicPlayerCapsule(
 	ndAnimationTwoWayBlend* const idleMoveBlend = new ndAnimationTwoWayBlend(idle, walkRunBlend);
 	
 	walkRunBlend->SetParam(0.0f);
+	//idleMoveBlend->SetParam(0.0f);
 	idleMoveBlend->SetParam(1.0f);
 	//walkRunBlend->SetTimeDilation1(scale1);
 	m_animBlendTree = idleMoveBlend;
@@ -125,24 +130,30 @@ ndBasicPlayerCapsule::ndBasicPlayerCapsule(
 	m_animBlendTree->Evaluate(m_output, dFloat32(0.0f));
 }
 
-ndBasicPlayerCapsule::ndBasicPlayerCapsule(const nd::TiXmlNode* const xmlNode, const dTree<const ndShape*, dUnsigned32>& shapesCache, ndPhysicsWorld* const world)
-	:ndBodyPlayerCapsule(ndBody::FindNode(xmlNode, "ndBodyPlayerCapsule"), shapesCache)
+ndBasicPlayerCapsule::ndBasicPlayerCapsule(const dLoadSaveBase::dLoadDescriptor& desc)
+	:ndBodyPlayerCapsule(dLoadSaveBase::dLoadDescriptor(desc))
+	,m_scene(nullptr)
+	,m_isPlayer(false)
+	,m_output()
+	,m_animBlendTree(nullptr)
 {
-	m_isPlayer = xmlGetInt(xmlNode, "isPlayer") ? true : false;
-	m_scene = world->GetManager();
-	if (m_isPlayer)
-	{
-		m_scene->SetUpdateCameraFunction(UpdateCameraCallback, this);
-	}
-
-	ndDemoEntity* const entity = new ndDemoEntity(m_localFrame, nullptr);
-	const ndShapeInstance& shape = GetCollisionShape();
-	ndDemoMesh* const mesh = new ndDemoMesh("shape", m_scene->GetShaderCache(), &shape, "smilli.tga", "marble.tga", "marble.tga");
-	entity->SetMesh(mesh, dGetIdentityMatrix());
-	mesh->Release();
-
-	m_scene->AddEntity(entity);
-	SetNotifyCallback(new ndDemoEntityNotify(m_scene, entity));
+	//dAssert(0);
+	//for now do not load the player configuration, we can do that is the postprocess pass. 
+	//m_isPlayer = xmlGetInt(xmlNode, "isPlayer") ? true : false;
+	//m_scene = world->GetManager();
+	//if (m_isPlayer)
+	//{
+	//	m_scene->SetUpdateCameraFunction(UpdateCameraCallback, this);
+	//}
+	//
+	//ndDemoEntity* const entity = new ndDemoEntity(m_localFrame, nullptr);
+	//const ndShapeInstance& shape = GetCollisionShape();
+	//ndDemoMesh* const mesh = new ndDemoMesh("shape", m_scene->GetShaderCache(), &shape, "smilli.tga", "marble.tga", "marble.tga");
+	//entity->SetMesh(mesh, dGetIdentityMatrix());
+	//mesh->Release();
+	//
+	//m_scene->AddEntity(entity);
+	//SetNotifyCallback(new ndDemoEntityNotify(m_scene, entity));
 }
 
 ndBasicPlayerCapsule::~ndBasicPlayerCapsule()
@@ -153,22 +164,21 @@ ndBasicPlayerCapsule::~ndBasicPlayerCapsule()
 	}
 }
 
-void ndBasicPlayerCapsule::Save(nd::TiXmlElement* const rootNode, const char* const assetPath, dInt32 nodeid, const dTree<dUnsigned32, const ndShape*>& shapesCache) const
+void ndBasicPlayerCapsule::Save(const dLoadSaveBase::dSaveDescriptor& desc) const
 {
-	nd::TiXmlElement* const paramNode = CreateRootElement(rootNode, "ndBasicPlayerCapsule", nodeid);
-	ndBodyPlayerCapsule::Save(paramNode, assetPath, nodeid, shapesCache);
+	nd::TiXmlElement* const childNode = new nd::TiXmlElement(ClassName());
+	desc.m_rootNode->LinkEndChild(childNode);
+	childNode->SetAttribute("hashId", desc.m_nodeNodeHash);
+	ndBodyPlayerCapsule::Save(dLoadSaveBase::dSaveDescriptor(desc, childNode));
 
-	xmlSaveParam(paramNode, "isPlayer", m_isPlayer ? 1 : 0);
+	//xmlSaveParam(paramNode, "isPlayer", m_isPlayer ? 1 : 0);
 }
 
 void ndBasicPlayerCapsule::ApplyInputs(dFloat32 timestep)
 {
 	//calculate the gravity contribution to the velocity, 
-	//use twice the gravity 
-	//dVector gravity(m_localFrame.RotateVector(dVector(g, 0.0f, 0.0f, 0.0f)));
-
-	dVector gravity(0.0f, 2.0f * DEMO_GRAVITY, 0.0f, 0.0f);
-	dVector totalImpulse(m_impulse + gravity.Scale(m_mass * timestep));
+	const dVector gravity(GetNotifyCallback()->GetGravity());
+	const dVector totalImpulse(m_impulse + gravity.Scale(m_mass * timestep));
 	m_impulse = totalImpulse;
 
 	//dTrace(("  frame: %d    player camera: %f\n", m_scene->GetWorld()->GetFrameIndex(), m_playerInput.m_heading * dRadToDegree));

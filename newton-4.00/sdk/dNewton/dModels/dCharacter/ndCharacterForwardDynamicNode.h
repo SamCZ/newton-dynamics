@@ -23,24 +23,26 @@
 #define __D_CHARACTER_FORWARD_DYNAMICS_NODE_H__
 
 #include "ndNewtonStdafx.h"
-#include "ndCharacterLimbNode.h"
+#include "ndCharacterNode.h"
 
-class ndJointPid3dofActuator;
+class ndJointPdActuator;
 
-class ndCharacterForwardDynamicNode: public ndCharacterLimbNode 
+class ndCharacterForwardDynamicNode: public ndCharacterNode 
 {
 	public:
-	D_CLASS_RELECTION(ndCharacterForwardDynamicNode);
-
-	D_NEWTON_API ndCharacterForwardDynamicNode(const dMatrix& matrixInGlobalScape, ndBodyDynamic* const body, ndCharacterLimbNode* const parent);
+	D_CLASS_REFLECTION(ndCharacterForwardDynamicNode);
+	D_NEWTON_API ndCharacterForwardDynamicNode(const ndCharacterLoadDescriptor& desc);
+	D_NEWTON_API ndCharacterForwardDynamicNode(const dMatrix& matrixInGlobalSpace, ndBodyDynamic* const body, ndCharacterNode* const parent);
 	D_NEWTON_API virtual ~ndCharacterForwardDynamicNode ();
 
 	virtual ndBodyDynamic* GetBody() const;
 	virtual ndJointBilateralConstraint* GetJoint() const;
 
 	protected:
+	void Save(const ndCharacterSaveDescriptor& desc) const;
+
 	ndBodyDynamic* m_body;
-	ndJointPid3dofActuator* m_joint;
+	ndJointPdActuator* m_joint;
 };
 
 inline ndBodyDynamic* ndCharacterForwardDynamicNode::GetBody() const

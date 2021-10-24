@@ -30,11 +30,13 @@ class ndPhysicsWorld: public ndWorld
 
 	void QueueBodyForDelete(ndBody* const body);
 
-	private:
-	void OnPostUpdate(dFloat32 timestep);
-	ndBody* LoadUserDefinedBody(const nd::TiXmlNode* const parentNode, const char* const bodyClassName, dTree<const ndShape*, dUnsigned32>& shapesCache, const char* const assetPath) const;
+	bool LoadScene(const char* const path);
+	void SaveScene(const char* const path);
+	void SaveSceneModel(const char* const path);
 
+	private:
 	void DeletePendingObjects();
+	void OnPostUpdate(dFloat32 timestep);
 
 	ndDemoEntityManager* m_manager;
 	ndSoundManager* m_soundManager;

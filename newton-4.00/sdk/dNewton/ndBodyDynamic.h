@@ -42,8 +42,9 @@ D_MSV_NEWTON_ALIGN_32
 class ndBodyDynamic: public ndBodyKinematic
 {
 	public:
+	D_CLASS_REFLECTION(ndBodyDynamic);
 	D_NEWTON_API ndBodyDynamic();
-	D_NEWTON_API ndBodyDynamic(const nd::TiXmlNode* const xmlNode, const dTree<const ndShape*, dUnsigned32>& shapesCache);
+	D_NEWTON_API ndBodyDynamic(const dLoadSaveBase::dLoadDescriptor& desc);
 	D_NEWTON_API virtual ~ndBodyDynamic ();
 
 	D_NEWTON_API virtual ndBodyDynamic* GetAsBodyDynamic() { return this; }
@@ -51,7 +52,7 @@ class ndBodyDynamic: public ndBodyKinematic
 	D_NEWTON_API virtual void AddDampingAcceleration(dFloat32 timestep);
 	D_NEWTON_API virtual void IntegrateVelocity(dFloat32 timestep);
 
-	D_NEWTON_API virtual void Save(nd::TiXmlElement* const rootNode, const char* const assetPath, dInt32 nodeid, const dTree<dUnsigned32, const ndShape*>& shapesCache) const;
+	D_NEWTON_API virtual void Save(const dLoadSaveBase::dSaveDescriptor& desc) const;
 
 	D_NEWTON_API void SetForce(const dVector& force);
 	D_NEWTON_API void SetTorque(const dVector& torque);
@@ -92,6 +93,11 @@ class ndBodyDynamic: public ndBodyKinematic
 	friend class ndDynamicsUpdateAvx2;
 	friend class ndDynamicsUpdateOpencl;
 } D_GCC_NEWTON_ALIGN_32 ;
+
+class ndBodySentinel : public ndBodyDynamic
+{
+	ndBodySentinel* GetAsBodySentinel() { return this; }
+};
 
 inline dVector ndBodyDynamic::GetForce() const
 {

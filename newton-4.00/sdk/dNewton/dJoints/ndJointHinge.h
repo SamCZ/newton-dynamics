@@ -21,7 +21,8 @@
 class ndJointHinge: public ndJointBilateralConstraint
 {
 	public:
-	D_CLASS_RELECTION(ndJointHinge);
+	D_CLASS_REFLECTION(ndJointHinge);
+	D_NEWTON_API ndJointHinge(const dLoadSaveBase::dLoadDescriptor& desc);
 	D_NEWTON_API ndJointHinge(const dMatrix& pinAndPivotFrame, ndBodyKinematic* const child, ndBodyKinematic* const parent);
 	D_NEWTON_API ndJointHinge(const dMatrix& pinAndPivotInChild, const dMatrix& pinAndPivotInParent, ndBodyKinematic* const child, ndBodyKinematic* const parent);
 	D_NEWTON_API virtual ~ndJointHinge();
@@ -40,10 +41,10 @@ class ndJointHinge: public ndJointBilateralConstraint
 	
 	protected:
 	D_NEWTON_API void JacobianDerivative(ndConstraintDescritor& desc);
+	D_NEWTON_API void Save(const dLoadSaveBase::dSaveDescriptor& desc) const;
 
-
-	dFloat32 m_jointAngle;
-	dFloat32 m_jointSpeed;
+	dFloat32 m_angle;
+	dFloat32 m_omega;
 	dFloat32 m_springK;
 	dFloat32 m_damperC;
 	dFloat32 m_minLimit;

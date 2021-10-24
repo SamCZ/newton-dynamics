@@ -10,6 +10,8 @@
 */
 
 #include "ndSandboxStdafx.h"
+#include "ndDemoMesh.h"
+#include "ndDemoCamera.h"
 #include "ndPhysicsWorld.h"
 #include "ndSoundManager.h"
 #include "ndContactCallback.h"
@@ -22,6 +24,53 @@
 #define MAX_PHYSICS_STEPS			1
 #define MAX_PHYSICS_FPS				60.0f
 //#define MAX_PHYSICS_RECOVER_STEPS	2
+
+class ndPhysicsWorldSettings : public ndWordSettings
+{
+	public:
+	D_CLASS_REFLECTION(ndPhysicsWorldSettings);
+
+	ndPhysicsWorldSettings(ndPhysicsWorld* const world)
+		:ndWordSettings()
+		,m_cameraMatrix(dGetIdentityMatrix())
+		,m_world(world)
+	{
+	}
+
+	ndPhysicsWorldSettings(const dLoadSaveBase::dLoadDescriptor& desc)
+		:ndWordSettings(dLoadSaveBase::dLoadDescriptor(desc))
+		,m_world(nullptr)
+	{
+	}
+
+	virtual void Load(const dLoadSaveBase::dLoadDescriptor& desc)
+	{
+		dLoadSaveBase::dLoadDescriptor childDesc(desc);
+		ndWordSettings::Load(childDesc);
+		
+		// load application specific settings here
+		m_cameraMatrix = xmlGetMatrix(desc.m_rootNode, "cameraMatrix");
+	}
+
+	virtual void Save(const dLoadSaveBase::dSaveDescriptor& desc) const
+	{
+		nd::TiXmlElement* const childNode = new nd::TiXmlElement(ClassName());
+		desc.m_rootNode->LinkEndChild(childNode);
+		ndWordSettings::Save(dLoadSaveBase::dSaveDescriptor(desc, childNode));
+
+		ndDemoEntityManager* const manager = m_world->GetManager();
+		ndDemoCamera* const camera = manager->GetCamera();
+
+		dMatrix cameraMatrix (camera->GetCurrentMatrix());
+		xmlSaveParam(childNode, "description", "string", "this scene was saved from Newton 4.0 sandbox demos");
+		xmlSaveParam(childNode, "cameraMatrix", cameraMatrix);
+	}
+	
+	dMatrix m_cameraMatrix;
+	ndPhysicsWorld* m_world;
+};
+
+D_CLASS_REFLECTION_IMPLEMENT_LOADER(ndPhysicsWorldSettings);
 
 ndPhysicsWorld::ndPhysicsWorld(ndDemoEntityManager* const manager)
 	:ndWorld()
@@ -117,17 +166,73 @@ void ndPhysicsWorld::OnPostUpdate(dFloat32 timestep)
 	}
 }
 
-//ndBody* ndPhysicsWorld::LoadUserDefinedBody(const nd::TiXmlNode* const parentNode, const char* const bodyClassName, dTree<const ndShape*, dUnsigned32>& shapesCache, const char* const assetPath) const
-ndBody* ndPhysicsWorld::LoadUserDefinedBody(const nd::TiXmlNode* const parentNode, const char* const bodyClassName, dTree<const ndShape*, dUnsigned32>& shapesCache, const char* const) const
+void ndPhysicsWorld::SaveScene(const char* const path)
 {
-	if (!strcmp(bodyClassName, "ndArchimedesBuoyancyVolume"))
+	ndLoadSave loadScene;
+	ndPhysicsWorldSettings setting(this);
+	
+	loadScene.SaveScene(path, this, &setting);
+}
+
+void ndPhysicsWorld::SaveSceneModel(const char* const path)
+{
+	ndLoadSave loadScene;
+	loadScene.SaveModel(path, m_manager->m_selectedModel);
+}
+
+bool ndPhysicsWorld::LoadScene(const char* const path)
+{
+	ndLoadSave loadScene;
+	loadScene.LoadScene(path);
+
+	// iterate over the loaded scene and add all objects to the world.
+	if (loadScene.m_setting && (strcmp("ndPhysicsWorldSettings", loadScene.m_setting->SubClassName()) == 0))
 	{
-		return new ndArchimedesBuoyancyVolume(parentNode, shapesCache);
-	}
-	else if (!strcmp(bodyClassName, "ndBasicPlayerCapsule"))
-	{
-		return new ndBasicPlayerCapsule(parentNode, shapesCache, (ndPhysicsWorld*)this);
+		ndPhysicsWorldSettings* const settings = (ndPhysicsWorldSettings*)loadScene.m_setting;
+		ndDemoEntityManager* const manager = GetManager();
+		manager->SetCameraMatrix(settings->m_cameraMatrix, settings->m_cameraMatrix.m_posit);
 	}
 
-	return nullptr;
+	ndBodyLoaderCache::Iterator bodyIter(loadScene.m_bodyMap);
+	for (bodyIter.Begin(); bodyIter; bodyIter++)
+	{
+		const ndBody* const body = (ndBody*)bodyIter.GetNode()->GetInfo();
+		AddBody((ndBody*)body);
+	}
+
+	ndJointLoaderCache::Iterator jointIter(loadScene.m_jointMap);
+	for (jointIter.Begin(); jointIter; jointIter++)
+	{
+		const ndJointBilateralConstraint* const joint = (ndJointBilateralConstraint*)jointIter.GetNode()->GetInfo();
+		AddJoint((ndJointBilateralConstraint*)joint);
+	}
+
+	ndModelLoaderCache::Iterator modelIter(loadScene.m_modelMap);
+	for (modelIter.Begin(); modelIter; modelIter++)
+	{
+		const ndModel* const model = modelIter.GetNode()->GetInfo();
+		AddModel((ndModel*)model);
+	}
+
+	// add some visualization
+	dMatrix scale(dGetIdentityMatrix());
+	scale[0][0] = 0.5f;
+	scale[1][1] = 0.5f;
+	scale[2][2] = 0.5f;
+	for (bodyIter.Begin(); bodyIter; bodyIter++)
+	{
+		ndBodyKinematic* const body = (ndBodyKinematic*)bodyIter.GetNode()->GetInfo();
+		dAssert(body->GetAsBodyKinematic());
+		const ndShapeInstance& collision = body->GetCollisionShape();
+
+		ndDemoMesh* const mesh = new ndDemoMesh("importMesh", m_manager->GetShaderCache(), &collision, "marbleCheckBoard.tga", "marbleCheckBoard.tga", "marbleCheckBoard.tga", 1.0f, scale);
+		ndDemoEntity* const entity = new ndDemoEntity(body->GetMatrix(), nullptr);
+		entity->SetMesh(mesh, dGetIdentityMatrix());
+		m_manager->AddEntity(entity);
+
+		body->SetNotifyCallback(new ndDemoEntityNotify(m_manager, entity));
+		mesh->Release();
+	}
+
+	return true;
 }

@@ -18,14 +18,14 @@ if (NEWTON_BUILD_PROFILER)
 	add_subdirectory(dProfiler)
 endif()
 
+add_subdirectory(dExtensions)
+
 if (NEWTON_BUILD_CREATE_SUB_PROJECTS)
 	add_subdirectory(dCore)
 	add_subdirectory(dNewton)
 	add_subdirectory(dTinyxml)
 	add_subdirectory(dCollision)
-
 else()
-
 	set (projectName "ndNewton")
 	message (${projectName})
 
@@ -38,22 +38,24 @@ else()
 	include_directories(dNewton/dModels/dVehicle)
 	include_directories(dNewton/dModels/dCharacter)
 
-	if (NEWTON_ENABLE_GPU_SOLVER)
+	if(NEWTON_ENABLE_AVX2_SOLVER)
+		add_definitions(-D_D_USE_AVX2_SOLVER)
+		include_directories(dExtensions/dAvx2)
+	endif()
+
+	if (NEWTON_ENABLE_OPENCL_SOLVER)
 		add_definitions(-D_D_NEWTON_OPENCL)
-		add_definitions(-DCL_TARGET_OPENCL_VERSION=120)
-		add_definitions(-DCL_KERNEL_PATH="${CMAKE_CURRENT_SOURCE_DIR}/dOpencl/")
-		include_directories(dOpencl/)
+		include_directories(dExtensions/dOpencl)
 
 		if(NEWTON_BUILD_SHARED_LIBS)
-			if(BUILD_64)
-				#link_libraries ("$(NEWTON_OPENCL_RUNTIME)/lib/x64/OpenCL.lib")
-				link_libraries ("${CMAKE_CURRENT_SOURCE_DIR}/dOpencl/CL/lib/x64/OpenCL.lib")
-			else(BUILD_64)
-				#link_libraries ("$(NEWTON_OPENCL_RUNTIME)/lib/x86/OpenCL.lib")
-				link_libraries ("${CMAKE_CURRENT_SOURCE_DIR}/dOpencl/CL/lib/x86/OpenCL.lib")
-			endif(BUILD_64)
+			if (PTR_SIZE EQUAL 8)
+				link_libraries ("${CMAKE_CURRENT_SOURCE_DIR}/dExtensions/dOpencl/CL/lib/x64/OpenCL.lib")
+			else()
+				link_libraries ("${CMAKE_CURRENT_SOURCE_DIR}/dExtensions/dOpencl/CL/lib/x86/OpenCL.lib")
+			endif()
 		endif()
-	endif(NEWTON_ENABLE_GPU_SOLVER)
+
+	endif(NEWTON_ENABLE_OPENCL_SOLVER)
 
 	# source and header files
 	file(GLOB HEADERS 
@@ -84,33 +86,29 @@ else()
 		dNewton/dModels/dCharacter/*.h
 		dNewton/dModels/dCharacter/*.cpp)
 
-	# exclude AVX files when disabled
-	if(NOT NEWTON_ENABLE_AVX2_SOLVER)
-		list(FILTER HEADERS EXCLUDE REGEX "(Avx)")
-		list(FILTER CPP_SOURCE EXCLUDE REGEX "(Avx)")
-	endif()
-
-	if(MSVC AND NEWTON_ENABLE_AVX2_SOLVER)
-		set_source_files_properties(dNewton/ndDynamicsUpdateAvx2.cpp PROPERTIES COMPILE_FLAGS " /arch:AVX2 " )
-	endif()
-
-	if(MINGW AND NEWTON_ENABLE_AVX2_SOLVER)
-		set_source_files_properties(dNewton/ndDynamicsUpdateAvx2.cpp PROPERTIES COMPILE_FLAGS " -mavx2 -mfma  " )
-	endif()
-
-	if(UNIX AND NEWTON_ENABLE_AVX2_SOLVER)
-		set_source_files_properties(dNewton/ndDynamicsUpdateAvx2.cpp PROPERTIES COMPILE_FLAGS " -march=haswell " )
-	endif()
-
 	source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/" FILES ${CPP_SOURCE})
 
 	add_definitions(-D_D_SINGLE_LIBRARY)
 
 	if(NEWTON_BUILD_SHARED_LIBS)
 		add_definitions(-D_D_CORE_EXPORT_DLL)
-		add_definitions(-D_D_COLLISION_EXPORT_DLL)
 		add_definitions(-D_D_NEWTON_EXPORT_DLL)
+		add_definitions(-D_D_TINYXML_EXPORT_DLL)
+		add_definitions(-D_D_COLLISION_EXPORT_DLL)
 		add_library(${projectName} SHARED ${CPP_SOURCE})
+
+		if(NEWTON_ENABLE_AVX2_SOLVER)
+			target_link_libraries (${projectName} ndSolverAvx2)
+		endif()
+
+		if (NEWTON_ENABLE_OPENCL_SOLVER)
+			target_link_libraries (${projectName} ndSolverOpenCL)
+		endif()
+
+		if(MSVC OR MINGW)
+			target_link_options(${projectName} PUBLIC "/DEBUG") 
+		endif()
+
 	else()
 		add_library(${projectName} STATIC ${CPP_SOURCE})
 	endif()

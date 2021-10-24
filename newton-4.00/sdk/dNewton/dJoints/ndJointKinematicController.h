@@ -32,7 +32,8 @@ class ndJointKinematicController: public ndJointBilateralConstraint
 		m_linearPlusAngularFriction, // this is pick mode from screen
 	};
 
-	D_CLASS_RELECTION(ndJointKinematicController);
+	D_CLASS_REFLECTION(ndJointKinematicController);
+	D_NEWTON_API ndJointKinematicController(const dLoadSaveBase::dLoadDescriptor& desc);
 	D_NEWTON_API ndJointKinematicController(ndBodyKinematic* const referenceBody, ndBodyKinematic* const body, const dVector& attachmentPointInGlobalSpace);
 	D_NEWTON_API ndJointKinematicController(ndBodyKinematic* const referenceBody, ndBodyKinematic* const body, const dMatrix& attachmentMatrixInGlobalSpace);
 	D_NEWTON_API virtual ~ndJointKinematicController();
@@ -55,6 +56,7 @@ class ndJointKinematicController: public ndJointBilateralConstraint
 
 	D_NEWTON_API void CheckSleep() const;
 	D_NEWTON_API void JacobianDerivative(ndConstraintDescritor& desc);
+	D_NEWTON_API void Save(const dLoadSaveBase::dSaveDescriptor& desc) const;
 
 	dFloat32 m_maxSpeed;
 	dFloat32 m_maxOmega;

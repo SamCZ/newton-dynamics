@@ -32,7 +32,8 @@ D_MSV_NEWTON_ALIGN_32
 class ndBodyPlayerCapsule : public ndBodyKinematic
 {
 	public:
-	D_COLLISION_API ndBodyPlayerCapsule(const nd::TiXmlNode* const xmlNode, const dTree<const ndShape*, dUnsigned32>& shapesCache);
+	D_CLASS_REFLECTION(ndBodyPlayerCapsule);
+	D_COLLISION_API ndBodyPlayerCapsule(const dLoadSaveBase::dLoadDescriptor& desc);
 	D_COLLISION_API ndBodyPlayerCapsule(const dMatrix& localAxis, dFloat32 mass, dFloat32 radius, dFloat32 height, dFloat32 stepHeight);
 	D_COLLISION_API virtual ~ndBodyPlayerCapsule();
 
@@ -73,7 +74,7 @@ class ndBodyPlayerCapsule : public ndBodyKinematic
 	void IntegrateVelocity(dFloat32 timestep);
 
 	protected: 
-	D_COLLISION_API void Save(nd::TiXmlElement* const rootNode, const char* const assetPath, dInt32 nodeid, const dTree<dUnsigned32, const ndShape*>& shapesCache) const;
+	D_COLLISION_API void Save(const dLoadSaveBase::dSaveDescriptor& desc) const;
 
 	dMatrix m_localFrame;
 	dVector m_impulse;

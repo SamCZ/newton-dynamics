@@ -33,6 +33,7 @@
 #include "ndBodyTriggerVolume.h"
 #include "ndBodiesInAabbNotify.h"
 #include "ndJointBilateralConstraint.h"
+#include "ndShapeStaticProceduralMesh.h"
 
 #define D_CONTACT_DELAY_FRAMES		4
 #define D_NARROW_PHASE_DIST			dFloat32 (0.2f)
@@ -187,8 +188,7 @@ dFloat64 ndScene::ndFitnessList::TotalCost() const
 }
 	
 ndScene::ndScene()
-	:dClassAlloc()
-	,dThreadPool("newtonWorker")
+	:dThreadPool("newtonWorker")
 	,m_bodyList()
 	,m_contactList()
 	,m_activeConstraintArray()
@@ -210,9 +210,11 @@ ndScene::~ndScene()
 	Cleanup();
 	Finish();
 	delete m_contactNotifyCallback;
-	ndContactList::FlushFreeList();
-	ndContactPointList::FlushFreeList();
-	ndShapeCompound::ndTreeArray::FlushFreeList();
+	dFreeListAlloc::Flush();
+	//ndContactList::FlushFreeList();
+	//ndContactPointList::FlushFreeList();
+	//ndShapeCompound::ndTreeArray::FlushFreeList();
+	//ndShapeStaticProceduralMesh::ndEdgeMap::FlushFreeList();
 }
 
 void ndScene::CollisionOnlyUpdate()
@@ -756,9 +758,7 @@ void ndScene::UpdateAabb(dInt32, ndBodyKinematic* const body)
 	const dInt32 test = dBoxInclusionTest(body->m_minAabb, body->m_maxAabb, bodyNode->m_minBox, bodyNode->m_maxBox);
 	if (!test) 
 	{
-		//body->m_broaphaseEquilibrium = 0;
 		bodyNode->SetAabb(body->m_minAabb, body->m_maxAabb);
-
 		if (!m_rootNode->GetAsSceneBodyNode()) 
 		{
 			const ndSceneNode* const root = (m_rootNode->GetLeft() && m_rootNode->GetRight()) ? nullptr : m_rootNode;
@@ -968,7 +968,6 @@ void ndScene::ProcessContacts(dInt32 threadIndex, dInt32 contactCount, ndContact
 		}
 		else 
 		{
-			//dScopeSpinLock lock(m_contactLock);
 			contactNode = contactPointList.Append();
 		}
 
@@ -1232,9 +1231,6 @@ ndContact* ndScene::FindContactJoint(ndBodyKinematic* const body0, ndBodyKinemat
 
 void ndScene::AddPair(ndBodyKinematic* const body0, ndBodyKinematic* const body1)
 {
-#ifdef D_USE_GLOBAL_LOCK
-	dScopeSpinLock lock(m_contactLock);
-#endif
 	ndContact* const contact = FindContactJoint(body0, body1);
 	if (!contact) 
 	{
@@ -1902,10 +1898,8 @@ void ndScene::Cleanup()
 		RemoveBody(body);
 		delete body;
 	}
-	ndContact::FlushFreeList();
-	ndBodyList::FlushFreeList();
-	ndFitnessList::FlushFreeList();
-	ndBodyKinematic::ReleaseMemory();
+	dFreeListAlloc::Flush();
+	//ndBodyKinematic::ReleaseMemory();
 	m_activeBodyArray.Resize(256);
 	m_activeConstraintArray.Resize(256);
 }

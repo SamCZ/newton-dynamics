@@ -46,8 +46,9 @@ class ndShapeCompound: public ndShape
 		void AddNode(ndNodeBase* const node, dInt32 index, const ndShapeInstance* const parent);
 	};
 
+	D_CLASS_REFLECTION(ndShapeCompound);
 	D_COLLISION_API ndShapeCompound();
-	D_COLLISION_API ndShapeCompound(const nd::TiXmlNode* const xmlNode);
+	D_COLLISION_API ndShapeCompound(const dLoadSaveBase::dLoadDescriptor& desc);
 	D_COLLISION_API virtual ~ndShapeCompound();
 
 	void SetOwner(const ndShapeInstance* const myInstance);
@@ -64,6 +65,7 @@ class ndShapeCompound: public ndShape
 	virtual ndShapeInfo GetShapeInfo() const;
 	virtual void DebugShape(const dMatrix& matrix, ndShapeDebugCallback& debugCallback) const;
 	virtual dFloat32 RayCast(ndRayCastNotify& callback, const dVector& localP0, const dVector& localP1, dFloat32 maxT, const ndBody* const body, ndContactPoint& contactOut) const;
+	virtual void Save(const dLoadSaveBase::dSaveDescriptor& desc) const;
 
 	virtual dFloat32 GetVolume() const;
 	virtual dFloat32 GetBoxMinRadius() const;
@@ -137,8 +139,8 @@ class ndShapeCompound::ndNodeBase: public dClassAlloc
 	ndNodeBase* m_left;
 	ndNodeBase* m_right;
 	ndNodeBase* m_parent;
-	ndShapeInstance* m_shape;
 	ndTreeArray::dNode* m_myNode;
+	ndShapeInstance* m_shapeInstance;
 };
 
 inline ndShapeCompound::ndNodeBase::ndNodeBase()
@@ -147,8 +149,8 @@ inline ndShapeCompound::ndNodeBase::ndNodeBase()
 	,m_left(nullptr)
 	,m_right(nullptr)
 	,m_parent(nullptr)
-	,m_shape(nullptr)
 	,m_myNode(nullptr)
+	,m_shapeInstance(nullptr)
 {
 }
 
@@ -163,10 +165,10 @@ inline ndShapeCompound::ndNodeBase::ndNodeBase(const ndNodeBase& copyFrom)
 	,m_left(nullptr)
 	,m_right(nullptr)
 	,m_parent(nullptr)
-	,m_shape(nullptr)
 	,m_myNode(nullptr)
+	,m_shapeInstance(nullptr)
 {
-	dAssert(!copyFrom.m_shape);
+	dAssert(!copyFrom.m_shapeInstance);
 }
 
 inline ndShapeCompound::ndNodeBase::ndNodeBase(ndShapeInstance* const instance)
@@ -175,8 +177,8 @@ inline ndShapeCompound::ndNodeBase::ndNodeBase(ndShapeInstance* const instance)
 	,m_left(nullptr)
 	,m_right(nullptr)
 	,m_parent(nullptr)
-	,m_shape(new ndShapeInstance(*instance))
 	,m_myNode(nullptr)
+	,m_shapeInstance(new ndShapeInstance(*instance))
 {
 	CalculateAABB();
 }
@@ -187,8 +189,8 @@ inline ndShapeCompound::ndNodeBase::ndNodeBase(ndNodeBase* const left, ndNodeBas
 	,m_left(left)
 	,m_right(right)
 	,m_parent(nullptr)
-	,m_shape(nullptr)
 	,m_myNode(nullptr)
+	,m_shapeInstance(nullptr)
 {
 	m_left->m_parent = this;
 	m_right->m_parent = this;
@@ -200,14 +202,14 @@ inline ndShapeCompound::ndNodeBase::ndNodeBase(ndNodeBase* const left, ndNodeBas
 
 inline ndShapeInstance* ndShapeCompound::ndNodeBase::GetShape() const
 {
-	return m_shape;
+	return m_shapeInstance;
 }
 
 inline void ndShapeCompound::ndNodeBase::CalculateAABB()
 {
 	dVector p0;
 	dVector p1;
-	m_shape->CalculateAabb(m_shape->GetLocalMatrix(), p0, p1);
+	m_shapeInstance->CalculateAabb(m_shapeInstance->GetLocalMatrix(), p0, p1);
 	SetBox(p0, p1);
 }
 

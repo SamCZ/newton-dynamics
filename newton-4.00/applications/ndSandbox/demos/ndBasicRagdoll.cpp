@@ -100,11 +100,11 @@ static dJointDefinition jointsDefinition[] =
 	{ "mixamorig:Spine1", 4, 16, 10.0f, { -15.0f, 15.0f, 30.0f }, { 0.0f, 0.0f, 180.0f } },
 	{ "mixamorig:Spine2", 8, 16, 10.0f, { -15.0f, 15.0f, 30.0f }, { 0.0f, 0.0f, 180.0f } },
 	{ "mixamorig:Neck", 16, 31, 10.0f, { -15.0f, 15.0f, 30.0f }, { 0.0f, 0.0f, 180.0f } },
-
+	
 	{ "mixamorig:RightUpLeg", 16, 31, 10.0f, { -45.0f, 45.0f, 120.0f }, { 0.0f, 0.0f, 180.0f } },
 	{ "mixamorig:RightLeg", 16, 31, 10.0f, { -140.0f, 10.0f, 0.0f }, { 0.0f, 90.0f, 90.0f } },
 	{ "mixamorig:RightFoot", 16, 31, 10.0f,{ 0.0f, 0.0f, 60.0f },{ 0.0f, 0.0f, 180.0f } },
-
+	
 	{ "mixamorig:LeftUpLeg", 16, 31, 10.0f, { -45.0f, 45.0f, 120.0f }, { 0.0f, 0.0f, 180.0f } },
 	{ "mixamorig:LeftLeg", 16, 31, 10.0f, { -140.0f, 10.0f, 0.0f }, { 0.0f, 90.0f, 90.0f } },
 	{ "mixamorig:LeftFoot", 16, 31, 10.0f,{ 0.0f, 0.0f, 60.0f },{ 0.0f, 0.0f, 180.0f } },
@@ -116,10 +116,12 @@ static dJointDefinition jointsDefinition[] =
 	{ "mixamorig:LeftForeArm", 16, 31, 10.0f, { -140.0f, 10.0f, 0.0f }, { 0.0f, 0.0f, -90.0f } },
 };
 
-class ndRagdollModel : public ndModel
+//class ndRagdollModel : public ndModel
+class ndRagdollModel : public ndCharacter
 {
 	public:
 	ndRagdollModel(ndDemoEntityManager* const scene, fbxDemoEntity* const ragdollMesh, const dMatrix& location)
+		:ndCharacter()
 	{
 		// make a clone of the mesh and add it to the scene
 		ndDemoEntity* const entity = ragdollMesh->CreateClone();
@@ -135,28 +137,29 @@ class ndRagdollModel : public ndModel
 		ndDemoEntity* const rootEntity = (ndDemoEntity*)entity->Find(jointsDefinition[0].m_boneName);
 		rootEntity->ResetMatrix(rootEntity->GetCurrentMatrix() * matrix);
 		ndBodyDynamic* const rootBody = CreateBodyPart(scene, rootEntity, nullptr);
+		ndCharacterRootNode* const rootNode = CreateRoot(rootBody);
 
 		dInt32 stack = 0;
 		const int definitionCount = sizeof(jointsDefinition) / sizeof(jointsDefinition[0]);
 		
-		ndBodyDynamic* parentBones[32];
 		ndDemoEntity* childEntities[32];
+		ndCharacterNode* parentBones[32];
 		for (ndDemoEntity* child = rootEntity->GetChild(); child; child = child->GetSibling()) 
 		{
 			childEntities[stack] = child;
-			parentBones[stack] = rootBody;
+			parentBones[stack] = rootNode;
 			stack++;
 		}
 		
 		dInt32 bodyCount = 1;
 		ndBodyDynamic* bodyArray[1024];
 		bodyArray[0] = rootBody;
-
+		
 		// walk model hierarchic adding all children designed as rigid body bones. 
 		while (stack) 
 		{
 			stack--;
-			ndBodyDynamic* parentBone = parentBones[stack];
+			ndCharacterNode* parentBone = parentBones[stack];
 			ndDemoEntity* const childEntity = childEntities[stack];
 			const char* const name = childEntity->GetName().GetStr();
 			//dTrace(("name: %s\n", name));
@@ -164,14 +167,12 @@ class ndRagdollModel : public ndModel
 			{
 				if (!strcmp(jointsDefinition[i].m_boneName, name)) 
 				{
-					ndBodyDynamic* const childBody = CreateBodyPart(scene, childEntity, parentBone);
+					ndBodyDynamic* const childBody = CreateBodyPart(scene, childEntity, parentBone->GetBody());
 					bodyArray[bodyCount] = childBody;
 					bodyCount++;
-
+		
 					// connect this body part to its parentBody with a ragdoll joint
-					ConnectBodyParts(world, childBody, parentBone, jointsDefinition[i]);
-
-					parentBone = childBody;
+					parentBone = ConnectBodyParts(childBody, parentBone, jointsDefinition[i]);
 					break;
 				}
 			}
@@ -185,7 +186,7 @@ class ndRagdollModel : public ndModel
 		}
 		
 		SetModelMass(100.0f, bodyCount, bodyArray);
-
+		
 		for (dInt32 i = 0; i < bodyCount; i++)
 		{
 			ndDemoEntity* ent = (ndDemoEntity*)bodyArray[i]->GetNotifyCallback()->GetUserData();
@@ -217,8 +218,7 @@ class ndRagdollModel : public ndModel
 	
 	ndBodyDynamic* CreateBodyPart(ndDemoEntityManager* const scene, ndDemoEntity* const entityPart, ndBodyDynamic* const parentBone)
 	{
-		ndWorld* const world = scene->GetWorld();
-		ndShapeInstance* const shape = entityPart->CreateCollisionFromchildren(world);
+		ndShapeInstance* const shape = entityPart->CreateCollisionFromchildren();
 		dAssert(shape);
 
 		// create the rigid body that will make this body
@@ -229,27 +229,26 @@ class ndRagdollModel : public ndModel
 		body->SetCollisionShape(*shape);
 		body->SetMassMatrix(1.0f, *shape);
 		body->SetNotifyCallback(new ndRagdollEntityNotify(scene, entityPart, parentBone));
-		world->AddBody(body);
 
 		delete shape;
 		return body;
 	}
 
-	void ConnectBodyParts(ndWorld* const world, ndBodyDynamic* const childBody, ndBodyDynamic* const parentBody, const dJointDefinition& definition) const
+	ndCharacterNode* ConnectBodyParts(ndBodyDynamic* const childBody, ndCharacterNode* const parentBone, const dJointDefinition& definition)
 	{
 		dMatrix matrix(childBody->GetMatrix());
 		dJointDefinition::dFrameMatrix frameAngle(definition.m_frameBasics);
 		dMatrix pinAndPivotInGlobalSpace(dPitchMatrix(frameAngle.m_pitch * dDegreeToRad) * dYawMatrix(frameAngle.m_yaw * dDegreeToRad) * dRollMatrix(frameAngle.m_roll * dDegreeToRad) * matrix);
-		ndJointBallAndSocket* const joint = new ndJointBallAndSocket(pinAndPivotInGlobalSpace, childBody, parentBody);
-	
+
+		ndCharacterForwardDynamicNode* const jointNode = CreateForwardDynamicLimb(pinAndPivotInGlobalSpace, childBody, parentBone);
+		ndJointPdActuator* const joint = (ndJointPdActuator*)jointNode->GetJoint();
+		
 		dJointDefinition::dJointLimit jointLimits(definition.m_jointLimits);
 		joint->SetConeLimit(jointLimits.m_coneAngle * dDegreeToRad);
-		joint->SetConeFriction(0.05f, definition.m_friction);
-		
 		joint->SetTwistLimits(jointLimits.m_minTwistAngle * dDegreeToRad, jointLimits.m_maxTwistAngle * dDegreeToRad);
-		joint->SetTwistFriction(0.05f, definition.m_friction);
+		joint->SetConeAngleSpringDamperRegularizer(0.0f, definition.m_friction, 0.005f);
 
-		world->AddJoint(joint);
+		return jointNode;
 	}
 
 	void Update(ndWorld* const, dFloat32) 
@@ -264,7 +263,6 @@ class ndRagdollModel : public ndModel
 	//void PostTransformUpdate(ndWorld* const world, dFloat32 timestep)
 	void PostTransformUpdate(ndWorld* const, dFloat32)
 	{
-
 	}
 };
 
@@ -279,6 +277,7 @@ void ndBasicRagdoll (ndDemoEntityManager* const scene)
 	dMatrix matrix(dGetIdentityMatrix());
 	matrix.m_posit.m_y = 0.5f;
 	ndRagdollModel* const ragdoll = new ndRagdollModel(scene, ragdollMesh, matrix);
+	scene->SetSelectedModel(ragdoll);
 	scene->GetWorld()->AddModel(ragdoll);
 
 	matrix.m_posit.m_x += 2.0f;

@@ -12,6 +12,8 @@
 #include "ndSandboxStdafx.h"
 #include "ndArchimedesBuoyancyVolume.h"
 
+D_CLASS_REFLECTION_IMPLEMENT_LOADER(ndArchimedesBuoyancyVolume);
+
 ndArchimedesBuoyancyVolume::ndArchimedesBuoyancyVolume()
 	:ndBodyTriggerVolume()
 	,m_plane(dVector::m_zero)
@@ -20,9 +22,10 @@ ndArchimedesBuoyancyVolume::ndArchimedesBuoyancyVolume()
 {
 }
 
-ndArchimedesBuoyancyVolume::ndArchimedesBuoyancyVolume(const nd::TiXmlNode* const xmlNode, const dTree<const ndShape*, dUnsigned32>& shapesCache)
-	:ndBodyTriggerVolume(ndBody::FindNode(xmlNode, "ndBodyTriggerVolume"), shapesCache)
+ndArchimedesBuoyancyVolume::ndArchimedesBuoyancyVolume(const dLoadSaveBase::dLoadDescriptor& desc)
+	:ndBodyTriggerVolume(dLoadSaveBase::dLoadDescriptor(desc))
 {
+	const nd::TiXmlNode* const xmlNode = desc.m_rootNode;
 	m_plane = xmlGetVector3(xmlNode, "planeNormal");
 	m_plane.m_w = xmlGetFloat(xmlNode, "planeDist");
 	m_density = xmlGetFloat(xmlNode, "density");
@@ -131,14 +134,16 @@ void ndArchimedesBuoyancyVolume::OnTriggerExit(ndBodyKinematic* const, dFloat32)
 	//dTrace(("exit trigger body: %d\n", body->GetId()));
 }
 
-void ndArchimedesBuoyancyVolume::Save(nd::TiXmlElement* const rootNode, const char* const assetPath, dInt32 nodeid, const dTree<dUnsigned32, const ndShape*>& shapesCache) const
+void ndArchimedesBuoyancyVolume::Save(const dLoadSaveBase::dSaveDescriptor& desc) const
 {
-	nd::TiXmlElement* const paramNode = CreateRootElement(rootNode, "ndArchimedesBuoyancyVolume", nodeid);
-	ndBodyTriggerVolume::Save(paramNode, assetPath, nodeid, shapesCache);
+	nd::TiXmlElement* const childNode = new nd::TiXmlElement(ClassName());
+	desc.m_rootNode->LinkEndChild(childNode);
+	childNode->SetAttribute("hashId", desc.m_nodeNodeHash);
+	ndBodyTriggerVolume::Save(dLoadSaveBase::dSaveDescriptor(desc, childNode));
 
-	xmlSaveParam(paramNode, "planeNormal", m_plane);
-	xmlSaveParam(paramNode, "planeDist", m_plane.m_w);
-	xmlSaveParam(paramNode, "density", m_density);
-	xmlSaveParam(paramNode, "hasPlane", m_hasPlane ? 1 : 0);
+	xmlSaveParam(childNode, "planeNormal", m_plane);
+	xmlSaveParam(childNode, "planeDist", m_plane.m_w);
+	xmlSaveParam(childNode, "density", m_density);
+	xmlSaveParam(childNode, "hasPlane", m_hasPlane ? 1 : 0);
 }
 

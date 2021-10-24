@@ -27,12 +27,18 @@
 
 const dMatrix& dGetIdentityMatrix()
 {
-	return dMatrix::m_identityMatrix;
+	static dMatrix identityMatrix(
+		dVector(dFloat32(1.0f), dFloat32(0.0f), dFloat32(0.0f), dFloat32(0.0f)),
+		dVector(dFloat32(0.0f), dFloat32(1.0f), dFloat32(0.0f), dFloat32(0.0f)),
+		dVector(dFloat32(0.0f), dFloat32(0.0f), dFloat32(1.0f), dFloat32(0.0f)),
+		dVector(dFloat32(0.0f), dFloat32(0.0f), dFloat32(0.0f), dFloat32(1.0f)));
+	return identityMatrix;
 }
 
 const dMatrix& dGetZeroMatrix ()
 {
-	return dMatrix::m_zeroMatrix;
+	static dMatrix zeroMatrix(dVector::m_zero, dVector::m_zero, dVector::m_zero, dVector::m_zero);
+	return zeroMatrix;
 }
 
 dMatrix::dMatrix (const dQuaternion &quat, const dVector &position)
@@ -105,7 +111,8 @@ void dMatrix::TransformTriplex (dFloat32* const dst, dInt32 dstStrideInBytes, co
 
 	dInt32 dstIndex = 0;
 	dInt32 srcIndex = 0;
-	for (dInt32 i = 0 ; i < count; i ++ ) {
+	for (dInt32 i = 0 ; i < count; i ++ ) 
+	{
 		dFloat32 x = src[srcIndex + 0];
 		dFloat32 y = src[srcIndex + 1];
 		dFloat32 z = src[srcIndex + 2];

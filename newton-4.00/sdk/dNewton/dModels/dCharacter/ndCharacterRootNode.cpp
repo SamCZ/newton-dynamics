@@ -25,27 +25,67 @@
 #include "ndBodyDynamic.h"
 #include "ndCharacterRootNode.h"
 
+D_CLASS_REFLECTION_IMPLEMENT_LOADER(ndCharacterRootNode)
+
 ndCharacterRootNode::ndCharacterRootNode(ndCharacter* const owner, ndBodyDynamic* const body)
-	:ndCharacterLimbNode(nullptr)
-	,m_localFrame(dGetIdentityMatrix())
-	,m_gravityDir(dFloat32 (0.0f), dFloat32(-1.0f), dFloat32(0.0f), dFloat32(0.0f))
+	:ndCharacterNode(nullptr)
+	,m_coronalFrame(dGetIdentityMatrix())
 	,m_owner(owner)
 	,m_body(body)
 {
-	SetLocalFrame(m_body->GetMatrix());
+	SetCoronalFrame(m_body->GetMatrix());
+}
+
+ndCharacterRootNode::ndCharacterRootNode(const ndCharacterLoadDescriptor& desc)
+	:ndCharacterNode(desc)
+	,m_coronalFrame(dGetIdentityMatrix())
+	,m_owner(nullptr)
+	,m_body(nullptr)
+{
+	const nd::TiXmlNode* const xmlNode = desc.m_rootNode;
+
+	const char* const name = xmlGetString(xmlNode, "name");
+	SetName(name);
+	m_localPose = xmlGetMatrix(xmlNode, "localPose");
+
+	dInt32 bodyHash = xmlGetInt(xmlNode, "bodyHash");
+	m_body = (ndBodyDynamic*)desc.m_bodyMap->Find(bodyHash)->GetInfo();
+	m_coronalFrame = xmlGetMatrix(xmlNode, "coronalFrame");
 }
 
 ndCharacterRootNode::~ndCharacterRootNode()
 {
+	delete m_body;
 }
 
-void ndCharacterRootNode::SetLocalFrame(const dMatrix& frameInGlobalSpace)
+void ndCharacterRootNode::Save(const ndCharacterSaveDescriptor& desc) const
 {
-	dMatrix matrix(m_body->GetMatrix());
-	m_localFrame = frameInGlobalSpace * matrix.Inverse();
+	nd::TiXmlElement* const childNode = new nd::TiXmlElement(ClassName());
+	desc.m_rootNode->LinkEndChild(childNode);
+	childNode->SetAttribute("hashId", desc.m_limbMap->GetCount());
+	ndCharacterNode::Save(ndCharacterSaveDescriptor(desc, childNode));
+	
+	dTree<dInt32, const ndBodyKinematic*>::dNode* bodyNode = desc.m_bodyMap->Find(m_body);
+	if (!bodyNode)
+	{
+		bodyNode = desc.m_bodyMap->Insert(desc.m_bodyMap->GetCount(), m_body);
+	}
+	dAssert(bodyNode);
+
+	xmlSaveParam(childNode, "name", GetName().GetStr());
+	xmlSaveParam(childNode, "localPose", m_localPose);
+	xmlSaveParam(childNode, "bodyHash", bodyNode->GetInfo());
+	xmlSaveParam(childNode, "coronalFrame", m_coronalFrame);
 }
 
-void ndCharacterRootNode::UpdateGlobalPose(ndWorld* const, dFloat32)
-{
-	// for now just; 
-}
+//void ndCharacterRootNode::SetCoronalFrame(const dMatrix& frameInGlobalSpace)
+//{
+//	dMatrix matrix(m_body->GetMatrix());
+//	m_coronalFrame = frameInGlobalSpace * matrix.Inverse();
+//	m_coronalFrame.m_posit = dVector::m_wOne;
+//}
+
+//void ndCharacterRootNode::UpdateGlobalPose(ndWorld* const, dFloat32)
+//{
+//	// for now just; 
+//}

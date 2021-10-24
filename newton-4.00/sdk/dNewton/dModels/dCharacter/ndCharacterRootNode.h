@@ -23,32 +23,30 @@
 #define __D_CHARACTER_ROOT_NODE_H__
 
 #include "ndNewtonStdafx.h"
-#include "ndCharacterLimbNode.h"
+#include "ndCharacterNode.h"
 
-class ndCharacterRootNode: public ndCharacterLimbNode
+class ndCharacterRootNode: public ndCharacterNode
 {
 	public:
-	D_CLASS_RELECTION(ndCharacterRootNode);
-
+	D_CLASS_REFLECTION(ndCharacterRootNode);
+	D_NEWTON_API ndCharacterRootNode(const ndCharacterLoadDescriptor& desc);
 	D_NEWTON_API ndCharacterRootNode(ndCharacter* const owner, ndBodyDynamic* const body);
 	D_NEWTON_API virtual ~ndCharacterRootNode ();
 
 	ndCharacter* GetOwner() const;
 	virtual ndBodyDynamic* GetBody() const;
 
-	const dVector& GetGravityDir() const;
-	void SetGravityDir(const dVector& dir);
-
-	const dMatrix& GetLocalFrame() const;
-	D_NEWTON_API void SetLocalFrame(const dMatrix& frameInGlobalSpace);
+	const dMatrix& GetCoronalFrame() const;
+	D_NEWTON_API void SetCoronalFrame(const dMatrix& sagittalFrameInGlobalSpace);
 
 	protected:
-	void UpdateGlobalPose(ndWorld* const world, dFloat32 timestep);
+	//void UpdateGlobalPose(ndWorld* const world, dFloat32 timestep);
+	void Save(const ndCharacterSaveDescriptor& desc) const;
 
-	dMatrix m_localFrame;
-	dVector m_gravityDir;
+	dMatrix m_coronalFrame;
 	ndCharacter* m_owner;
 	ndBodyDynamic* m_body;
+	friend class ndCharacter;
 };
 
 inline ndCharacter* ndCharacterRootNode::GetOwner() const
@@ -61,19 +59,15 @@ inline ndBodyDynamic* ndCharacterRootNode::GetBody() const
 	return m_body;
 }
 
-inline const dMatrix& ndCharacterRootNode::GetLocalFrame() const
+inline const dMatrix& ndCharacterRootNode::GetCoronalFrame() const
 {
-	return m_localFrame;
+	return m_coronalFrame;
 }
 
-inline const dVector& ndCharacterRootNode::GetGravityDir() const
+inline void ndCharacterRootNode::SetCoronalFrame(const dMatrix& frameInGlobalSpace)
 {
-	return m_gravityDir;
-}
-
-inline void ndCharacterRootNode::SetGravityDir(const dVector& dir)
-{
-	m_gravityDir = dir;
+	m_coronalFrame = frameInGlobalSpace * m_body->GetMatrix().Inverse();
+	m_coronalFrame.m_posit = dVector::m_wOne;
 }
 
 

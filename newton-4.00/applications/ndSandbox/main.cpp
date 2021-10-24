@@ -31,12 +31,14 @@ void *operator new (size_t size)
 	// this should not happens on this test
 	// newton should never use global operator new and delete.
 	//dAssert(0);
-	return PhysicsAlloc(size);
+	void* const ptr = dMemory::Malloc(size);
+	dAssert((dUnsigned64(ptr) & (0x1f)) == 0);
+	return ptr;
 }
 
 void operator delete (void* ptr) noexcept
 {
-	PhysicsFree(ptr);
+	dMemory::Free(ptr);
 }
 
 class CheckMemoryLeaks
@@ -48,7 +50,7 @@ class CheckMemoryLeaks
 			// Track all memory leaks at the operating system level.
 			// make sure no Newton tool or utility leaves leaks behind.
 			_CrtSetDbgFlag(_CRTDBG_LEAK_CHECK_DF | _CRTDBG_REPORT_FLAG);
-			//_CrtSetBreakAlloc (180);
+			//_CrtSetBreakAlloc (2488);
 		#endif
 
 		atexit(CheckMemoryLeaksCallback);

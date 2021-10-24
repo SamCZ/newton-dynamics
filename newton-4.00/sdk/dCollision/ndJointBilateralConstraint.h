@@ -39,14 +39,19 @@ enum ndJointBilateralSolverModel
 };
 
 D_MSV_NEWTON_ALIGN_32
-class ndJointBilateralConstraint: public ndConstraint, public dClassAlloc
+//class ndJointBilateralConstraint: public ndConstraint, public dClassAlloc
+class ndJointBilateralConstraint : public ndConstraint, public dContainersFreeListAlloc<ndJointBilateralConstraint>
 {
 	public:
+	D_CLASS_REFLECTION(ndJointBilateralConstraint);
+	D_COLLISION_API ndJointBilateralConstraint(const dLoadSaveBase::dLoadDescriptor& desc);
 	D_COLLISION_API ndJointBilateralConstraint(dInt32 maxDof, ndBodyKinematic* const body0, ndBodyKinematic* const body1, const dMatrix& globalMatrix);
 	D_COLLISION_API virtual ~ndJointBilateralConstraint();
 
 	virtual ndBodyKinematic* GetBody0() const;
 	virtual ndBodyKinematic* GetBody1() const;
+	void ReplaceSentinel(ndBodyKinematic* const sentinel);
+
 	virtual dUnsigned32 GetRowsCount() const;
 	virtual ndJointBilateralConstraint* GetAsBilateral() { return this; }
 	virtual void JacobianDerivative(ndConstraintDescritor& desc);
@@ -59,6 +64,7 @@ class ndJointBilateralConstraint: public ndConstraint, public dClassAlloc
 	D_COLLISION_API void AddAngularRowJacobian(ndConstraintDescritor& desc, const dVector& dir, dFloat32 relAngle);
 	D_COLLISION_API void AddLinearRowJacobian(ndConstraintDescritor& desc, const dVector& pivot0, const dVector& pivot1, const dVector& dir);
 
+	D_COLLISION_API virtual void Save(const dLoadSaveBase::dSaveDescriptor& desc) const;
 	D_COLLISION_API virtual void DebugJoint(ndConstraintDebugCallback& debugCallback) const;
 	D_COLLISION_API dFloat32 CalculateSpringDamperAcceleration(dFloat32 dt, dFloat32 ks, dFloat32 x, dFloat32 kd, dFloat32 v) const;
 	D_COLLISION_API void SetMassSpringDamperAcceleration(ndConstraintDescritor& desc, dFloat32 regularizer, dFloat32 spring, dFloat32 damper);
@@ -71,6 +77,7 @@ class ndJointBilateralConstraint: public ndConstraint, public dClassAlloc
 	dVector GetForceBody1() const;
 	dVector GetTorqueBody1() const;
 
+	bool IsBilateral() const;
 	bool IsCollidable() const;
 	void SetCollidable(bool state);
 	void SetSkeletonFlag(bool flag);
@@ -102,7 +109,6 @@ class ndJointBilateralConstraint: public ndConstraint, public dClassAlloc
 	ndJointList::dNode* m_body0Node;
 	ndJointList::dNode* m_body1Node;
 
-	dFloat32 m_maxAngleError;
 	dFloat32 m_defualtDiagonalRegularizer;
 	dUnsigned32 m_maxDof			: 6;
 	dUnsigned32 m_mark0				: 1;
@@ -180,7 +186,6 @@ inline void ndJointBilateralConstraint::SetMotorAcceleration(ndConstraintDescrit
 	desc.m_flags[index] = 0;
 	m_motorAcceleration[index] = acceleration;
 	desc.m_jointAccel[index] = acceleration;
-	desc.m_penetrationStiffness[index] = acceleration;
 }
 
 inline void ndJointBilateralConstraint::SetLowerFriction(ndConstraintDescritor& desc, dFloat32 friction)
@@ -228,7 +233,8 @@ inline void ndJointBilateralConstraint::SetHighFriction(ndConstraintDescritor& d
 
 inline void ndJointBilateralConstraint::JacobianDerivative(ndConstraintDescritor&)
 {
-	dAssert(0);
+	//dAssert(0);
+	dTrace(("error: this joint is an interface\n"));
 }
 
 inline void ndJointBilateralConstraint::SetSkeletonFlag(bool flag)
@@ -239,6 +245,11 @@ inline void ndJointBilateralConstraint::SetSkeletonFlag(bool flag)
 inline bool ndJointBilateralConstraint::IsCollidable() const
 {
 	return m_enableCollision ? true : false;
+}
+
+inline bool ndJointBilateralConstraint::IsBilateral() const
+{
+	return true;
 }
 
 inline void ndJointBilateralConstraint::SetCollidable(bool state)
@@ -290,6 +301,11 @@ inline bool ndJointBilateralConstraint::IsSkeleton() const
 	test = test || (mode == m_jointkinematicCloseLoop);
 	//test = test || (mode == m_jointkinematicHintOpenLoop);
 	return test;
+}
+
+inline void ndJointBilateralConstraint::ReplaceSentinel(ndBodyKinematic* const sentinel)
+{
+	m_body1 = sentinel;
 }
 
 #endif

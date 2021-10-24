@@ -84,8 +84,9 @@ class ndBodyKinematic: public ndBody
 		friend class ndBodyKinematic;
 	};
 
+	D_CLASS_REFLECTION(ndBodyKinematic);
 	D_COLLISION_API ndBodyKinematic();
-	D_COLLISION_API ndBodyKinematic(const nd::TiXmlNode* const xmlNode, const dTree<const ndShape*, dUnsigned32>& shapesCache);
+	D_COLLISION_API ndBodyKinematic(const dLoadSaveBase::dLoadDescriptor& desc);
 	D_COLLISION_API virtual ~ndBodyKinematic();
 
 	ndScene* GetScene() const;
@@ -99,6 +100,7 @@ class ndBodyKinematic: public ndBody
 	void SetMassMatrix(const dVector& massMatrix);
 
 	dVector GetGyroAlpha() const;
+	dVector GetGyroTorque() const;
 
 	bool GetSleepState() const;
 	void RestoreSleepState(bool state);
@@ -125,12 +127,11 @@ class ndBodyKinematic: public ndBody
 
 	D_COLLISION_API dMatrix CalculateInertiaMatrix() const;
 	D_COLLISION_API virtual dMatrix CalculateInvInertiaMatrix() const;
-
-	D_COLLISION_API void UpdateInvInertiaMatrix();
+	
 	D_COLLISION_API virtual void IntegrateVelocity(dFloat32 timestep);
+	D_COLLISION_API virtual void Save(const dLoadSaveBase::dSaveDescriptor& desc) const;
 
-	D_COLLISION_API virtual void Save(nd::TiXmlElement* const rootNode, const char* const assetPath, dInt32 nodeid, const dTree<dUnsigned32, const ndShape*>& shapesCache) const;
-
+	void UpdateInvInertiaMatrix();
 	void SetMassMatrix(dFloat32 mass, const ndShapeInstance& shapeInstance);
 	void SetMassMatrix(dFloat32 Ixx, dFloat32 Iyy, dFloat32 Izz, dFloat32 mass);
 	void GetMassMatrix(dFloat32& Ixx, dFloat32& Iyy, dFloat32& Izz, dFloat32& mass);
@@ -155,7 +156,7 @@ class ndBodyKinematic: public ndBody
 	const ndContactMap& GetContactMap() const;
 
 	protected:
-	D_COLLISION_API static void ReleaseMemory();
+	//D_COLLISION_API static void ReleaseMemory();
 	D_COLLISION_API virtual void AttachContact(ndContact* const contact);
 	D_COLLISION_API virtual void DetachContact(ndContact* const contact);
 	D_COLLISION_API virtual void SetMassMatrix(dFloat32 mass, const dMatrix& inertia);
@@ -181,7 +182,6 @@ class ndBodyKinematic: public ndBody
 	dVector m_gyroAlpha;
 	dVector m_gyroTorque;
 	dQuaternion m_gyroRotation;
-
 	ndJointList m_jointList;
 	ndContactMap m_contactList;
 	mutable dSpinLock m_lock;
@@ -238,6 +238,11 @@ inline const dMatrix& ndBodyKinematic::GetInvInertiaMatrix() const
 inline dVector ndBodyKinematic::GetGyroAlpha() const
 {
 	return m_gyroAlpha;
+}
+
+inline dVector ndBodyKinematic::GetGyroTorque() const
+{
+	return m_gyroTorque;
 }
 
 inline void ndBodyKinematic::GetMassMatrix(dFloat32& Ixx, dFloat32& Iyy, dFloat32& Izz, dFloat32& mass)
@@ -430,6 +435,22 @@ inline dVector ndBodyKinematic::GetAngularDamping() const
 {
 	return dVector::m_zero;
 }
+
+inline void ndBodyKinematic::UpdateInvInertiaMatrix()
+{
+	dAssert(m_invWorldInertiaMatrix[0][3] == dFloat32(0.0f));
+	dAssert(m_invWorldInertiaMatrix[1][3] == dFloat32(0.0f));
+	dAssert(m_invWorldInertiaMatrix[2][3] == dFloat32(0.0f));
+	dAssert(m_invWorldInertiaMatrix[3][3] == dFloat32(1.0f));
+
+	m_invWorldInertiaMatrix = CalculateInvInertiaMatrix();
+
+	dAssert(m_invWorldInertiaMatrix[0][3] == dFloat32(0.0f));
+	dAssert(m_invWorldInertiaMatrix[1][3] == dFloat32(0.0f));
+	dAssert(m_invWorldInertiaMatrix[2][3] == dFloat32(0.0f));
+	dAssert(m_invWorldInertiaMatrix[3][3] == dFloat32(1.0f));
+}
+
 
 #endif 
 

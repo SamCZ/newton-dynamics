@@ -32,19 +32,19 @@ ndConstraint::ndConstraint()
 	,m_preconditioner1(dFloat32(1.0f))
 	,m_rowCount(0)
 	,m_rowStart(0)
-	,m_jointFeebackForce(false)
-	,m_isInSkeletonLoop(false)
-	,m_active(true)
+	,m_active(1)
+	,m_resting(0)
+	,m_isInSkeletonLoop(0)
+	//,m_jointFeebackForce(0)
 {
 }
 
-void ndConstraint::InitPointParam(dgPointParam& param, dFloat32 stiffness, const dVector& p0Global, const dVector& p1Global) const
+void ndConstraint::InitPointParam(dgPointParam& param, const dVector& p0Global, const dVector& p1Global) const
 {
 	ndBodyKinematic* const body0 = GetBody0();
 	ndBodyKinematic* const body1 = GetBody1();
 	dAssert(body0);
 	dAssert(body1);
-	param.m_defaultDiagonalRegularizer = stiffness;
 
 	param.m_posit0 = p0Global;
 	param.m_posit1 = p1Global;

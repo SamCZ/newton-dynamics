@@ -141,7 +141,7 @@ void ndShapeConvex::SetVolumeAndCG()
 	dAssert(p1.m_w == dFloat32(0.0f));
 	m_boxSize = (p1 - p0) * dVector::m_half;
 	m_boxOrigin = (p1 + p0) * dVector::m_half;
-	m_boxMinRadius = dMin(m_boxSize.m_x, m_boxSize.m_y, m_boxSize.m_z);
+	m_boxMinRadius = dMin(dMin(m_boxSize.m_x, m_boxSize.m_y), m_boxSize.m_z);
 	m_boxMaxRadius = dSqrt((m_boxSize.DotProduct(m_boxSize)).GetScalar());
 
 	MassProperties();
@@ -1024,4 +1024,14 @@ dInt32 ndShapeConvex::BuildCylinderCapPoly(dFloat32 radius, const dMatrix& trans
 	}
 
 	return count;
+}
+
+void ndShapeConvex::Save(const dLoadSaveBase::dSaveDescriptor& desc) const
+{
+	nd::TiXmlElement* const childNode = new nd::TiXmlElement(ClassName());
+	desc.m_rootNode->LinkEndChild(childNode);
+	childNode->SetAttribute("hashId", desc.m_nodeNodeHash);
+	ndShape::Save(dLoadSaveBase::dSaveDescriptor(desc, childNode));
+
+	// maybe save some stuff here
 }

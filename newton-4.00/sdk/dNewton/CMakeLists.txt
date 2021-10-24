@@ -26,29 +26,35 @@ file(GLOB CPP_SOURCE
 	dJoints/*.h
 	dJoints/*.cpp
 	dModels/dVehicle*.h	
-	dModels/dVehicle/*.cpp)
+	dModels/dVehicle/*.cpp
+	dModels/dCharacter/*.h
+	dModels/dCharacter/*.cpp)
 
 file(GLOB HEADERS *.h dJoints/*.h)
 file(GLOB HEADERS *.h dModels/*.h)
 file(GLOB HEADERS *.h dModels/dVehicle/*.h)
+file(GLOB HEADERS *.h dModels/dCharacter/*.h)
 
-# exclude AVX files when disabled
-if(NOT NEWTON_ENABLE_AVX)
-	list(FILTER HEADERS EXCLUDE REGEX "(Avx)")
-	list(FILTER CPP_SOURCE EXCLUDE REGEX "(Avx)")
+if(NEWTON_ENABLE_AVX2_SOLVER)
+	add_definitions(-D_D_USE_AVX2_SOLVER)
 endif()
 
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/" FILES ${CPP_SOURCE})
 
 include_directories(./)
-include_directories(dJoints/)
-include_directories(dModels/)
-include_directories(dModels/dVehicle/)
 include_directories(../dCore/)
 include_directories(../dTinyxml/)
 include_directories(../dCollision/)
+include_directories(dJoints/)
+include_directories(dModels/)
+include_directories(dModels/dVehicle/)
+include_directories(dModels/dCharacter)
 
-if (NEWTON_ENABLE_GPU_SOLVER)
+if(NEWTON_ENABLE_AVX2_SOLVER)
+	include_directories(../dExtensions/dAvx2)
+endif()
+
+if (NEWTON_ENABLE_OPENCL_SOLVER)
 	add_definitions(-D_D_NEWTON_OPENCL)
 	add_definitions(-DCL_TARGET_OPENCL_VERSION=120)
 	add_definitions(-DCL_KERNEL_PATH="${CMAKE_CURRENT_SOURCE_DIR}/../dOpencl/")
@@ -61,21 +67,18 @@ if (NEWTON_ENABLE_GPU_SOLVER)
 			link_libraries ("${CMAKE_CURRENT_SOURCE_DIR}/../dOpencl/CL/lib/x86/OpenCL.lib")
 		endif(BUILD_64)
 	endif()
-endif(NEWTON_ENABLE_GPU_SOLVER)
-
-if (MSVC)
-	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /fp:fast")
-	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /fp:fast")
-	set_source_files_properties(./ndDynamicsUpdateAvx2.cpp PROPERTIES COMPILE_FLAGS " /arch:AVX2 " )
-endif(MSVC)
-
-if(UNIX)
-	set_source_files_properties(./ndDynamicsUpdateAvx2.cpp PROPERTIES COMPILE_FLAGS " -march=haswell " )
-endif(UNIX)
+endif()
 
 if(NEWTON_BUILD_SHARED_LIBS)
 	add_definitions(-D_D_NEWTON_EXPORT_DLL)
 	add_library(${projectName} SHARED ${CPP_SOURCE})
+
+	target_link_libraries (${projectName} ndAvx2Solver)
+
+	if(MSVC OR MINGW)
+		target_link_options(${projectName} PUBLIC "/DEBUG") 
+	endif()
+
 else()
 	add_library(${projectName} STATIC ${CPP_SOURCE})
 endif()

@@ -13,15 +13,31 @@
 #include "ndNewtonStdafx.h"
 #include "ndJointHingeActuator.h"
 
+D_CLASS_REFLECTION_IMPLEMENT_LOADER(ndJointHingeActuator)
+
 ndJointHingeActuator::ndJointHingeActuator(const dMatrix& pinAndPivotFrame, dFloat32 angularRate, dFloat32 minAngle, dFloat32 maxAngle, ndBodyKinematic* const child, ndBodyKinematic* const parent)
 	:ndJointHinge(pinAndPivotFrame, child, parent)
-	,m_targetAngle(0.0f)
+	,m_targetAngle(dFloat32(0.0f))
 	,m_motorSpeed(angularRate)
 	,m_maxTorque(D_LCP_MAX_VALUE)
 {
 	m_friction = dFloat32 (0.0f);
 	SetAngularRate(angularRate);
 	EnableLimits(false, minAngle, maxAngle);
+}
+
+ndJointHingeActuator::ndJointHingeActuator(const dLoadSaveBase::dLoadDescriptor& desc)
+	:ndJointHinge(dLoadSaveBase::dLoadDescriptor(desc))
+	,m_targetAngle(dFloat32 (0.0f))
+	,m_motorSpeed(dFloat32(0.0f))
+	,m_maxTorque(D_LCP_MAX_VALUE)
+{
+	m_friction = dFloat32(0.0f);
+	const nd::TiXmlNode* const xmlNode = desc.m_rootNode;
+	
+	m_targetAngle = xmlGetFloat(xmlNode, "targetAngle");
+	m_motorSpeed = xmlGetFloat(xmlNode, "motorSpeed");
+	m_maxTorque = xmlGetFloat(xmlNode, "maxTorque");
 }
 
 ndJointHingeActuator::~ndJointHingeActuator()
@@ -95,22 +111,22 @@ void ndJointHingeActuator::JacobianDerivative(ndConstraintDescritor& desc)
 	dFloat32 step = m_motorSpeed * desc.m_timestep;
 
 	dFloat32 currentSpeed = 0.0f;
-	if (m_jointAngle < (m_targetAngle - step))
+	if (m_angle < (m_targetAngle - step))
 	{
 		currentSpeed = m_motorSpeed;
 	}
-	else if (m_jointAngle > (m_targetAngle + step))
+	else if (m_angle > (m_targetAngle + step))
 	{
 		currentSpeed = -m_motorSpeed;
 	}
-	else if (m_jointAngle < m_targetAngle)
+	else if (m_angle < m_targetAngle)
 	{
-		currentSpeed = dFloat32 (0.3f) * (m_targetAngle - m_jointAngle) * desc.m_invTimestep;
+		currentSpeed = dFloat32 (0.3f) * (m_targetAngle - m_angle) * desc.m_invTimestep;
 		dAssert(dAbs(currentSpeed) < m_motorSpeed);
 	}
-	else if (m_jointAngle > m_targetAngle)
+	else if (m_angle > m_targetAngle)
 	{
-		currentSpeed = dFloat32(0.3f) * (m_targetAngle - m_jointAngle) * desc.m_invTimestep;
+		currentSpeed = dFloat32(0.3f) * (m_targetAngle - m_angle) * desc.m_invTimestep;
 		dAssert(dAbs(currentSpeed) < m_motorSpeed);
 	}
 
@@ -119,11 +135,11 @@ void ndJointHingeActuator::JacobianDerivative(ndConstraintDescritor& desc)
 	AddAngularRowJacobian(desc, pin, dFloat32 (0.0f));
 	dFloat32 accel = GetMotorZeroAcceleration(desc) + dFloat32(0.3f) * currentSpeed * desc.m_invTimestep;
 	SetMotorAcceleration(desc, accel);
-	if (m_jointAngle > GetMaxAngularLimit())
+	if (m_angle > GetMaxAngularLimit())
 	{
 		SetHighFriction(desc, m_maxTorque);
 	}
-	else if (m_jointAngle < GetMinAngularLimit())
+	else if (m_angle < GetMinAngularLimit())
 	{
 		SetLowerFriction(desc, -m_maxTorque);
 	}
@@ -133,4 +149,16 @@ void ndJointHingeActuator::JacobianDerivative(ndConstraintDescritor& desc)
 		SetLowerFriction(desc, -m_maxTorque);
 	}
 	dAssert(desc.m_rowsCount <= 6);
+}
+
+void ndJointHingeActuator::Save(const dLoadSaveBase::dSaveDescriptor& desc) const
+{
+	nd::TiXmlElement* const childNode = new nd::TiXmlElement(ClassName());
+	desc.m_rootNode->LinkEndChild(childNode);
+	childNode->SetAttribute("hashId", desc.m_nodeNodeHash);
+	ndJointHinge::Save(dLoadSaveBase::dSaveDescriptor(desc, childNode));
+
+	xmlSaveParam(childNode, "targetAngle", m_targetAngle);
+	xmlSaveParam(childNode, "motorSpeed", m_motorSpeed);
+	xmlSaveParam(childNode, "maxTorque", m_maxTorque);
 }

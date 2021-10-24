@@ -39,8 +39,8 @@ ndBodyParticleSet::ndBodyParticleSet()
 	//dAssert(0);
 }
 
-ndBodyParticleSet::ndBodyParticleSet(const nd::TiXmlNode* const xmlNode, const dTree<const ndShape*, dUnsigned32>& shapesCache)
-	:ndBody(xmlNode->FirstChild("ndBodyKinematic"), shapesCache)
+ndBodyParticleSet::ndBodyParticleSet(const dLoadSaveBase::dLoadDescriptor& desc)
+	:ndBody(desc)
 	//,m_accel(dVector::m_zero)
 	//,m_alpha(dVector::m_zero)
 	//,m_externalForce(dVector::m_zero)
@@ -50,6 +50,7 @@ ndBodyParticleSet::ndBodyParticleSet(const nd::TiXmlNode* const xmlNode, const d
 	//,m_savedExternalForce(dVector::m_zero)
 	//,m_savedExternalTorque(dVector::m_zero)
 {
+	//xmlNode->FirstChild("ndBodyKinematic"), shapesCache
 	// nothing was saved
 	dAssert(0);
 }
@@ -58,9 +59,10 @@ ndBodyParticleSet::~ndBodyParticleSet()
 {
 }
 
-void ndBodyParticleSet::Save(nd::TiXmlElement* const rootNode, const char* const assetPath, dInt32 nodeid, const dTree<dUnsigned32, const ndShape*>& shapesCache) const
+//void ndBodyParticleSet::Save(const dLoadSaveBase::dSaveDescriptor& desc) const
+void ndBodyParticleSet::Save(const dLoadSaveBase::dSaveDescriptor&) const
 {
 	dAssert(0);
-	nd::TiXmlElement* const paramNode = CreateRootElement(rootNode, "ndBodyParticleSet", nodeid);
-	ndBody::Save(paramNode, assetPath, nodeid, shapesCache);
+	//nd::TiXmlElement* const paramNode = CreateRootElement(rootNode, "ndBodyParticleSet", nodeid);
+	//ndBody::Save(paramNode, assetPath, nodeid, shapesCache);
 }

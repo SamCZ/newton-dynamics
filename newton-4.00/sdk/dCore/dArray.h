@@ -30,10 +30,10 @@
 #include "dCoreStdafx.h"
 #include "dTypes.h"
 #include "dUtils.h"
-#include "dMemory.h"
+#include "dClassAlloc.h"
 
 template<class T>
-class dArray
+class dArray: public dClassAlloc
 {
 	public:
 	dArray();
@@ -63,7 +63,8 @@ class dArray
 
 template<class T>
 dArray<T>::dArray()
-	:m_array(nullptr)
+	:dClassAlloc()
+	,m_array(nullptr)
 	,m_size(0)
 	,m_capacity(0)
 {
@@ -71,7 +72,8 @@ dArray<T>::dArray()
 
 template<class T>
 dArray<T>::dArray(dInt32 count)
-	:m_array(nullptr)
+	:dClassAlloc()
+	,m_array(nullptr)
 	,m_size(0)
 	,m_capacity(0)
 {
@@ -80,7 +82,8 @@ dArray<T>::dArray(dInt32 count)
 
 template<class T>
 dArray<T>::dArray(const dArray& source)
-	:m_array(nullptr)
+	:dClassAlloc()
+	,m_array(nullptr)
 	,m_size(0)
 	,m_capacity(0)
 {
@@ -163,7 +166,7 @@ void dArray<T>::Clear()
 template<class T>
 void dArray<T>::Resize(dInt32 size)
 {
-	if (size >= m_capacity) 
+	if (size > m_capacity || (m_capacity == 0))
 	{
 		size = dMax(size, 16);
 		T* const newArray = (T*)dMemory::Malloc(dInt32(sizeof(T) * size));

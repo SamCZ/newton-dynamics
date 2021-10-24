@@ -30,6 +30,7 @@
 
 #define D_MINIMUM_MASS	dFloat32(1.0e-5f)
 #define D_INFINITE_MASS	dFloat32(1.0e15f)
+D_CLASS_REFLECTION_IMPLEMENT_LOADER(ndBodyKinematic);
 
 class ndDummyCollision: public ndShapeNull
 {
@@ -51,7 +52,6 @@ class ndDummyCollision: public ndShapeNull
 		return &nullShape;
 	}
 };
-
 
 ndBodyKinematic::ndContactMap::ndContactMap()
 	:dTree<ndContact*, ndContactkey, dContainersFreeListAlloc<ndContact*>>()
@@ -114,8 +114,8 @@ ndBodyKinematic::ndBodyKinematic()
 	SetMassMatrix(dVector::m_zero);
 }
 
-ndBodyKinematic::ndBodyKinematic(const nd::TiXmlNode* const xmlNode, const dTree<const ndShape*, dUnsigned32>& shapesCache)
-	:ndBody(xmlNode->FirstChild("ndBody"), shapesCache)
+ndBodyKinematic::ndBodyKinematic(const dLoadSaveBase::dLoadDescriptor& desc)
+	:ndBody(dLoadSaveBase::dLoadDescriptor(desc))
 	,m_invWorldInertiaMatrix(dGetZeroMatrix())
 	,m_shapeInstance(ndDummyCollision::GetNullShape())
 	,m_mass(dVector::m_zero)
@@ -138,19 +138,21 @@ ndBodyKinematic::ndBodyKinematic(const nd::TiXmlNode* const xmlNode, const dTree
 	,m_index(0)
 	,m_sleepingCounter(0)
 {
+	const nd::TiXmlNode* const xmlNode = desc.m_rootNode;
 	m_invWorldInertiaMatrix[3][3] = dFloat32(1.0f);
-	ndShapeInstance instance(xmlNode->FirstChild("ndShapeInstance"), shapesCache);
+	ndShapeInstance instance(xmlNode->FirstChild("ndShapeInstance"), *desc.m_shapeMap);
 	SetCollisionShape(instance);
-
+	
 	dFloat32 invMass = xmlGetFloat(xmlNode, "invMass");
 	SetMassMatrix(dVector::m_zero);
 	if (invMass > dFloat32 (0.0f))
 	{
 		dVector invInertia(xmlGetVector3(xmlNode, "invPrincipalInertia"));
-		invInertia.m_w = dFloat32 (1.0f);
-		dVector mass (invInertia.Scale(dFloat32(1.0f) / invMass));
-		SetMassMatrix(mass.m_x, mass.m_y, mass.m_z, mass.m_w);
+		SetMassMatrix(dFloat32 (1.0f)/invInertia.m_x, dFloat32(1.0f) / invInertia.m_y, dFloat32(1.0f) / invInertia.m_z, dFloat32(1.0f) / invMass);
 	}
+
+	m_maxAngleStep = xmlGetFloat(xmlNode, "maxAngleStep");
+	m_maxLinearSpeed = xmlGetFloat(xmlNode, "maxLinearSpeed");
 }
 
 ndBodyKinematic::~ndBodyKinematic()
@@ -184,24 +186,20 @@ void ndBodyKinematic::SetCollisionShape(const ndShapeInstance& shapeInstance)
 	}
 }
 
-void ndBodyKinematic::ReleaseMemory()
-{
-	ndContactMap::FlushFreeList();
-}
+//void ndBodyKinematic::ReleaseMemory()
+//{
+//	ndContactMap::FlushFreeList();
+//}
 
 ndContact* ndBodyKinematic::FindContact(const ndBody* const otherBody) const
 {
-#ifndef D_USE_GLOBAL_LOCK
 	dScopeSpinLock lock(m_lock);
-#endif
 	return m_contactList.FindContact(this, otherBody);
 }
 
 void ndBodyKinematic::AttachContact(ndContact* const contact)
 {
-#ifndef D_USE_GLOBAL_LOCK
 	dScopeSpinLock lock(m_lock);
-#endif
 	dAssert((this == contact->GetBody0()) || (this == contact->GetBody1()));
 	if (m_invMass.m_w > dFloat32(0.0f))
 	{
@@ -213,9 +211,7 @@ void ndBodyKinematic::AttachContact(ndContact* const contact)
 
 void ndBodyKinematic::DetachContact(ndContact* const contact)
 {
-#ifndef D_USE_GLOBAL_LOCK
 	dScopeSpinLock lock(m_lock);
-#endif
 	dAssert((this == contact->GetBody0()) || (this == contact->GetBody1()));
 	m_equilibrium = contact->m_body0->m_equilibrium & contact->m_body1->m_equilibrium;
 	m_contactList.DetachContact(contact);
@@ -410,21 +406,6 @@ dFloat32 ndBodyKinematic::TotalEnergy() const
 	return energy.AddHorizontal().GetScalar()* dFloat32(0.5f);
 }
 
-void ndBodyKinematic::UpdateInvInertiaMatrix()
-{
-	dAssert(m_invWorldInertiaMatrix[0][3] == dFloat32(0.0f));
-	dAssert(m_invWorldInertiaMatrix[1][3] == dFloat32(0.0f));
-	dAssert(m_invWorldInertiaMatrix[2][3] == dFloat32(0.0f));
-	dAssert(m_invWorldInertiaMatrix[3][3] == dFloat32(1.0f));
-
-	m_invWorldInertiaMatrix = CalculateInvInertiaMatrix();
-
-	dAssert(m_invWorldInertiaMatrix[0][3] == dFloat32(0.0f));
-	dAssert(m_invWorldInertiaMatrix[1][3] == dFloat32(0.0f));
-	dAssert(m_invWorldInertiaMatrix[2][3] == dFloat32(0.0f));
-	dAssert(m_invWorldInertiaMatrix[3][3] == dFloat32(1.0f));
-}
-
 void ndBodyKinematic::IntegrateVelocity(dFloat32 timestep)
 {
 	dAssert(m_veloc.m_w == dFloat32(0.0f));
@@ -451,8 +432,6 @@ void ndBodyKinematic::IntegrateVelocity(dFloat32 timestep)
 		dVector omegaAxis(m_omega.Scale(invOmegaMag));
 		dFloat32 omegaAngle = invOmegaMag * omegaMag2 * timestep;
 		dQuaternion rotationStep(omegaAxis, omegaAngle);
-		//m_rotation = m_rotation * rotationStep;
-		//m_rotation.Scale(dRsqrt(m_rotation.DotProduct(m_rotation)));
 		m_rotation = (m_rotation * rotationStep).Normalize();
 		m_matrix = dMatrix(m_rotation, m_matrix.m_posit);
 	}
@@ -484,7 +463,7 @@ void ndBodyKinematic::IntegrateExternalForce(dFloat32 timestep)
 		// f(w + dt) ~= f(w) + f'(w) * dt
 		
 		// calculating dw as the  f'(w) = d(wx, wy, wz) | dt
-		// dw/dt = a = (Tl - (wl x (wl * Il)) * Il^1
+		// dw/dt = a = (Tl - (wl x (wl * Il)) * Il^-1
 		
 		// expanding f(w) 
 		// f'(wx) = Ix * ax = Tx - (Iz - Iy) * wy * wz 
@@ -547,14 +526,19 @@ void ndBodyKinematic::IntegrateExternalForce(dFloat32 timestep)
 	}
 }
 
-void ndBodyKinematic::Save(nd::TiXmlElement* const rootNode, const char* const assetPath, dInt32 nodeid, const dTree<dUnsigned32, const ndShape*>& shapesCache) const
+void ndBodyKinematic::Save(const dLoadSaveBase::dSaveDescriptor& desc) const
 {
-	nd::TiXmlElement* const paramNode = CreateRootElement(rootNode, "ndBodyKinematic", nodeid);
-
-	ndBody::Save(paramNode, assetPath, nodeid, shapesCache);
-
-	m_shapeInstance.Save(paramNode, shapesCache);
-	xmlSaveParam(paramNode, "invMass", m_invMass.m_w);
+	nd::TiXmlElement* const childNode = new nd::TiXmlElement(ClassName());
+	desc.m_rootNode->LinkEndChild(childNode);
+	childNode->SetAttribute("hashId", desc.m_nodeNodeHash);
+	ndBody::Save(dLoadSaveBase::dSaveDescriptor(desc, childNode));
+	
+	xmlSaveParam(childNode, "invMass", m_invMass.m_w);
 	dVector invInertia(m_invMass & dVector::m_triplexMask);
-	xmlSaveParam(paramNode, "invPrincipalInertia", invInertia);
+	xmlSaveParam(childNode, "invPrincipalInertia", invInertia);
+
+	xmlSaveParam(childNode, "maxAngleStep", m_maxAngleStep);
+	xmlSaveParam(childNode, "maxLinearSpeed", m_maxLinearSpeed);
+
+	m_shapeInstance.Save(dLoadSaveBase::dSaveDescriptor(desc, childNode));
 }

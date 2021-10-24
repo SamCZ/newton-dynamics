@@ -29,8 +29,9 @@ D_MSV_NEWTON_ALIGN_32
 class ndBodyTriggerVolume : public ndBodyKinematic
 {
 	public:
+	D_CLASS_REFLECTION(ndBodyTriggerVolume);
 	D_COLLISION_API ndBodyTriggerVolume();
-	D_COLLISION_API ndBodyTriggerVolume(const nd::TiXmlNode* const xmlNode, const dTree<const ndShape*, dUnsigned32>& shapesCache);
+	D_COLLISION_API ndBodyTriggerVolume(const dLoadSaveBase::dLoadDescriptor& desc);
 	D_COLLISION_API virtual ~ndBodyTriggerVolume();
 
 	ndBodyTriggerVolume* GetAsBodyTriggerVolume();
@@ -39,7 +40,7 @@ class ndBodyTriggerVolume : public ndBodyKinematic
 	virtual void OnTriggerEnter(ndBodyKinematic* const body, dFloat32 timestep);
 	virtual void OnTriggerExit(ndBodyKinematic* const body, dFloat32 timestep);
 
-	D_COLLISION_API virtual void Save(nd::TiXmlElement* const rootNode, const char* const assetPath, dInt32 nodeid, const dTree<dUnsigned32, const ndShape*>& shapesCache) const;
+	D_COLLISION_API virtual void Save(const dLoadSaveBase::dSaveDescriptor& desc) const;
 
 	private:
 	virtual void IntegrateExternalForce(dFloat32 timestep);

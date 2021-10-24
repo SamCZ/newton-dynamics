@@ -26,6 +26,8 @@
 #include "ndShapeInstance.h"
 #include "ndShapeHeightfield.h"
 
+D_CLASS_REFLECTION_IMPLEMENT_LOADER(ndShapeHeightfield)
+
 dVector ndShapeHeightfield::m_yMask(0xffffffff, 0, 0xffffffff, 0);
 dVector ndShapeHeightfield::m_padding(dFloat32(0.25f), dFloat32(0.25f), dFloat32(0.25f), dFloat32(0.0f));
 dVector ndShapeHeightfield::m_elevationPadding(dFloat32(0.0f), dFloat32(1.0e10f), dFloat32(0.0f), dFloat32(0.0f));
@@ -74,24 +76,89 @@ ndShapeHeightfield::ndShapeHeightfield(
 	memset(&m_atributeMap[0], 0, sizeof(dInt8) * m_atributeMap.GetCount());
 	memset(&m_elevationMap[0], 0, sizeof(dInt16) * m_elevationMap.GetCount());
 
-	CalculateAABB();
+	CalculateLocalObb();
 }
 
-//ndShapeHeightfield::ndShapeHeightfield(const nd::TiXmlNode* const xmlNode, const char* const assetPath)
-ndShapeHeightfield::ndShapeHeightfield(const nd::TiXmlNode* const, const char* const)
+ndShapeHeightfield::ndShapeHeightfield(const dLoadSaveBase::dLoadDescriptor& desc)
 	:ndShapeStaticMesh(m_heightField)
+	,m_minBox(dVector::m_zero)
+	,m_maxBox(dVector::m_zero)
+	,m_atributeMap(0)
+	,m_elevationMap(0)
+	,m_verticalScale(dFloat32 (0.0f))
+	,m_horizontalScale_x(dFloat32(0.0f))
+	,m_horizontalScale_z(dFloat32(0.0f))
+	,m_horizontalScaleInv_x(dFloat32(0.0f))
+	,m_horizontalScaleInv_z(dFloat32(0.0f))
+	,m_width(0)
+	,m_height(0)
+	,m_diagonalMode(m_normalDiagonals)
+	,m_localData()
 {
-	dAssert(0);
+	const nd::TiXmlNode* const xmlNode = desc.m_rootNode;
+	const char* const assetName = xmlGetString(xmlNode, "assetName");
+
+	m_minBox = xmlGetVector3(xmlNode, "minBox");
+	m_maxBox = xmlGetVector3(xmlNode, "maxBox");
+	m_verticalScale = xmlGetFloat(xmlNode, "verticalScale");
+	m_horizontalScale_x = xmlGetFloat(xmlNode, "horizontalScale_x");
+	m_horizontalScale_z = xmlGetFloat(xmlNode, "horizontalScale_z");
+	m_width = xmlGetInt(xmlNode, "width");
+	m_height = xmlGetInt(xmlNode, "height");
+	m_diagonalMode = ndGridConstruction(xmlGetInt(xmlNode, "diagonalMode"));
+
+	m_horizontalScaleInv_x = dFloat32(1.0f) / m_horizontalScale_x;
+	m_horizontalScaleInv_z = dFloat32(1.0f) / m_horizontalScale_z;
+
+	char filePathName[1024 * 2];
+	sprintf(filePathName, "%s/%s", desc.m_assetPath, assetName);
+	FILE* const file = fopen(filePathName, "rb");
+	if (file)
+	{
+		dInt64 readBytes;
+		m_elevationMap.SetCount(m_width * m_height);
+		m_atributeMap.SetCount(m_width * m_height);
+		readBytes = fread(&m_elevationMap[0], sizeof(dInt16), m_elevationMap.GetCount(), file);
+		readBytes = fread(&m_atributeMap[0], sizeof(dInt8), m_atributeMap.GetCount(), file);
+		fclose(file);
+	}
+	CalculateLocalObb();
 }
 
 ndShapeHeightfield::~ndShapeHeightfield(void)
 {
 }
 
-//void ndShapeHeightfield::Save(nd::TiXmlElement* const xmlNode, const char* const assetPath, dInt32 nodeid) const
-void ndShapeHeightfield::Save(nd::TiXmlElement* const, const char* const, dInt32) const
+void ndShapeHeightfield::Save(const dLoadSaveBase::dSaveDescriptor& desc) const
 {
-	dAssert(0);
+	nd::TiXmlElement* const childNode = new nd::TiXmlElement(ClassName());
+	desc.m_rootNode->LinkEndChild(childNode);
+	childNode->SetAttribute("hashId", desc.m_nodeNodeHash);
+	ndShapeStaticMesh::Save(dLoadSaveBase::dSaveDescriptor(desc, childNode));
+
+	char fileName[1024];
+	sprintf(fileName, "%s_%d.bin", desc.m_assetName, desc.m_assetIndex);
+	xmlSaveParam(childNode, "assetName", "string", fileName);
+	xmlSaveParam(childNode, "minBox", m_minBox);
+	xmlSaveParam(childNode, "maxBox", m_maxBox);
+	xmlSaveParam(childNode, "verticalScale", m_verticalScale);
+	xmlSaveParam(childNode, "horizontalScale_x", m_horizontalScale_x);
+	xmlSaveParam(childNode, "horizontalScale_z", m_horizontalScale_z);
+	xmlSaveParam(childNode, "width", m_width);
+	xmlSaveParam(childNode, "height", m_height);
+	xmlSaveParam(childNode, "diagonalMode", dInt32 (m_diagonalMode));
+
+	char filePathName[1024 * 2];
+	sprintf(filePathName, "%s/%s", desc.m_assetPath, fileName);
+	desc.m_assetIndex++;
+
+	FILE* const file = fopen(filePathName, "wb");
+	if (file) 
+	{
+		fwrite(&m_elevationMap[0], sizeof(dInt16), m_elevationMap.GetCount(), file);
+		fwrite(&m_atributeMap[0], sizeof(dInt8), m_atributeMap.GetCount(), file);
+		fclose(file);
+	}
 }
 
 ndShapeInfo ndShapeHeightfield::GetShapeInfo() const
@@ -110,7 +177,7 @@ ndShapeInfo ndShapeHeightfield::GetShapeInfo() const
 	return info;
 }
 
-void ndShapeHeightfield::CalculateAABB()
+void ndShapeHeightfield::CalculateLocalObb()
 {
 	dInt16 y0 = dInt16(0x7fff);
 	dInt16 y1 = dInt16 (-0x7fff);
@@ -129,7 +196,7 @@ void ndShapeHeightfield::CalculateAABB()
 
 void ndShapeHeightfield::UpdateElevationMapAabb()
 {
-	CalculateAABB();
+	CalculateLocalObb();
 }
 
 const dInt32* ndShapeHeightfield::GetIndexList() const
@@ -271,7 +338,6 @@ dFloat32 ndShapeHeightfield::RayCastCell(const dFastRay& ray, dInt32 xIndex0, dI
 	points[1 * 2 + 0] = dVector((xIndex0 + 0) * m_horizontalScale_x, m_verticalScale * dFloat32 (m_elevationMap[base + m_width + 0]), (zIndex0 + 1) * m_horizontalScale_z, dFloat32(0.0f));
 
 	dFloat32 t = dFloat32(1.2f);
-	//if (!m_diagonals[base]) 
 	if (m_diagonalMode == m_normalDiagonals)
 	{
 		triangle[0] = 1;
@@ -336,7 +402,6 @@ dFloat32 ndShapeHeightfield::RayCastCell(const dFastRay& ray, dInt32 xIndex0, dI
 	}
 	return t;
 }
-
 
 dFloat32 ndShapeHeightfield::RayCast(ndRayCastNotify&, const dVector& localP0, const dVector& localP1, dFloat32 maxT, const ndBody* const, ndContactPoint& contactOut) const
 {
@@ -450,41 +515,6 @@ dFloat32 ndShapeHeightfield::RayCast(ndRayCastNotify&, const dVector& localP0, c
 	// if no cell was hit, return a large value
 	return dFloat32(1.2f);
 }
-
-/*
-dIntersectStatus ndShapeHeightfield::GetPolygon(void* const context, const dFloat32* const, dInt32, const dInt32* const indexArray, dInt32 indexCount, dFloat32 hitDistance)
-{
-	ndPolygonMeshDesc& data = (*(ndPolygonMeshDesc*)context);
-	if (data.m_faceCount >= D_MAX_COLLIDING_FACES) 
-	{
-		dTrace(("buffer Over float, try using a lower resolution mesh for collision\n"));
-		return t_StopSearh;
-	}
-	if ((data.m_globalIndexCount + indexCount * 2 + 3) >= D_MAX_COLLIDING_INDICES) 
-	{
-		dTrace(("buffer Over float, try using a lower resolution mesh for collision\n"));
-		return t_StopSearh;
-	}
-
-	dInt32 count = indexCount * 2 + 3;
-
-	data.m_faceIndexCount[data.m_faceCount] = indexCount;
-	data.m_faceIndexStart[data.m_faceCount] = data.m_globalIndexCount;
-	data.m_hitDistance[data.m_faceCount] = hitDistance;
-	data.m_faceCount++;
-	dInt32* const dst = &data.m_faceVertexIndex[data.m_globalIndexCount];
-
-	//the docks say memcpy is an intrinsic function but as usual this is another Microsoft lied
-	for (dInt32 i = 0; i < count; i++) 
-	{
-		dst[i] = indexArray[i];
-	}
-
-	data.m_globalIndexCount += count;
-
-	return t_ContinueSearh;
-}
-*/
 
 void ndShapeHeightfield::CalculateMinAndMaxElevation(dInt32 x0, dInt32 x1, dInt32 z0, dInt32 z1, dFloat32& minHeight, dFloat32& maxHeight) const
 {

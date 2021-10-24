@@ -25,10 +25,11 @@
 #include "dCoreStdafx.h"
 #include "dTypes.h"
 #include "dMemory.h"
+#include "dClassAlloc.h"
 #include "dContainersAlloc.h"
 
 template<class T, class allocator = dContainersAlloc<T> >
-class dList
+class dList: public dClassAlloc
 {
 	public:
 	class dNode: public allocator
@@ -230,7 +231,7 @@ class dList
 
 	static void FlushFreeList()
 	{
-		allocator::FlushFreeList();
+		allocator::FlushFreeList(sizeof (dNode));
 	}
 
 	protected:
@@ -246,7 +247,8 @@ class dList
 
 template<class T, class allocator>
 dList<T,allocator>::dList ()
-	:m_first(nullptr)
+	:dClassAlloc()
+	,m_first(nullptr)
 	,m_last(nullptr)
 	,m_count(0)
 {

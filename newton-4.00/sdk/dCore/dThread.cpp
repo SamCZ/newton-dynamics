@@ -26,7 +26,8 @@
 #include "dProfiler.h"
 
 dThread::dThread()
-	:dSemaphore()
+	:dClassAlloc()
+	,dSemaphore()
 #ifndef D_USE_THREAD_EMULATION
 	,dAtomic<bool>(true)
 	,std::condition_variable()
@@ -89,9 +90,7 @@ void dThread::Finish()
 
 void dThread::Signal()
 {
-#ifdef D_USE_THREAD_EMULATION
-	ThreadFunction();
-#else
+#ifndef D_USE_THREAD_EMULATION
 	dSemaphore::Signal();
 #endif
 }

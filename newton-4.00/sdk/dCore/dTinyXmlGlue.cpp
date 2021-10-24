@@ -70,7 +70,8 @@ void xmlSaveParam(nd::TiXmlElement* const rootNode, const char* const name, dInt
 void xmlSaveParam(nd::TiXmlElement* const rootNode, const char* const name, dInt64 value)
 {
 	char buffer[1024];
-	sprintf(buffer, "%lld", value);
+	long long x = value;
+	sprintf(buffer, "%llu", x);
 	xmlSaveParam(rootNode, name, "int64", buffer);
 }
 
@@ -105,6 +106,11 @@ void xmlSaveParam(nd::TiXmlElement* const rootNode, const char* const name, cons
 	node->SetAttribute("position", buffer);
 	sprintf(buffer, "%f %f %f", euler0.m_x, euler0.m_y, euler0.m_z);
 	node->SetAttribute("angles", buffer);
+}
+
+void xmlSaveParam(nd::TiXmlElement* const rootNode, const char* const name, const char* const value)
+{
+	xmlSaveParam(rootNode, name, "char", value);
 }
 
 void xmlSaveParam(nd::TiXmlElement* const rootNode, const char* const name, dInt32 count, const dVector* const array)
@@ -143,9 +149,9 @@ dInt64 xmlGetInt64(const nd::TiXmlNode* const rootNode, const char* const name)
 	dAssert(element);
 	const char* const data = element->Attribute("int64");
 
-	dInt64 value;
+	long long int value;
 	sscanf(data, "%lld", &value);
-	return value;
+	return dInt64 (value);
 }
 
 dFloat32 xmlGetFloat(const nd::TiXmlNode* const rootNode, const char* const name)

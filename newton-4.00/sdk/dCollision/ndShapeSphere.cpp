@@ -25,13 +25,12 @@
 #include "ndShapeSphere.h"
 #include "ndContactSolver.h"
 
-
 #define D_SPHERE_EDGE_COUNT 96
+D_CLASS_REFLECTION_IMPLEMENT_LOADER(ndShapeSphere)
 
 dInt32 ndShapeSphere::m_shapeRefCount = 0;
 dVector ndShapeSphere::m_unitSphere[D_SPHERE_VERTEX_COUNT];
 ndShapeConvex::ndConvexSimplexEdge ndShapeSphere::m_edgeArray[D_SPHERE_EDGE_COUNT];
-
 
 ndShapeSphere::ndShapeSphere(dFloat32 radius)
 	:ndShapeConvex(m_sphere)
@@ -39,9 +38,10 @@ ndShapeSphere::ndShapeSphere(dFloat32 radius)
 	Init(radius);
 }
 
-ndShapeSphere::ndShapeSphere(const nd::TiXmlNode* const xmlNode)
-	: ndShapeConvex(m_sphere)
+ndShapeSphere::ndShapeSphere(const dLoadSaveBase::dLoadDescriptor& desc)
+	:ndShapeConvex(m_sphere)
 {
+	const nd::TiXmlNode* const xmlNode = desc.m_rootNode;
 	dFloat32 radius = xmlGetFloat(xmlNode, "radius");
 	Init(radius);
 }
@@ -274,12 +274,12 @@ void ndShapeSphere::DebugShape(const dMatrix& matrix, ndShapeDebugCallback& debu
 	}
 }
 
-D_COLLISION_API void ndShapeSphere::Save( nd::TiXmlElement* const xmlNode, const char* const, dInt32 nodeid ) const
+void ndShapeSphere::Save(const dLoadSaveBase::dSaveDescriptor& desc) const
 {
-	nd::TiXmlElement* const paramNode = new nd::TiXmlElement("ndShapeSphere");
-	xmlNode->LinkEndChild(paramNode);
-
-	paramNode->SetAttribute("nodeId", nodeid);
-
-	xmlSaveParam(paramNode, "radius", m_radius);
+	nd::TiXmlElement* const childNode = new nd::TiXmlElement(ClassName());
+	desc.m_rootNode->LinkEndChild(childNode);
+	childNode->SetAttribute("hashId", desc.m_nodeNodeHash);
+	ndShapeConvex::Save(dLoadSaveBase::dSaveDescriptor(desc, childNode));
+	
+	xmlSaveParam(childNode, "radius", m_radius);
 }

@@ -24,10 +24,13 @@
 #include "ndBodyNotify.h"
 #include "ndBodyKinematic.h"
 
-ndBodyNotify::ndBodyNotify(const nd::TiXmlNode* const rootNode)
+D_CLASS_REFLECTION_IMPLEMENT_LOADER(ndBodyNotify)
+
+ndBodyNotify::ndBodyNotify(const dLoadSaveBase::dLoadDescriptor& desc)
 	:dClassAlloc()
 	,m_body(nullptr)
 {
+	const nd::TiXmlNode* const rootNode = desc.m_rootNode;
 	m_defualtGravity = xmlGetVector3(rootNode, "gravity");
 }
 
@@ -47,9 +50,11 @@ void ndBodyNotify::OnApplyExternalForce(dInt32, dFloat32)
 	}
 }
 
-void ndBodyNotify::Save(nd::TiXmlElement* const rootNode, const char* const) const
+void ndBodyNotify::Save(const dLoadSaveBase::dSaveDescriptor& desc) const
 {
-	nd::TiXmlElement* const paramNode = new nd::TiXmlElement("ndBodyNotify");
-	rootNode->LinkEndChild(paramNode);
-	xmlSaveParam(paramNode, "gravity", m_defualtGravity);
+	//nd::TiXmlElement* const rootNode, const char* const
+	nd::TiXmlElement* const childNode = new nd::TiXmlElement(ClassName());
+	desc.m_rootNode->LinkEndChild(childNode);
+
+	xmlSaveParam(childNode, "gravity", m_defualtGravity);
 }

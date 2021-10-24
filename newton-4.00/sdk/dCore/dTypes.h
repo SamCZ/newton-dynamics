@@ -57,7 +57,6 @@
 #include <stdarg.h>
 #include <locale.h>
 #include <tinyxml.h>
-#include <immintrin.h>
 #include <condition_variable>
 
 // we need _clearfp() and _controlfp() from float.h which are excluded if __STRICT_ANSI__ is defined
@@ -97,11 +96,16 @@
 		extern "C" 
 		{ 
 			// for SSE3 and up
+			#include <immintrin.h>
 			#include <pmmintrin.h> 
 			#include <emmintrin.h> 
 			#include <mmintrin.h> 
 		} 
 	#endif
+#endif
+
+#if defined (__x86_64) || defined(__x86_64__) || defined(_M_IX86) || defined(_M_X64)
+	#include <immintrin.h>
 #endif
 
 #if defined (__APPLE__)
@@ -110,6 +114,7 @@
     #include <assert.h> 
     #if (defined __i386__ || defined __x86_64__)
 		#include <fenv.h>
+		#include <immintrin.h>
 		#include <pmmintrin.h> 
 		#include <emmintrin.h>  //sse3
         #include <mmintrin.h> 
@@ -163,17 +168,6 @@
 
 #ifdef _DEBUG
 //#define __ENABLE_D_CONTAINERS_SANITY_CHECK 
-#endif
-
-#ifdef _DEBUG
-	#define D_INLINE inline
-#else
-	#if defined(_MSC_VER)
-		#define D_INLINE __forceinline 
-	#else 
-		#define D_INLINE	inline
-		//#define D_INLINE	 __attribute__((always_inline))
-	#endif
 #endif
 
 #if defined(_MSC_VER)
@@ -252,9 +246,6 @@ typedef double dFloat64;
 	#define dCheckFloat(x) (isfinite(x) && !isnan(x))
 #endif
 
-#define D_CLASS_RELECTION(Class)	\
-	virtual const char* ClassName() const {return #Class;} 
-
 #ifdef D_NEWTON_USE_DOUBLE
 	union dFloatSign
 	{
@@ -296,103 +287,122 @@ class dTriplex
 	dFloat32 m_z;
 };
 
-#define PointerToInt(x) ((size_t)x)
-#define IntToPointer(x) ((void*)(size_t(x)))
+
+#define D_OPERATOR_NEW_AND_DELETE			\
+inline void *operator new (size_t size)		\
+{											\
+	return dMemory::Malloc(size);			\
+}											\
+											\
+inline void *operator new[](size_t size) 	\
+{											\
+	return dMemory::Malloc(size);			\
+}											\
+											\
+inline void operator delete (void* ptr)		\
+{											\
+	dMemory::Free(ptr);						\
+}											\
+											\
+inline void operator delete[](void* ptr)	\
+{											\
+	dMemory::Free(ptr);						\
+}
 
 #ifndef _MSC_VER 
 	#define _stricmp(x,y) strcasecmp(x,y)
 #endif
 
 #ifdef D_USE_THREAD_EMULATION
-/// wrapper over standard atomic operations
-template<class T>
-class dAtomic
-{
-	public:
-	dAtomic<T>()
-		: m_val(T(0))
+	/// wrapper over standard atomic operations
+	template<class T>
+	class dAtomic
 	{
-	}
-
-	dAtomic<T>(T val)
-		: m_val(val)
-	{
-	}
-
-	operator T() const
-	{
-		return m_val;
-	}
-
-	T load() const
-	{
-		return m_val;
-	}
-
-	void store(T val)
-	{
-		m_val = val;
-	}
-
-	T exchange(T val)
-	{
-		dSwap(val, m_val);
-		return val;
-	}
-
-	T fetch_add(T val)
-	{
-		T ret = m_val;
-		m_val += val;
-		return ret;
-	}
-
-	T fetch_sub(T val)
-	{
-		T ret = m_val;
-		m_val -= val;
-		return ret;
-	}
-
-	bool compare_exchange_weak(T oldValue, T newValue)
-	{
-		if (m_val == oldValue)
+		public:
+		dAtomic<T>()
+			: m_val(T(0))
 		{
-			m_val = newValue;
-			return true;
 		}
-		return false;
-	}
 
-	private:
-	T m_val;
-};
+		dAtomic<T>(T val)
+			: m_val(val)
+		{
+		}
+
+		operator T() const
+		{
+			return m_val;
+		}
+
+		T load() const
+		{
+			return m_val;
+		}
+
+		void store(T val)
+		{
+			m_val = val;
+		}
+
+		T exchange(T val)
+		{
+			dSwap(val, m_val);
+			return val;
+		}
+
+		T fetch_add(T val)
+		{
+			T ret = m_val;
+			m_val += val;
+			return ret;
+		}
+
+		T fetch_sub(T val)
+		{
+			T ret = m_val;
+			m_val -= val;
+			return ret;
+		}
+
+		bool compare_exchange_weak(T oldValue, T newValue)
+		{
+			if (m_val == oldValue)
+			{
+				m_val = newValue;
+				return true;
+			}
+			return false;
+		}
+
+		private:
+		T m_val;
+	};
 #else
-/// wrapper over standard atomic operations
-template<class T>
-class dAtomic : public std::atomic<T>
-{
-	public:
-	dAtomic<T>()
-		: std::atomic<T>(T(0))
+	/// wrapper over standard atomic operations
+	template<class T>
+	class dAtomic : public std::atomic<T>
 	{
-	}
+		public:
+		dAtomic<T>()
+			: std::atomic<T>(T(0))
+		{
+		}
 
-	dAtomic<T>(T val)
-		: std::atomic<T>(val)
-	{
-	}
+		dAtomic<T>(T val)
+			: std::atomic<T>(val)
+		{
+		}
 
-	dAtomic<T>(const dAtomic<T>& copy)
-		: std::atomic<T>(copy)
-	{
-	}
+		dAtomic<T>(const dAtomic<T>& copy)
+			: std::atomic<T>(copy)
+		{
+		}
 
-	T operator=(T value)
-	{
-		return std::atomic<T>::operator=(value);
-	}
-};
+		T operator=(T value)
+		{
+			return std::atomic<T>::operator=(value);
+		}
+	};
 #endif
 
 /// Simple spin lock for synchronizing threads for very short period of time.
@@ -420,7 +430,7 @@ class dSpinLock
 	void Unlock()
 	{
 		#ifndef D_USE_THREAD_EMULATION	
-		m_lock.exchange(0);
+		m_lock.store(0);
 		#endif
 	}
 
@@ -449,7 +459,6 @@ class dScopeSpinLock
 
 	dSpinLock& m_spinLock;
 };
-
 
 
 #endif
