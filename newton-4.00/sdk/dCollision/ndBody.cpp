@@ -28,7 +28,8 @@
 dUnsigned32 ndBody::m_uniqueIdCount = 0;
 
 ndBody::ndBody()
-	:m_matrix(dGetIdentityMatrix())
+	:dContainersFreeListAlloc<ndBody>()
+	,m_matrix(dGetIdentityMatrix())
 	,m_veloc(dVector::m_zero)
 	,m_omega(dVector::m_zero)
 	,m_localCentreOfMass(dVector::m_wOne)
@@ -42,12 +43,12 @@ ndBody::ndBody()
 {
 	m_autoSleep = 1;
 	m_transformIsDirty = 1;
-	//m_collideWithLinkedBodies = 1;
 	m_uniqueIdCount++;
 }
 
 ndBody::ndBody(const dLoadSaveBase::dLoadDescriptor& desc)
-	:m_matrix(dGetIdentityMatrix())
+	:dContainersFreeListAlloc<ndBody>()
+	,m_matrix(dGetIdentityMatrix())
 	,m_veloc(dVector::m_zero)
 	,m_omega(dVector::m_zero)
 	,m_localCentreOfMass(dVector::m_wOne)
@@ -125,16 +126,6 @@ void ndBody::SetVelocity(const dVector& veloc)
 {
 	m_equilibrium = 0;
 	m_veloc = veloc;
-}
-
-dMatrix ndBody::GetMatrix() const
-{
-	return m_matrix;
-}
-
-dQuaternion ndBody::GetRotation() const
-{
-	return m_rotation;
 }
 
 void ndBody::SetMatrix(const dMatrix& matrix)

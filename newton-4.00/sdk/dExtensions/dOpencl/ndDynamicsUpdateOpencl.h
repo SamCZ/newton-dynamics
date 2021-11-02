@@ -25,7 +25,7 @@
 #include "ndNewtonStdafx.h"
 #include "ndDynamicsUpdate.h"
 
-class OpenclSystem;
+class ndOpenclSystem;
 
 class ndDynamicsUpdateOpencl : public ndDynamicsUpdate
 {
@@ -39,8 +39,6 @@ class ndDynamicsUpdateOpencl : public ndDynamicsUpdate
 	virtual void Update();
 
 	private:
-	void GpuUpdate();
-	void RadixSort();
 	void SortJoints();
 	void SortIslands();
 	void BuildIsland();
@@ -50,6 +48,7 @@ class ndDynamicsUpdateOpencl : public ndDynamicsUpdate
 	void CalculateForces();
 	void IntegrateBodies();
 	void UpdateSkeletons();
+	void FinishGpuUpdate();
 	void InitJacobianMatrix();
 	void UpdateForceFeedback();
 	void CalculateJointsForce();
@@ -60,22 +59,10 @@ class ndDynamicsUpdateOpencl : public ndDynamicsUpdate
 	void DetermineSleepStates();
 	void UpdateIslandState(const ndIsland& island);
 	void GetJacobianDerivatives(ndConstraint* const joint);
-	static dInt32 CompareIslands(const ndIsland* const islandA, const ndIsland* const islandB, void* const);
 
-	OpenclSystem* m_opencl;
+	ndOpenclSystem* m_opencl;
 };
 
-inline void ndDynamicsUpdateOpencl::Update()
-{
-	if (m_opencl)
-	{
-		GpuUpdate();
-	}
-	else
-	{
-		ndDynamicsUpdate::Update();
-	}
-}
 
 #endif
 

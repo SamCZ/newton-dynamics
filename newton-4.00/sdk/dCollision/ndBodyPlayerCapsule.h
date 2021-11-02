@@ -150,8 +150,7 @@ inline void ndBodyPlayerCapsule::SetHeadingAngle(dFloat32 angle)
 
 inline void ndBodyPlayerCapsule::IntegrateVelocity(dFloat32)
 {
-	m_residualVeloc = m_veloc;
-	m_residualOmega = m_omega;
+	dAssert(0);
 }
 
 inline bool ndBodyPlayerCapsule::IsOnFloor() const 

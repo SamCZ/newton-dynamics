@@ -40,7 +40,7 @@ class ndBodiesInAabbNotify;
 class ndJointBilateralConstraint;
 
 D_MSV_NEWTON_ALIGN_32
-class ndSceneTreeNotiFy
+class ndSceneTreeNotiFy : public dClassAlloc
 {
 	public:
 	ndSceneTreeNotiFy()
@@ -101,6 +101,9 @@ class ndScene : public dThreadPool
 	template <class T> 
 	void SubmitJobs(void* const context = nullptr);
 
+	template <class T, dInt32 bits, class dEvaluateKey, class dKey = dUnsigned32>
+	void CountingSort(T* const array, T* const scratchBuffer, dInt32 elements, dInt32 digitLocation);
+
 	dFloat32 GetTimestep() const;
 	void SetTimestep(dFloat32 timestep);
 
@@ -140,7 +143,6 @@ class ndScene : public dThreadPool
 	void RotateRight(ndSceneTreeNode* const node, ndSceneNode** const root);
 	dFloat64 ReduceEntropy(ndFitnessList& fitness, ndSceneNode** const root);
 	void ImproveNodeFitness(ndSceneTreeNode* const node, ndSceneNode** const root);
-	static dInt32 CompareNodes(const ndSceneNode* const nodeA, const ndSceneNode* const nodeB, void* const);
 	ndSceneNode* BuildTopDown(ndSceneNode** const leafArray, dInt32 firstBox, dInt32 lastBox, ndFitnessList::dNode** const nextNode);
 	ndSceneNode* BuildTopDownBig(ndSceneNode** const leafArray, dInt32 firstBox, dInt32 lastBox, ndFitnessList::dNode** const nextNode);
 
@@ -178,6 +180,7 @@ class ndScene : public dThreadPool
 	ndConstraintArray m_activeConstraintArray;
 	dArray<ndBodyKinematic*> m_sceneBodyArray;
 	dArray<ndBodyKinematic*> m_activeBodyArray;
+	dArray<ndBodyKinematic*> m_activeBodyArrayBuffer;
 	dSpinLock m_contactLock;
 	ndSceneNode* m_rootNode;
 	ndContactNotify* m_contactNotifyCallback;
@@ -276,5 +279,131 @@ inline dFloat32 ndScene::CalculateSurfaceArea(const ndSceneNode* const node0, co
 	dVector side0(maxBox - minBox);
 	return side0.DotProduct(side0.ShiftTripleRight()).GetScalar();
 }
+
+template <class T, dInt32 bits, class dEvaluateKey, class dKey>
+void ndScene::CountingSort(T* const array, T* const scratchBuffer, dInt32 elementsCount, dInt32 digitLocation)
+{
+	class ndInfo
+	{
+		public:
+		T* m_sourceBuffer;
+		T* m_scratchBuffer;
+		dInt32 m_elementCount;
+		dInt32 m_digitNumber;
+		dInt32 m_digitScan[D_MAX_THREADS_COUNT][1 << bits];
+	};
+
+	class ndScanDigit : public ndBaseJob
+	{
+		public:
+		ndScanDigit()
+		{
+		}
+
+		virtual void Execute()
+		{
+			D_TRACKTIME();
+			ndInfo& info = *((ndInfo*)m_context);
+			const dInt32 threadIndex = GetThreadId();
+			const dInt32 threadCount = m_owner->GetThreadCount();
+			const dInt32 stride = info.m_elementCount / threadCount;
+			const dInt32 start = threadIndex * stride;
+			const dInt32 blockSize = (threadIndex != (threadCount - 1)) ? stride : info.m_elementCount - start;
+			
+			const dInt32 digitCount = 1 << bits;
+			const dKey digitMask = digitCount - 1;
+			const dInt32 shiftBits = info.m_digitNumber * bits;
+
+			dInt32* const digitBuffer = &info.m_digitScan[threadIndex][0];
+			memset(digitBuffer, 0, digitCount * sizeof(dInt32));
+						
+			const dEvaluateKey evaluator;
+			for (dInt32 i = 0; i < blockSize; i++)
+			{
+				const T data(info.m_sourceBuffer[i + start]);
+				info.m_scratchBuffer[i + start] = data;
+
+				const dKey key = evaluator.GetKey(data);
+				const dInt32 entry = dInt32 ((key >> shiftBits) & digitMask);
+				digitBuffer[entry] ++;
+			}
+		}
+	};
+
+	class ndSortBuffer : public ndBaseJob
+	{
+		public:
+		ndSortBuffer()
+		{
+		}
+
+		virtual void Execute()
+		{
+			D_TRACKTIME();
+			ndInfo& info = *((ndInfo*)m_context);
+			const dInt32 threadIndex = GetThreadId();
+			const dInt32 threadCount = m_owner->GetThreadCount();
+			const dInt32 stride = info.m_elementCount / threadCount;
+			const dInt32 start = threadIndex * stride;
+			const dInt32 blockSize = (threadIndex != (threadCount - 1)) ? stride : info.m_elementCount - start;
+
+			const dInt32 digitCount = 1 << bits;
+			const dKey digitMask = digitCount - 1;
+			const dInt32 shiftBits = info.m_digitNumber * bits;
+			dInt32* const digitBuffer = &info.m_digitScan[threadIndex][0];
+
+			const dEvaluateKey evaluator;
+			for (dInt32 i = 0; i < blockSize; i++)
+			{
+				const T data(info.m_scratchBuffer[i + start]);
+				const dKey key = evaluator.GetKey(data);
+				const dInt32 digitEntry = dInt32((key >> shiftBits) & digitMask);
+				const dInt32 dstIndex = digitBuffer[digitEntry];
+				info.m_sourceBuffer[dstIndex] = data;
+				digitBuffer[digitEntry] ++;
+			}
+		}
+	};
+
+	ndInfo info;
+	info.m_sourceBuffer = array;
+	info.m_scratchBuffer = scratchBuffer;
+	info.m_elementCount = elementsCount;
+	info.m_digitNumber = digitLocation;
+
+	const dInt32 threadCount = GetThreadCount();
+	SubmitJobs<ndScanDigit>(&info);
+
+	dInt32 sum = 0;
+	const dInt32 scanSize = 1 << bits;
+	for (dInt32 j = 0; j < scanSize; j++)
+	{
+		for (dInt32 i = 0; i < threadCount; i++)
+		{
+			const dInt32 count = info.m_digitScan[i][j];
+			info.m_digitScan[i][j] = sum;
+			sum += count;
+		}
+	}
+
+	SubmitJobs<ndSortBuffer>(&info);
+
+	#ifdef _DEBUG
+		const dInt32 digitCount = 1 << bits;
+		const dKey digitMask = digitCount - 1;
+		const dInt32 shiftBits = info.m_digitNumber * bits;
+
+		const dEvaluateKey evaluator;
+		for (dInt32 i = elementsCount - 1; i; i--)
+		{
+			const dKey key0 = evaluator.GetKey(array[i - 1]);
+			const dKey key1 = evaluator.GetKey(array[i - 0]);
+			const dInt32 digitEntry0 = dInt32((key0 >> shiftBits) & digitMask);
+			const dInt32 digitEntry1 = dInt32((key1 >> shiftBits) & digitMask);
+			dAssert(digitEntry0 <= digitEntry1);
+		}
+	#endif
+}
+
 
 #endif

@@ -24,11 +24,9 @@
 
 #include "ndNewtonStdafx.h"
 
-#define D_SMALL_ISLAND_COUNT			32
-#define	D_FREEZZING_VELOCITY_DRAG		dFloat32 (0.9f)
-#define	D_SOLVER_MAX_ERROR				(D_FREEZE_MAG * dFloat32 (0.5f))
-
-#define D_DEFAULT_BUFFER_SIZE			1024
+#define D_SMALL_ISLAND_COUNT		32
+#define	D_FREEZZING_VELOCITY_DRAG	dFloat32 (0.9f)
+#define	D_SOLVER_MAX_ERROR			(D_FREEZE_MAG * dFloat32 (0.5f))
 
 // the solver is a RK order 4, but instead of weighting the intermediate derivative by the usual 1/6, 1/3, 1/3, 1/6 coefficients
 // I am using 1/4, 1/4, 1/4, 1/4.
@@ -106,6 +104,7 @@ class ndDynamicsUpdate: public dClassAlloc
 	void* GetTempBuffer() const;
 	virtual const char* GetStringId() const;
 	dInt32 GetUnconstrainedBodyCount() const;
+	void ClearBuffer(void* const buffer, dInt32 sizeInByte) const;
 	void ClearJacobianBuffer(dInt32 count, ndJacobian* const dst) const;
 
 	dArray<ndJacobian>& GetInternalForces();
@@ -114,11 +113,9 @@ class ndDynamicsUpdate: public dClassAlloc
 	dArray<ndRightHandSide>& GetRightHandSide();
 	dArray<ndJacobian>& GetTempInternalForces();
 	dArray<ndBodyKinematic*>& GetBodyIslandOrder();
-	dArray<ndJacobianPair>& GetInternalJointForces();
 	dArray<ndJointBodyPairIndex>& GetJointBodyPairIndexBuffer();
 
 	private:
-	void RadixSort();
 	void SortJoints();
 	void SortIslands();
 	void BuildIsland();
@@ -138,11 +135,12 @@ class ndDynamicsUpdate: public dClassAlloc
 	void DetermineSleepStates();
 	void UpdateIslandState(const ndIsland& island);
 	void GetJacobianDerivatives(ndConstraint* const joint);
-	static dInt32 CompareIslands(const ndIsland* const  A, const ndIsland* const B, void* const);
 
 	protected:
 	void Clear();
 	virtual void Update();
+	void SortJointsScan();
+	void SortBodyJointScan();
 	ndBodyKinematic* FindRootAndSplit(ndBodyKinematic* const body);
 
 	dVector m_velocTol;
@@ -153,7 +151,6 @@ class ndDynamicsUpdate: public dClassAlloc
 	dArray<ndRightHandSide> m_rightHandSide;
 	dArray<ndJacobian> m_tempInternalForces;
 	dArray<ndBodyKinematic*> m_bodyIslandOrder;
-	dArray<ndJacobianPair> m_internalJointForces;
 	dArray<ndJointBodyPairIndex> m_jointBodyPairIndexBuffer;
 
 	ndWorld* m_world;
@@ -200,11 +197,6 @@ inline  dArray<ndBodyKinematic*>& ndDynamicsUpdate::GetBodyIslandOrder()
 	return m_bodyIslandOrder; 
 }
 
-inline dArray<ndJacobianPair>& ndDynamicsUpdate::GetInternalJointForces()
-{ 
-	return m_internalJointForces; 
-}
-
 inline dInt32 ndDynamicsUpdate::GetUnconstrainedBodyCount() const
 {
 	return m_unConstrainedBodyCount;
@@ -220,6 +212,7 @@ inline dArray<dInt32>& ndDynamicsUpdate::GetJointForceIndexBuffer()
 	return m_jointForcesIndex;
 }
 
+
 inline void ndDynamicsUpdate::ClearJacobianBuffer(dInt32 count, ndJacobian* const buffer) const
 {
 	const dVector zero(dVector::m_zero);
@@ -228,6 +221,17 @@ inline void ndDynamicsUpdate::ClearJacobianBuffer(dInt32 count, ndJacobian* cons
 	{
 		dst[i * 2 + 0] = zero;
 		dst[i * 2 + 1] = zero;
+	}
+}
+
+inline void ndDynamicsUpdate::ClearBuffer(void* const buffer, dInt32 sizeInByte) const
+{
+	dInt32 sizeInJacobian = sizeInByte / sizeof(ndJacobian);
+	ClearJacobianBuffer(sizeInJacobian, (ndJacobian*)buffer);
+	char* const ptr = (char*)buffer;
+	for (dInt32 i = sizeInJacobian * sizeof(ndJacobian); i < sizeInByte; i++)
+	{
+		ptr[i] = 0;
 	}
 }
 

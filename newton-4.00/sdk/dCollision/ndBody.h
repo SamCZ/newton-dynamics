@@ -37,7 +37,7 @@ class ndBodyTriggerVolume;
 class ndJointBilateralConstraint;
 
 D_MSV_NEWTON_ALIGN_32
-class ndBody: public dClassAlloc
+class ndBody : public dContainersFreeListAlloc<ndBody>
 {
 	public:
 	D_CLASS_REFLECTION(ndBody);
@@ -64,17 +64,25 @@ class ndBody: public dClassAlloc
 	D_COLLISION_API void SetCentreOfMass(const dVector& com);
 
 	ndBodyNotify* GetNotifyCallback() const;
+
+	
+	dVector GetOmega() const;
+	dMatrix GetMatrix() const;
+	dVector GetVelocity() const;
+	dVector GetPosition() const;
+	dQuaternion GetRotation() const;
+	dVector GetGlobalGetCentreOfMass() const;
+
 	D_COLLISION_API void SetNotifyCallback(ndBodyNotify* const notify);
-	D_COLLISION_API dVector GetOmega() const;
 	D_COLLISION_API void SetOmega(const dVector& veloc);
-	D_COLLISION_API dVector GetVelocity() const;
 	D_COLLISION_API void SetVelocity(const dVector& veloc);
-	D_COLLISION_API dMatrix GetMatrix() const;
 	D_COLLISION_API void SetMatrix(const dMatrix& matrix);
-	D_COLLISION_API dQuaternion GetRotation() const;
+	
 	D_COLLISION_API virtual void Save(const dLoadSaveBase::dSaveDescriptor& desc) const;
 
 	D_COLLISION_API dVector GetVelocityAtPoint(const dVector& point) const;
+
+	void SetMatrixAndCentreOfMass(const dQuaternion& rotation, const dVector& globalcom);
 
 	protected:
 	D_COLLISION_API static const nd::TiXmlNode* FindNode(const nd::TiXmlNode* const rootNode, const char* const name);
@@ -123,7 +131,6 @@ class ndBody: public dClassAlloc
 	friend class ndBodyPlayerCapsuleImpulseSolver;
 } D_GCC_NEWTON_ALIGN_32;
 
-
 inline dUnsigned32 ndBody::GetId() const
 {
 	return m_uniqueId;
@@ -132,6 +139,26 @@ inline dUnsigned32 ndBody::GetId() const
 inline ndBodyNotify* ndBody::GetNotifyCallback() const
 {
 	return m_notifyCallback;
+}
+
+inline dMatrix ndBody::GetMatrix() const
+{
+	return m_matrix;
+}
+
+inline dVector ndBody::GetPosition() const
+{
+	return m_matrix.m_posit;
+}
+
+inline dQuaternion ndBody::GetRotation() const
+{
+	return m_rotation;
+}
+
+inline dVector ndBody::GetGlobalGetCentreOfMass() const
+{
+	return m_globalCentreOfMass;
 }
 
 inline dVector ndBody::GetVelocity() const
@@ -163,6 +190,14 @@ inline dVector ndBody::GetVelocityAtPoint(const dVector& point) const
 inline dFloat32 ndBody::GetInvMass() const 
 { 
 	return dFloat32(0.0f); 
+}
+
+inline void ndBody::SetMatrixAndCentreOfMass(const dQuaternion& rotation, const dVector& globalcom)
+{
+	m_rotation = rotation;
+	m_globalCentreOfMass = globalcom;
+	m_matrix = dMatrix(rotation, m_matrix.m_posit);
+	m_matrix.m_posit = m_globalCentreOfMass - m_matrix.RotateVector(m_localCentreOfMass);
 }
 
 #endif 
