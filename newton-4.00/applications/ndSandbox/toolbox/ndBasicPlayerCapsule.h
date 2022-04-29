@@ -35,27 +35,27 @@ class ndBasicPlayerCapsule: public ndBodyPlayerCapsule
 			m_strafeSpeed = 0.0f;
 			m_jump = false;
 		}
-		dFloat32 m_heading;
-		dFloat32 m_forwardSpeed;
-		dFloat32 m_strafeSpeed;
+		ndFloat32 m_heading;
+		ndFloat32 m_forwardSpeed;
+		ndFloat32 m_strafeSpeed;
 		bool m_jump;
 	};
 
 	ndBasicPlayerCapsule(
 		ndDemoEntityManager* const scene, const ndDemoEntity* const modelEntity,
-		const dMatrix& localAxis, const dMatrix& location, 
-		dFloat32 mass, dFloat32 radius, dFloat32 height, dFloat32 stepHeight, bool isPlayer = false);
+		const ndMatrix& localAxis, const ndMatrix& location, 
+		ndFloat32 mass, ndFloat32 radius, ndFloat32 height, ndFloat32 stepHeight, bool isPlayer = false);
 
 	~ndBasicPlayerCapsule();
 
-	ndBasicPlayerCapsule(const dLoadSaveBase::dLoadDescriptor& desc);
-	virtual void Save(const dLoadSaveBase::dSaveDescriptor& desc) const;
+	ndBasicPlayerCapsule(const ndLoadSaveBase::ndLoadDescriptor& desc);
+	virtual void Save(const ndLoadSaveBase::ndSaveDescriptor& desc) const;
 
-	void ApplyInputs(dFloat32 timestep);
-	dFloat32 ContactFrictionCallback(const dVector& position, const dVector& normal, dInt32 contactId, const ndBodyKinematic* const otherbody) const;
+	void ApplyInputs(ndFloat32 timestep);
+	ndFloat32 ContactFrictionCallback(const ndVector& position, const ndVector& normal, ndInt32 contactId, const ndBodyKinematic* const otherbody) const;
 
 	void SetCamera();
-	static void UpdateCameraCallback(ndDemoEntityManager* const manager, void* const context, dFloat32 timestep);
+	static void UpdateCameraCallback(ndDemoEntityManager* const manager, void* const context, ndFloat32 timestep);
 
 	ndDemoEntityManager* m_scene;
 	PlayerInputs m_playerInput;

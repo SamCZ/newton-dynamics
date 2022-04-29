@@ -19,14 +19,14 @@
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
-#ifndef __D_BODIES_IN_AABB_NOTYFY_H__
-#define __D_BODIES_IN_AABB_NOTYFY_H__
+#ifndef __ND_BODIES_IN_AABB_NOTIFY_H__
+#define __ND_BODIES_IN_AABB_NOTIFY_H__
 
 #include "ndCollisionStdafx.h"
 
 
 D_MSV_NEWTON_ALIGN_32
-class ndBodiesInAabbNotify : public dClassAlloc
+class ndBodiesInAabbNotify : public ndClassAlloc
 {
 	public: 
 	ndBodiesInAabbNotify()
@@ -38,12 +38,12 @@ class ndBodiesInAabbNotify : public dClassAlloc
 	{
 	}
 
-	virtual dUnsigned32 OnOverlap(const ndBody* const)
+	virtual ndUnsigned32 OnOverlap(const ndBody* const)
 	{
 		return 1;
 	}
 
-	dArray<ndBody*> m_bodyArray;
+	ndArray<ndBody*> m_bodyArray;
 } D_GCC_NEWTON_ALIGN_32;
 
 

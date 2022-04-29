@@ -19,8 +19,9 @@
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
-#include "dCoreStdafx.h"
+#include "ndCoreStdafx.h"
 #include "ndCollisionStdafx.h"
+#include "ndContact.h"
 #include "ndBodyTriggerVolume.h"
 
 D_CLASS_REFLECTION_IMPLEMENT_LOADER(ndBodyTriggerVolume)
@@ -31,8 +32,8 @@ ndBodyTriggerVolume::ndBodyTriggerVolume()
 	m_contactTestOnly = 1;
 }
 
-ndBodyTriggerVolume::ndBodyTriggerVolume(const dLoadSaveBase::dLoadDescriptor& desc)
-	:ndBodyKinematic(dLoadSaveBase::dLoadDescriptor(desc))
+ndBodyTriggerVolume::ndBodyTriggerVolume(const ndLoadSaveBase::ndLoadDescriptor& desc)
+	:ndBodyKinematic(ndLoadSaveBase::ndLoadDescriptor(desc))
 {
 	m_contactTestOnly = 1;
 }
@@ -41,12 +42,27 @@ ndBodyTriggerVolume::~ndBodyTriggerVolume()
 {
 }
 
-void ndBodyTriggerVolume::Save(const dLoadSaveBase::dSaveDescriptor& desc) const
+void ndBodyTriggerVolume::Save(const ndLoadSaveBase::ndSaveDescriptor& desc) const
 {
 	nd::TiXmlElement* const childNode = new nd::TiXmlElement(ClassName());
 	desc.m_rootNode->LinkEndChild(childNode);
 	childNode->SetAttribute("hashId", desc.m_nodeNodeHash);
-	ndBodyKinematic::Save(dLoadSaveBase::dSaveDescriptor(desc, childNode));
+	ndBodyKinematic::Save(ndLoadSaveBase::ndSaveDescriptor(desc, childNode));
 
 	// nothing to save so far
+}
+
+void ndBodyTriggerVolume::SpecialUpdate(ndFloat32 timestep)
+{
+	const ndContactMap& contactMap = GetContactMap();
+
+	ndBodyKinematic::ndContactMap::Iterator it(contactMap);
+	for (it.Begin(); it; it++)
+	{
+		const ndContact* const contact = *it;
+		if (contact->IsActive())
+		{
+			OnTrigger(contact->GetBody0(), timestep);
+		}
+	}
 }

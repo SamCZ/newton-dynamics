@@ -8,7 +8,7 @@
 # including commercial applications, and to alter it and redistribute it
 # freely.
 
-cmake_minimum_required(VERSION 3.4.0)
+cmake_minimum_required(VERSION 3.9.0 FATAL_ERROR)
 
 set (projectName "ndCore")
 message (${projectName})
@@ -18,6 +18,7 @@ file(GLOB CPP_SOURCE *.h *.cpp)
 file(GLOB HEADERS *.h)
 
 include_directories(../dTinyxml/)
+include_directories(../dProfiler/)
 
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/" FILES ${CPP_SOURCE})
 
@@ -35,8 +36,8 @@ endif()
     
 if (MSVC)
 	if(CMAKE_VS_MSBUILD_COMMAND OR CMAKE_VS_DEVENV_COMMAND)
-		set_target_properties(${projectName} PROPERTIES COMPILE_FLAGS "/YudCoreStdAfx.h")
-		set_source_files_properties(dCoreStdAfx.cpp PROPERTIES COMPILE_FLAGS "/YcdCoreStdAfx.h")
+		set_target_properties(${projectName} PROPERTIES COMPILE_FLAGS "/YundCoreStdafx.h")
+		set_source_files_properties(ndCoreStdAfx.cpp PROPERTIES COMPILE_FLAGS "/YcndCoreStdafx.h")
 	endif()
 
 	if (NEWTON_BUILD_TEST AND NEWTON_BUILD_SHARED_LIBS)

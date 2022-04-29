@@ -9,8 +9,8 @@
 * freely
 */
 
-#ifndef __D_JOINT_PLANE_H__
-#define __D_JOINT_PLANE_H__
+#ifndef __ND_JOINT_PLANE_H__
+#define __ND_JOINT_PLANE_H__
 
 #include "ndNewtonStdafx.h"
 #include "ndJointBilateralConstraint.h"
@@ -19,8 +19,8 @@ class ndJointPlane: public ndJointBilateralConstraint
 {
 	public:
 	D_CLASS_REFLECTION(ndJointPlane);
-	D_NEWTON_API ndJointPlane(const dLoadSaveBase::dLoadDescriptor& desc);
-	D_NEWTON_API ndJointPlane (const dVector& pivot, const dVector& normal, ndBodyKinematic* const child, ndBodyKinematic* const parent);
+	D_NEWTON_API ndJointPlane(const ndLoadSaveBase::ndLoadDescriptor& desc);
+	D_NEWTON_API ndJointPlane (const ndVector& pivot, const ndVector& normal, ndBodyKinematic* const child, ndBodyKinematic* const parent);
 	D_NEWTON_API virtual ~ndJointPlane();
 
 	void EnableControlRotation(bool state);
@@ -28,7 +28,7 @@ class ndJointPlane: public ndJointBilateralConstraint
 
 	protected:
 	D_NEWTON_API void JacobianDerivative(ndConstraintDescritor& desc);
-	D_NEWTON_API void Save(const dLoadSaveBase::dSaveDescriptor& desc) const;
+	D_NEWTON_API void Save(const ndLoadSaveBase::ndSaveDescriptor& desc) const;
 	
 	bool m_enableControlRotation;
 };

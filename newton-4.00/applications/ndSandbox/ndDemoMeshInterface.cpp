@@ -33,7 +33,7 @@ ndDemoSubMeshMaterial::~ndDemoSubMeshMaterial()
 }
 
 ndDemoMeshInterface::ndDemoMeshInterface()
-	:dRefCounter<ndDemoMeshInterface>()
+	:ndRefCounter<ndDemoMeshInterface>()
 	,m_name()
 	,m_isVisible(true)
 {
@@ -43,12 +43,12 @@ ndDemoMeshInterface::~ndDemoMeshInterface()
 {
 }
 
-dInt32 ndDemoMeshInterface::Release()
+ndInt32 ndDemoMeshInterface::Release()
 {
-	return dRefCounter<ndDemoMeshInterface>::Release();
+	return ndRefCounter<ndDemoMeshInterface>::Release();
 }
 
-const dString& ndDemoMeshInterface::GetName () const
+const ndString& ndDemoMeshInterface::GetName () const
 {
 	return m_name;
 }
@@ -75,7 +75,7 @@ ndDemoSubMesh::~ndDemoSubMesh ()
 {
 }
 
-void ndDemoSubMesh::SetOpacity(dFloat32 opacity)
+void ndDemoSubMesh::SetOpacity(ndFloat32 opacity)
 {
 	m_material.m_opacity = GLfloat(opacity);
 	m_material.m_ambient[3] = GLfloat(opacity);

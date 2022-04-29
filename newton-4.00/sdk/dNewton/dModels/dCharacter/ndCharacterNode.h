@@ -19,8 +19,8 @@
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
-#ifndef __D_CHARACTER_LIMB_NODE_H__
-#define __D_CHARACTER_LIMB_NODE_H__
+#ifndef __ND_CHARACTER_LIMB_NODE_H__
+#define __ND_CHARACTER_LIMB_NODE_H__
 
 #include "ndNewtonStdafx.h"
 #include "ndModel.h"
@@ -34,17 +34,17 @@ class ndJointBilateralConstraint;
 class ndCharacterForwardDynamicNode;
 class ndCharacterInverseDynamicNode;
 
-class ndCharacterLoadDescriptor: public dLoadSaveBase::dLoadDescriptor
+class ndCharacterLoadDescriptor: public ndLoadSaveBase::ndLoadDescriptor
 {
 	public:
 	ndCharacterLoadDescriptor()
-		:dLoadSaveBase::dLoadDescriptor()
+		:ndLoadSaveBase::ndLoadDescriptor()
 		,m_limbMap(nullptr)
 	{
 	}
 
-	ndCharacterLoadDescriptor(const dLoadSaveBase::dLoadDescriptor& desc)
-		:dLoadDescriptor(desc)
+	ndCharacterLoadDescriptor(const ndLoadSaveBase::ndLoadDescriptor& desc)
+		:ndLoadDescriptor(desc)
 		,m_limbMap(nullptr)
 	{
 		ndCharacterLoadDescriptor* const modelDesc = (ndCharacterLoadDescriptor*)&desc;
@@ -52,46 +52,46 @@ class ndCharacterLoadDescriptor: public dLoadSaveBase::dLoadDescriptor
 		m_limbMap = modelDesc->m_limbMap;
 	}
 
-	ndCharacterLoadDescriptor(const dLoadSaveBase::dLoadDescriptor& desc, dTree<const ndCharacterNode*, dUnsigned32>* const limbMap)
-		:dLoadDescriptor(desc)
+	ndCharacterLoadDescriptor(const ndLoadSaveBase::ndLoadDescriptor& desc, ndTree<const ndCharacterNode*, ndUnsigned32>* const limbMap)
+		:ndLoadDescriptor(desc)
 		,m_limbMap(limbMap)
 	{
 	}
 
 	ndCharacterLoadDescriptor(const ndCharacterLoadDescriptor& desc)
-		:dLoadDescriptor(desc)
+		:ndLoadDescriptor(desc)
 		,m_limbMap(desc.m_limbMap)
 	{
 	}
 
-	dTree<const ndCharacterNode*, dUnsigned32>* m_limbMap;
+	ndTree<const ndCharacterNode*, ndUnsigned32>* m_limbMap;
 };
 
-class ndCharacterSaveDescriptor: public dLoadSaveBase::dSaveDescriptor
+class ndCharacterSaveDescriptor: public ndLoadSaveBase::ndSaveDescriptor
 {
 	public:
 	ndCharacterSaveDescriptor()
-		:dLoadSaveBase::dSaveDescriptor()
+		:ndLoadSaveBase::ndSaveDescriptor()
 		,m_limbMap(nullptr)
 	{
 	}
 
-	ndCharacterSaveDescriptor(const dLoadSaveBase::dSaveDescriptor& desc)
-		:dLoadSaveBase::dSaveDescriptor(desc)
+	ndCharacterSaveDescriptor(const ndLoadSaveBase::ndSaveDescriptor& desc)
+		:ndLoadSaveBase::ndSaveDescriptor(desc)
 		,m_limbMap(nullptr)
 	{
 	}
 
 	ndCharacterSaveDescriptor(const ndCharacterSaveDescriptor& desc, nd::TiXmlNode* const rootNode)
-		:dLoadSaveBase::dSaveDescriptor(desc, rootNode)
+		:ndLoadSaveBase::ndSaveDescriptor(desc, rootNode)
 		,m_limbMap(desc.m_limbMap)
 	{
 	}
 
-	dTree<dInt32, const ndCharacterNode*>* m_limbMap;
+	ndTree<ndInt32, const ndCharacterNode*>* m_limbMap;
 };
 
-class ndCharacterNode: public dNodeHierarchy<ndCharacterNode>
+class ndCharacterNode: public ndNodeHierarchy<ndCharacterNode>
 {
 	public:
 	D_CLASS_REFLECTION(ndCharacterNode);
@@ -107,20 +107,20 @@ class ndCharacterNode: public dNodeHierarchy<ndCharacterNode>
 	virtual ndCharacterForwardDynamicNode* GetAsForwardDynamicNode();
 	virtual ndCharacterInverseDynamicNode* GetAsInverseDynamicNode();
 
-	const dMatrix& GetLocalPose() const;
-	void SetLocalPose(const dMatrix& matrix);
+	const ndMatrix& GetLocalPose() const;
+	void SetLocalPose(const ndMatrix& matrix);
 
 	//virtual void UpdateGlobalPose(ndWorld* const world, dFloat32 timestep);
 	//virtual void CalculateLocalPose(ndWorld* const world, dFloat32 timestep);
 	virtual void Debug(ndConstraintDebugCallback& context) const;
 
-	//D_NEWTON_API virtual dMatrix GetBoneMatrix() const;
+	//D_NEWTON_API virtual ndMatrix GetBoneMatrix() const;
 
 	protected:
-	D_NEWTON_API dNodeBaseHierarchy* CreateClone() const;
+	D_NEWTON_API ndNodeBaseHierarchy* CreateClone() const;
 	D_NEWTON_API virtual void Save(const ndCharacterSaveDescriptor& desc) const;
 
-	dMatrix m_localPose;
+	ndMatrix m_localPose;
 };
 
 inline ndBodyDynamic* ndCharacterNode::GetBody() const
@@ -164,12 +164,12 @@ inline ndCharacterForwardDynamicNode* ndCharacterNode::GetAsForwardDynamicNode()
 	return nullptr;
 }
 
-inline const dMatrix& ndCharacterNode::GetLocalPose() const
+inline const ndMatrix& ndCharacterNode::GetLocalPose() const
 {
 	return m_localPose;
 }
 
-inline void ndCharacterNode::SetLocalPose(const dMatrix& matrix)
+inline void ndCharacterNode::SetLocalPose(const ndMatrix& matrix)
 {
 	m_localPose = matrix;
 }

@@ -19,8 +19,8 @@
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
-#ifndef __D_CHARACTER_ROOT_NODE_H__
-#define __D_CHARACTER_ROOT_NODE_H__
+#ifndef __ND_CHARACTER_ROOT_NODE_H__
+#define __ND_CHARACTER_ROOT_NODE_H__
 
 #include "ndNewtonStdafx.h"
 #include "ndCharacterNode.h"
@@ -36,14 +36,14 @@ class ndCharacterRootNode: public ndCharacterNode
 	ndCharacter* GetOwner() const;
 	virtual ndBodyDynamic* GetBody() const;
 
-	const dMatrix& GetCoronalFrame() const;
-	D_NEWTON_API void SetCoronalFrame(const dMatrix& sagittalFrameInGlobalSpace);
+	const ndMatrix& GetCoronalFrame() const;
+	D_NEWTON_API void SetCoronalFrame(const ndMatrix& sagittalFrameInGlobalSpace);
 
 	protected:
 	//void UpdateGlobalPose(ndWorld* const world, dFloat32 timestep);
 	void Save(const ndCharacterSaveDescriptor& desc) const;
 
-	dMatrix m_coronalFrame;
+	ndMatrix m_coronalFrame;
 	ndCharacter* m_owner;
 	ndBodyDynamic* m_body;
 	friend class ndCharacter;
@@ -59,15 +59,15 @@ inline ndBodyDynamic* ndCharacterRootNode::GetBody() const
 	return m_body;
 }
 
-inline const dMatrix& ndCharacterRootNode::GetCoronalFrame() const
+inline const ndMatrix& ndCharacterRootNode::GetCoronalFrame() const
 {
 	return m_coronalFrame;
 }
 
-inline void ndCharacterRootNode::SetCoronalFrame(const dMatrix& frameInGlobalSpace)
+inline void ndCharacterRootNode::SetCoronalFrame(const ndMatrix& frameInGlobalSpace)
 {
 	m_coronalFrame = frameInGlobalSpace * m_body->GetMatrix().Inverse();
-	m_coronalFrame.m_posit = dVector::m_wOne;
+	m_coronalFrame.m_posit = ndVector::m_wOne;
 }
 
 

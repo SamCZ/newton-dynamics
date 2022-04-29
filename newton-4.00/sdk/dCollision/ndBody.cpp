@@ -19,53 +19,70 @@
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
-#include "dCoreStdafx.h"
+#include "ndCoreStdafx.h"
 #include "ndCollisionStdafx.h"
 #include "ndBody.h"
 #include "ndContact.h"
 #include "ndBodyNotify.h"
 
-dUnsigned32 ndBody::m_uniqueIdCount = 0;
+ndUnsigned32 ndBody::m_uniqueIdCount = 0;
 
 ndBody::ndBody()
-	:dContainersFreeListAlloc<ndBody>()
+	:ndContainersFreeListAlloc<ndBody>()
 	,m_matrix(dGetIdentityMatrix())
-	,m_veloc(dVector::m_zero)
-	,m_omega(dVector::m_zero)
-	,m_localCentreOfMass(dVector::m_wOne)
-	,m_globalCentreOfMass(dVector::m_wOne)
-	,m_minAabb(dVector::m_wOne)
-	,m_maxAabb(dVector::m_wOne)
+	,m_veloc(ndVector::m_zero)
+	,m_omega(ndVector::m_zero)
+	,m_localCentreOfMass(ndVector::m_wOne)
+	,m_globalCentreOfMass(ndVector::m_wOne)
+	,m_minAabb(ndVector::m_wOne)
+	,m_maxAabb(ndVector::m_wOne)
 	,m_rotation()
 	,m_notifyCallback(nullptr)
-	,m_flags(0)
 	,m_uniqueId(m_uniqueIdCount)
+	,m_flags(0)
+	,m_isStatic(0)
+	,m_autoSleep(1)
+	,m_equilibrium(0)
+	,m_equilibrium0(0)
+	,m_isJointFence0(0)
+	,m_isJointFence1(0)
+	,m_isConstrained(0)
+	,m_sceneForceUpdate(1)
+	,m_sceneEquilibrium(0)
 {
-	m_autoSleep = 1;
-	m_transformIsDirty = 1;
 	m_uniqueIdCount++;
+	m_transformIsDirty = 1;
 }
 
-ndBody::ndBody(const dLoadSaveBase::dLoadDescriptor& desc)
-	:dContainersFreeListAlloc<ndBody>()
+ndBody::ndBody(const ndLoadSaveBase::ndLoadDescriptor& desc)
+	:ndContainersFreeListAlloc<ndBody>()
 	,m_matrix(dGetIdentityMatrix())
-	,m_veloc(dVector::m_zero)
-	,m_omega(dVector::m_zero)
-	,m_localCentreOfMass(dVector::m_wOne)
-	,m_globalCentreOfMass(dVector::m_wOne)
-	,m_minAabb(dVector::m_wOne)
-	,m_maxAabb(dVector::m_wOne)
+	,m_veloc(ndVector::m_zero)
+	,m_omega(ndVector::m_zero)
+	,m_localCentreOfMass(ndVector::m_wOne)
+	,m_globalCentreOfMass(ndVector::m_wOne)
+	,m_minAabb(ndVector::m_wOne)
+	,m_maxAabb(ndVector::m_wOne)
 	,m_rotation()
 	,m_notifyCallback(nullptr)
-	,m_flags(0)
 	,m_uniqueId(m_uniqueIdCount)
+	,m_flags(0)
+	,m_isStatic(0)
+	,m_autoSleep(1)
+	,m_equilibrium(0)
+	,m_equilibrium0(0)
+	,m_isJointFence0(0)
+	,m_isJointFence1(0)
+	,m_isConstrained(0)
+	,m_sceneForceUpdate(1)
+	,m_sceneEquilibrium(0)
 {
 	m_uniqueIdCount++;
 	m_transformIsDirty = 1;
 
 	const nd::TiXmlNode* const xmlNode = desc.m_rootNode;
 
-	dMatrix matrix(xmlGetMatrix(xmlNode, "matrix"));
+	ndMatrix matrix(xmlGetMatrix(xmlNode, "matrix"));
 	m_veloc = xmlGetVector3(xmlNode, "veloc");
 	m_omega = xmlGetVector3(xmlNode, "omega");
 	m_localCentreOfMass = xmlGetVector3(xmlNode, "centreOfMass");
@@ -75,13 +92,16 @@ ndBody::ndBody(const dLoadSaveBase::dLoadDescriptor& desc)
 	const nd::TiXmlNode* const notifyNode = xmlNode->FirstChild("bodyNotifyClass");
 	if (notifyNode)
 	{
-		const nd::TiXmlNode* node = notifyNode->FirstChild();
-		const char* const className = node->Value();
+		const nd::TiXmlNode* const node = notifyNode->FirstChild();
+		if (node)
+		{
+			const char* const className = node->Value();
 
-		dLoadSaveBase::dLoadDescriptor notifyDesc(desc);
-		notifyDesc.m_rootNode = node;
-		m_notifyCallback = D_CLASS_REFLECTION_LOAD_NODE(ndBodyNotify, className, notifyDesc);
-		m_notifyCallback->m_body = this;
+			ndLoadSaveBase::ndLoadDescriptor notifyDesc(desc);
+			notifyDesc.m_rootNode = node;
+			m_notifyCallback = D_CLASS_REFLECTION_LOAD_NODE(ndBodyNotify, className, notifyDesc);
+			m_notifyCallback->m_body = this;
+		}
 	}
 }
 
@@ -93,12 +113,32 @@ ndBody::~ndBody()
 	}
 }
 
-void ndBody::SetCentreOfMass(const dVector& com)
+void ndBody::Save(const ndLoadSaveBase::ndSaveDescriptor& desc) const
+{
+	nd::TiXmlElement* const childNode = new nd::TiXmlElement(ClassName());
+	desc.m_rootNode->LinkEndChild(childNode);
+	childNode->SetAttribute("hashId", desc.m_nodeNodeHash);
+
+	if (m_notifyCallback)
+	{
+		nd::TiXmlElement* const notifyNode = new nd::TiXmlElement("bodyNotifyClass");
+		childNode->LinkEndChild(notifyNode);
+		m_notifyCallback->Save(ndLoadSaveBase::ndSaveDescriptor(desc, notifyNode));
+	}
+
+	xmlSaveParam(childNode, "matrix", m_matrix);
+	xmlSaveParam(childNode, "veloc", m_veloc);
+	xmlSaveParam(childNode, "omega", m_omega);
+	xmlSaveParam(childNode, "centreOfMass", m_localCentreOfMass);
+	xmlSaveParam(childNode, "autoSleep", m_autoSleep);
+}
+
+void ndBody::SetCentreOfMass(const ndVector& com)
 {
 	m_localCentreOfMass.m_x = com.m_x;
 	m_localCentreOfMass.m_y = com.m_y;
 	m_localCentreOfMass.m_z = com.m_z;
-	m_localCentreOfMass.m_w = dFloat32(1.0f);
+	m_localCentreOfMass.m_w = ndFloat32(1.0f);
 	m_globalCentreOfMass = m_matrix.TransformVector(m_localCentreOfMass);
 }
 
@@ -116,27 +156,52 @@ void ndBody::SetNotifyCallback(ndBodyNotify* const notify)
 	}
 }
 
-void ndBody::SetOmega(const dVector& omega)
+void ndBody::SetOmegaNoSleep(const ndVector& omega)
 {
-	m_equilibrium = 0;
 	m_omega = omega;
 }
 
-void ndBody::SetVelocity(const dVector& veloc)
+void ndBody::SetOmega(const ndVector& omega)
 {
 	m_equilibrium = 0;
+	SetOmegaNoSleep(omega);
+}
+
+void ndBody::SetVelocityNoSleep(const ndVector& veloc)
+{
 	m_veloc = veloc;
 }
 
-void ndBody::SetMatrix(const dMatrix& matrix)
+void ndBody::SetVelocity(const ndVector& veloc)
+{
+	m_equilibrium = 0;
+	SetVelocityNoSleep(veloc);
+}
+
+void ndBody::SetMatrixNoSleep(const ndMatrix& matrix)
+{
+	m_matrix = matrix;
+	dAssert(m_matrix.TestOrthogonal(ndFloat32(1.0e-4f)));
+
+	m_rotation = ndQuaternion(m_matrix);
+	m_globalCentreOfMass = m_matrix.TransformVector(m_localCentreOfMass);
+}
+
+void ndBody::SetMatrixAndCentreOfMass(const ndQuaternion& rotation, const ndVector& globalcom)
+{
+	m_rotation = rotation;
+	dAssert(m_rotation.DotProduct(m_rotation).GetScalar() > ndFloat32(0.9999f));
+	m_globalCentreOfMass = globalcom;
+	m_matrix = ndMatrix(rotation, m_matrix.m_posit);
+	m_matrix.m_posit = m_globalCentreOfMass - m_matrix.RotateVector(m_localCentreOfMass);
+}
+
+void ndBody::SetMatrix(const ndMatrix& matrix)
 {
 	m_equilibrium = 0;
 	m_transformIsDirty = 1;
-	m_matrix = matrix;
-	dAssert(m_matrix.TestOrthogonal(dFloat32(1.0e-4f)));
-
-	m_rotation = dQuaternion(m_matrix);
-	m_globalCentreOfMass = m_matrix.TransformVector(m_localCentreOfMass);
+	m_sceneForceUpdate = 1;
+	SetMatrixNoSleep(matrix);
 }
 
 D_COLLISION_API const nd::TiXmlNode* ndBody::FindNode(const nd::TiXmlNode* const rootNode, const char* const name)
@@ -144,22 +209,3 @@ D_COLLISION_API const nd::TiXmlNode* ndBody::FindNode(const nd::TiXmlNode* const
 	return rootNode->FirstChild(name);
 }
 
-void ndBody::Save(const dLoadSaveBase::dSaveDescriptor& desc) const
-{
-	nd::TiXmlElement* const childNode = new nd::TiXmlElement(ClassName());
-	desc.m_rootNode->LinkEndChild(childNode);
-	childNode->SetAttribute("hashId", desc.m_nodeNodeHash);
-
-	if (m_notifyCallback)
-	{
-		nd::TiXmlElement* const notifyNode = new nd::TiXmlElement("bodyNotifyClass");
-		childNode->LinkEndChild(notifyNode);
-		m_notifyCallback->Save(dLoadSaveBase::dSaveDescriptor(desc, notifyNode));
-	}
-
-	xmlSaveParam(childNode, "matrix", m_matrix);
-	xmlSaveParam(childNode, "veloc", m_veloc);
-	xmlSaveParam(childNode, "omega", m_omega);
-	xmlSaveParam(childNode, "centreOfMass", m_localCentreOfMass);
-	xmlSaveParam(childNode, "autoSleep", m_autoSleep ? 1 : 0);
-}

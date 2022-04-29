@@ -19,15 +19,16 @@
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
-#ifndef __D_JOINT_BILATERAL_CONSTRAINT_H__
-#define __D_JOINT_BILATERAL_CONSTRAINT_H__
+#ifndef __ND_JOINT_BILATERAL_CONSTRAINT_H__
+#define __ND_JOINT_BILATERAL_CONSTRAINT_H__
 
 #include "ndCollisionStdafx.h"
 #include "ndJointList.h"
 #include "ndConstraint.h"
 #include "ndBodyKinematic.h"
 
-#define DG_BILATERAL_CONTRAINT_DOF	8
+#define ND_BILATERAL_CONTRAINT_DOF	8
+#define ND_MAX_STOP_ACCEL			ndFloat32 (1000.0f)
 
 enum ndJointBilateralSolverModel
 {
@@ -38,91 +39,123 @@ enum ndJointBilateralSolverModel
 	m_jointModesCount
 };
 
+#define D_ADD_IK_INTERFACE()																\
+	virtual void SetIkMode(bool mode)														\
+	{																						\
+		m_ikMode = mode;																	\
+	}																						\
+	virtual void SetIkSetAccel(const ndJacobian& body0Accel, const ndJacobian& body1Accel)	\
+	{																						\
+		m_accel0 = body0Accel;																\
+		m_accel1 = body1Accel;																\
+	}
+
+
 D_MSV_NEWTON_ALIGN_32
-//class ndJointBilateralConstraint: public ndConstraint, public dClassAlloc
-class ndJointBilateralConstraint : public ndConstraint, public dContainersFreeListAlloc<ndJointBilateralConstraint>
+class ndJointBilateralConstraint : public ndConstraint
 {
 	public:
+	class ndIkInterface
+	{
+		public:
+		ndIkInterface()
+			:m_ikMode(true)
+		{}
+
+		ndJacobian m_accel0;
+		ndJacobian m_accel1;
+		bool m_ikMode;
+	};
+
 	D_CLASS_REFLECTION(ndJointBilateralConstraint);
-	D_COLLISION_API ndJointBilateralConstraint(const dLoadSaveBase::dLoadDescriptor& desc);
-	D_COLLISION_API ndJointBilateralConstraint(dInt32 maxDof, ndBodyKinematic* const body0, ndBodyKinematic* const body1, const dMatrix& globalMatrix);
+	D_COLLISION_API ndJointBilateralConstraint(const ndLoadSaveBase::ndLoadDescriptor& desc);
+	D_COLLISION_API ndJointBilateralConstraint(ndInt32 maxDof, ndBodyKinematic* const body0, ndBodyKinematic* const body1, const ndMatrix& globalMatrix);
+	D_COLLISION_API ndJointBilateralConstraint(ndInt32 maxDof, ndBodyKinematic* const body0, ndBodyKinematic* const body1, const ndMatrix& globalMatrixBody0,  const ndMatrix& globalMatrixBody1);
 	D_COLLISION_API virtual ~ndJointBilateralConstraint();
 
 	virtual ndBodyKinematic* GetBody0() const;
 	virtual ndBodyKinematic* GetBody1() const;
 	void ReplaceSentinel(ndBodyKinematic* const sentinel);
 
-	virtual dUnsigned32 GetRowsCount() const;
+	virtual ndUnsigned32 GetRowsCount() const;
 	virtual ndJointBilateralConstraint* GetAsBilateral() { return this; }
 	virtual void JacobianDerivative(ndConstraintDescritor& desc);
 	virtual ndJointBilateralSolverModel GetSolverModel() const;
 	virtual void SetSolverModel(ndJointBilateralSolverModel model);
 
-	D_COLLISION_API dFloat32 CalculateAngle(const dVector& planeDir, const dVector& cosDir, const dVector& sinDir) const;
+	D_COLLISION_API ndFloat32 CalculateAngle(const ndVector& planeDir, const ndVector& cosDir, const ndVector& sinDir) const;
 	D_COLLISION_API virtual void JointAccelerations(ndJointAccelerationDecriptor* const desc);
-	D_COLLISION_API void CalculateLocalMatrix(const dMatrix& pinsAndPivotFrame, dMatrix& localMatrix0, dMatrix& localMatrix1) const;
-	D_COLLISION_API void AddAngularRowJacobian(ndConstraintDescritor& desc, const dVector& dir, dFloat32 relAngle);
-	D_COLLISION_API void AddLinearRowJacobian(ndConstraintDescritor& desc, const dVector& pivot0, const dVector& pivot1, const dVector& dir);
+	D_COLLISION_API void CalculateLocalMatrix(const ndMatrix& pinsAndPivotFrame, ndMatrix& localMatrix0, ndMatrix& localMatrix1) const;
+	D_COLLISION_API void AddAngularRowJacobian(ndConstraintDescritor& desc, const ndVector& dir, ndFloat32 relAngle);
+	D_COLLISION_API void AddLinearRowJacobian(ndConstraintDescritor& desc, const ndVector& pivot0, const ndVector& pivot1, const ndVector& dir);
 
-	D_COLLISION_API virtual void Save(const dLoadSaveBase::dSaveDescriptor& desc) const;
+	D_COLLISION_API virtual void Save(const ndLoadSaveBase::ndSaveDescriptor& desc) const;
 	D_COLLISION_API virtual void DebugJoint(ndConstraintDebugCallback& debugCallback) const;
-	D_COLLISION_API dFloat32 CalculateSpringDamperAcceleration(dFloat32 dt, dFloat32 ks, dFloat32 x, dFloat32 kd, dFloat32 v) const;
-	D_COLLISION_API void SetMassSpringDamperAcceleration(ndConstraintDescritor& desc, dFloat32 regularizer, dFloat32 spring, dFloat32 damper);
+	D_COLLISION_API ndFloat32 CalculateSpringDamperAcceleration(ndFloat32 dt, ndFloat32 ks, ndFloat32 x, ndFloat32 kd, ndFloat32 v) const;
+	D_COLLISION_API void SetMassSpringDamperAcceleration(ndConstraintDescritor& desc, ndFloat32 regularizer, ndFloat32 spring, ndFloat32 damper);
 	
-	const dMatrix& GetLocalMatrix0() const;
-	const dMatrix& GetLocalMatrix1() const;
+	const ndMatrix& GetLocalMatrix0() const;
+	const ndMatrix& GetLocalMatrix1() const;
 
-	dVector GetForceBody0() const;
-	dVector GetTorqueBody0() const;
-	dVector GetForceBody1() const;
-	dVector GetTorqueBody1() const;
+	ndVector GetForceBody0() const;
+	ndVector GetTorqueBody0() const;
+	ndVector GetForceBody1() const;
+	ndVector GetTorqueBody1() const;
 
+	bool IsInWorld() const;
 	bool IsBilateral() const;
 	bool IsCollidable() const;
 	void SetCollidable(bool state);
+	bool GetSkeletonFlag() const;
 	void SetSkeletonFlag(bool flag);
-	void CalculateGlobalMatrix(dMatrix& matrix0, dMatrix& matrix1) const;
-	dFloat32 GetMotorZeroAcceleration(ndConstraintDescritor& desc) const;
-	void SetHighFriction(ndConstraintDescritor& desc, dFloat32 friction);
-	void SetLowerFriction(ndConstraintDescritor& desc, dFloat32 friction);
-	void SetMotorAcceleration(ndConstraintDescritor& desc, dFloat32 acceleration);
-	dFloat32 GetDiagonalRegularizer(const ndConstraintDescritor& desc) const;
-	void SetDiagonalRegularizer(ndConstraintDescritor& desc, dFloat32 stiffness);
+	void CalculateGlobalMatrix(ndMatrix& matrix0, ndMatrix& matrix1) const;
+	ndFloat32 GetMotorZeroAcceleration(ndConstraintDescritor& desc) const;
+	void SetHighFriction(ndConstraintDescritor& desc, ndFloat32 friction);
+	void SetLowerFriction(ndConstraintDescritor& desc, ndFloat32 friction);
+	void SetMotorAcceleration(ndConstraintDescritor& desc, ndFloat32 acceleration);
+	ndFloat32 GetDiagonalRegularizer(const ndConstraintDescritor& desc) const;
+	void SetDiagonalRegularizer(ndConstraintDescritor& desc, ndFloat32 regularizer);
 
 	bool IsSkeleton() const;
 
 	protected:
-	dMatrix m_localMatrix0;
-	dMatrix m_localMatrix1;
-	dVector m_forceBody0;
-	dVector m_torqueBody0;
-	dVector m_forceBody1;
-	dVector m_torqueBody1;
+	// inverse dynamics interface
+	D_COLLISION_API virtual void SetIkMode(bool mode);
+	D_COLLISION_API virtual void SetIkSetAccel(const ndJacobian& body0Accel, const ndJacobian& body1Accel);
 
-	dVector m_r0[DG_BILATERAL_CONTRAINT_DOF];
-	dVector m_r1[DG_BILATERAL_CONTRAINT_DOF];
-	ndForceImpactPair m_jointForce[DG_BILATERAL_CONTRAINT_DOF];
-	dFloat32 m_motorAcceleration[DG_BILATERAL_CONTRAINT_DOF];
+	ndMatrix m_localMatrix0;
+	ndMatrix m_localMatrix1;
+	ndVector m_forceBody0;
+	ndVector m_torqueBody0;
+	ndVector m_forceBody1;
+	ndVector m_torqueBody1;
+
+	ndVector m_r0[ND_BILATERAL_CONTRAINT_DOF];
+	ndVector m_r1[ND_BILATERAL_CONTRAINT_DOF];
+	ndForceImpactPair m_jointForce[ND_BILATERAL_CONTRAINT_DOF];
+	ndFloat32 m_motorAcceleration[ND_BILATERAL_CONTRAINT_DOF];
 	ndBodyKinematic* m_body0;
 	ndBodyKinematic* m_body1;
-	ndJointList::dNode* m_worldNode;
-	ndJointList::dNode* m_body0Node;
-	ndJointList::dNode* m_body1Node;
+	ndJointList::ndNode* m_worldNode;
+	ndJointList::ndNode* m_body0Node;
+	ndJointList::ndNode* m_body1Node;
 
-	dFloat32 m_defualtDiagonalRegularizer;
-	dUnsigned32 m_maxDof			: 6;
-	dUnsigned32 m_mark0				: 1;
-	dUnsigned32 m_mark1				: 1;
-	dUnsigned32 m_isInSkeleton		: 1;
-	dUnsigned32 m_enableCollision	: 1;
-	dInt8 m_rowIsMotor;
+	ndFloat32 m_defualtDiagonalRegularizer;
+	ndUnsigned32 m_maxDof			: 6;
+	ndUnsigned32 m_mark0			: 1;
+	ndUnsigned32 m_mark1			: 1;
+	ndUnsigned32 m_isInSkeleton		: 1;
+	ndUnsigned32 m_enableCollision	: 1;
+	ndInt8 m_rowIsMotor;
 	ndJointBilateralSolverModel m_solverModel;
 
 	friend class ndWorld;
+	friend class ndIkSolver;
 	friend class ndDynamicsUpdate;
 	friend class ndSkeletonContainer;
 	friend class ndDynamicsUpdateSoa;
 	friend class ndDynamicsUpdateAvx2;
+	friend class ndDynamicsUpdateCuda;
 	friend class ndDynamicsUpdateOpencl;
 };
 
@@ -138,12 +171,12 @@ inline void ndJointBilateralConstraint::SetSolverModel(ndJointBilateralSolverMod
 	m_solverModel = dClamp(model, m_jointIterativeSoft, m_jointModesCount);
 }
 
-inline dUnsigned32 ndJointBilateralConstraint::GetRowsCount() const
+inline ndUnsigned32 ndJointBilateralConstraint::GetRowsCount() const
 {
 	return m_maxDof;
 }
 
-inline void ndJointBilateralConstraint::CalculateGlobalMatrix(dMatrix& matrix0, dMatrix& matrix1) const
+inline void ndJointBilateralConstraint::CalculateGlobalMatrix(ndMatrix& matrix0, ndMatrix& matrix1) const
 {
 	matrix0 = m_localMatrix0 * m_body0->GetMatrix();
 	matrix1 = m_localMatrix1 * m_body1->GetMatrix();
@@ -159,46 +192,46 @@ inline ndBodyKinematic* ndJointBilateralConstraint::GetBody1() const
 	return m_body1;
 }
 
-inline const dMatrix& ndJointBilateralConstraint::GetLocalMatrix0() const
+inline const ndMatrix& ndJointBilateralConstraint::GetLocalMatrix0() const
 {
 	return m_localMatrix0;
 }
 
-inline const dMatrix& ndJointBilateralConstraint::GetLocalMatrix1() const
+inline const ndMatrix& ndJointBilateralConstraint::GetLocalMatrix1() const
 {
 	return m_localMatrix1;
 }
 
-inline dFloat32 ndJointBilateralConstraint::GetMotorZeroAcceleration(ndConstraintDescritor& desc) const
+inline ndFloat32 ndJointBilateralConstraint::GetMotorZeroAcceleration(ndConstraintDescritor& desc) const
 {
-	const dInt32 index = desc.m_rowsCount - 1;
+	const ndInt32 index = desc.m_rowsCount - 1;
 	dAssert(index >= 0);
-	dAssert(index < dInt32(m_maxDof));
+	dAssert(index < ndInt32(m_maxDof));
 	return desc.m_zeroRowAcceleration[index];
 }
 
-inline void ndJointBilateralConstraint::SetMotorAcceleration(ndConstraintDescritor& desc, dFloat32 acceleration)
+inline void ndJointBilateralConstraint::SetMotorAcceleration(ndConstraintDescritor& desc, ndFloat32 acceleration)
 {
-	const dInt32 index = desc.m_rowsCount - 1;
+	const ndInt32 index = desc.m_rowsCount - 1;
 	dAssert(index >= 0);
-	dAssert(index < dInt32(m_maxDof));
+	dAssert(index < ndInt32(m_maxDof));
 	m_rowIsMotor |= (1 << index);
 	desc.m_flags[index] = 0;
 	m_motorAcceleration[index] = acceleration;
 	desc.m_jointAccel[index] = acceleration;
 }
 
-inline void ndJointBilateralConstraint::SetLowerFriction(ndConstraintDescritor& desc, dFloat32 friction)
+inline void ndJointBilateralConstraint::SetLowerFriction(ndConstraintDescritor& desc, ndFloat32 friction)
 {
-	const dInt32 index = desc.m_rowsCount - 1;
+	const ndInt32 index = desc.m_rowsCount - 1;
 	dAssert(index >= 0);
-	dAssert(index < dInt32 (m_maxDof));
-	desc.m_forceBounds[index].m_low = dClamp(friction, dFloat32(D_MIN_BOUND), dFloat32(-0.001f));
+	dAssert(index < ndInt32 (m_maxDof));
+	desc.m_forceBounds[index].m_low = dClamp(friction, ndFloat32(D_MIN_BOUND), ndFloat32(-0.001f));
 	dAssert(desc.m_forceBounds[index].m_normalIndex == D_INDEPENDENT_ROW);
 
 	#ifdef _DEBUG
-	dInt32 i0 = 0;
-	dInt32 i1 = index - 1;
+	ndInt32 i0 = 0;
+	ndInt32 i1 = index - 1;
 	while ((i0 <= i1) && (desc.m_forceBounds[i0].m_normalIndex == D_INDEPENDENT_ROW)) i0++;
 	while ((i1 >= i0) && (desc.m_forceBounds[i1].m_normalIndex != D_INDEPENDENT_ROW)) i1--;
 	dAssert((i0 - i1) == 1);
@@ -209,18 +242,18 @@ inline void ndJointBilateralConstraint::SetLowerFriction(ndConstraintDescritor& 
 	#endif
 }
 
-inline void ndJointBilateralConstraint::SetHighFriction(ndConstraintDescritor& desc, dFloat32 friction)
+inline void ndJointBilateralConstraint::SetHighFriction(ndConstraintDescritor& desc, ndFloat32 friction)
 {
-	const dInt32 index = desc.m_rowsCount - 1;
+	const ndInt32 index = desc.m_rowsCount - 1;
 	dAssert(index >= 0);
-	dAssert(index < dInt32(m_maxDof));
+	dAssert(index < ndInt32(m_maxDof));
 	
-	desc.m_forceBounds[index].m_upper = dClamp(friction, dFloat32(0.001f), dFloat32(D_MAX_BOUND));
+	desc.m_forceBounds[index].m_upper = dClamp(friction, ndFloat32(0.001f), ndFloat32(D_MAX_BOUND));
 	dAssert(desc.m_forceBounds[index].m_normalIndex == D_INDEPENDENT_ROW);
 
 	#ifdef _DEBUG
-	dInt32 i0 = 0;
-	dInt32 i1 = index - 1;
+	ndInt32 i0 = 0;
+	ndInt32 i1 = index - 1;
 	while ((i0 <= i1) && (desc.m_forceBounds[i0].m_normalIndex == D_INDEPENDENT_ROW)) i0++;
 	while ((i1 >= i0) && (desc.m_forceBounds[i1].m_normalIndex != D_INDEPENDENT_ROW)) i1--;
 	dAssert((i0 - i1) == 1);
@@ -235,6 +268,11 @@ inline void ndJointBilateralConstraint::JacobianDerivative(ndConstraintDescritor
 {
 	//dAssert(0);
 	dTrace(("error: this joint is an interface\n"));
+}
+
+inline bool ndJointBilateralConstraint::GetSkeletonFlag() const
+{
+	return m_isInSkeleton ? true : false;
 }
 
 inline void ndJointBilateralConstraint::SetSkeletonFlag(bool flag)
@@ -257,40 +295,45 @@ inline void ndJointBilateralConstraint::SetCollidable(bool state)
 	m_enableCollision = state ? 1 : 0;
 }
 
-inline dVector ndJointBilateralConstraint::GetForceBody0() const
+inline ndVector ndJointBilateralConstraint::GetForceBody0() const
 {
 	return m_forceBody0;
 }
 
-inline dVector ndJointBilateralConstraint::GetTorqueBody0() const
+inline ndVector ndJointBilateralConstraint::GetTorqueBody0() const
 {
 	return m_torqueBody0;
 }
 
-inline dVector ndJointBilateralConstraint::GetForceBody1() const
+inline ndVector ndJointBilateralConstraint::GetForceBody1() const
 {
 	return m_forceBody1;
 }
 
-inline dVector ndJointBilateralConstraint::GetTorqueBody1() const
+inline ndVector ndJointBilateralConstraint::GetTorqueBody1() const
 {
 	return m_torqueBody1;
 }
 
-inline dFloat32 ndJointBilateralConstraint::GetDiagonalRegularizer(const ndConstraintDescritor& desc) const
+inline ndFloat32 ndJointBilateralConstraint::GetDiagonalRegularizer(const ndConstraintDescritor& desc) const
 {
-	const dInt32 index = desc.m_rowsCount - 1;
+	const ndInt32 index = desc.m_rowsCount - 1;
 	dAssert(index >= 0);
-	dAssert(index < dInt32(m_maxDof));
+	dAssert(index < ndInt32(m_maxDof));
 	return desc.m_diagonalRegularizer[index];
 }
 
-inline void ndJointBilateralConstraint::SetDiagonalRegularizer(ndConstraintDescritor& desc, dFloat32 stiffness)
+inline void ndJointBilateralConstraint::SetDiagonalRegularizer(ndConstraintDescritor& desc, ndFloat32 regularizer)
 {
-	const dInt32 index = desc.m_rowsCount - 1;
+	const ndInt32 index = desc.m_rowsCount - 1;
 	dAssert(index >= 0);
-	dAssert(index < dInt32(m_maxDof));
-	desc.m_diagonalRegularizer[index] = dClamp(stiffness, dFloat32(0.0f), dFloat32(1.0f));
+	dAssert(index < ndInt32(m_maxDof));
+	desc.m_diagonalRegularizer[index] = dClamp(regularizer, ndFloat32(0.0f), ndFloat32(1.0f));
+}
+
+inline bool ndJointBilateralConstraint::IsInWorld() const
+{
+	return m_worldNode ? true : false;
 }
 
 inline bool ndJointBilateralConstraint::IsSkeleton() const

@@ -10,8 +10,8 @@
 */
 
 
-#ifndef __D_JOINT_FOLLOW_PATH_H__
-#define __D_JOINT_FOLLOW_PATH_H__
+#ifndef __ND_JOINT_FOLLOW_PATH_H__
+#define __ND_JOINT_FOLLOW_PATH_H__
 
 #include "ndNewtonStdafx.h"
 #include "ndJointBilateralConstraint.h"
@@ -20,19 +20,19 @@ class ndJointFollowPath: public ndJointBilateralConstraint
 {
 	public:
 	D_CLASS_REFLECTION(ndJointFollowPath);
-	D_NEWTON_API ndJointFollowPath(const dLoadSaveBase::dLoadDescriptor& desc);
-	D_NEWTON_API ndJointFollowPath (const dMatrix& pinAndPivotFrame, ndBodyKinematic* const child, ndBodyKinematic* const parent);
+	D_NEWTON_API ndJointFollowPath(const ndLoadSaveBase::ndLoadDescriptor& desc);
+	D_NEWTON_API ndJointFollowPath (const ndMatrix& pinAndPivotFrame, ndBodyKinematic* const child, ndBodyKinematic* const parent);
 	D_NEWTON_API virtual ~ndJointFollowPath();
 
-	virtual void GetPointAndTangentAtLocation(const dVector& location, dVector& positOut, dVector& tangentOut) const 
+	virtual void GetPointAndTangentAtLocation(const ndVector& location, ndVector& positOut, ndVector& tangentOut) const 
 	{ 
 		positOut = location;
-		tangentOut = dVector(1.0f, 0.0f, 0.0f, 0.0f);
+		tangentOut = ndVector(1.0f, 0.0f, 0.0f, 0.0f);
 	}
 
 	protected:
 	D_NEWTON_API void JacobianDerivative(ndConstraintDescritor& desc);
-	D_NEWTON_API void Save(const dLoadSaveBase::dSaveDescriptor& desc) const;
+	D_NEWTON_API void Save(const ndLoadSaveBase::ndSaveDescriptor& desc) const;
 };
 
 #endif

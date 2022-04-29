@@ -27,18 +27,18 @@ class ndFlatShadedDebugMesh: public ndDemoMeshInterface
 	ndFlatShadedDebugMesh(const ndShaderPrograms& shaderCache, const ndShapeInstance* const collision);
 	~ndFlatShadedDebugMesh();
 
-	void SetColor(const dVector& color)
+	void SetColor(const ndVector& color)
 	{
 		m_color = color;
 	}
-	void Render(ndDemoEntityManager* const scene, const dMatrix& modelMatrix);
+	void Render(ndDemoEntityManager* const scene, const ndMatrix& modelMatrix);
 
-	dVector m_color;
-	dInt32 m_indexCount;
-	dInt32 m_shadeColorLocation;
-	dInt32 m_normalMatrixLocation;
-	dInt32 m_projectMatrixLocation;
-	dInt32 m_viewModelMatrixLocation;
+	ndVector m_color;
+	ndInt32 m_indexCount;
+	ndInt32 m_shadeColorLocation;
+	ndInt32 m_normalMatrixLocation;
+	ndInt32 m_projectMatrixLocation;
+	ndInt32 m_viewModelMatrixLocation;
 
 	GLuint m_shader;
 	GLuint m_vertexBuffer;
@@ -49,20 +49,20 @@ class ndFlatShadedDebugMesh: public ndDemoMeshInterface
 class ndWireFrameDebugMesh: public ndDemoMeshInterface
 {
 	public:
-	ndWireFrameDebugMesh(const ndShaderPrograms& shaderCache, const ndShapeInstance* const collision, ndShapeDebugCallback::ndEdgeType edgeType = ndShapeDebugCallback::ndEdgeType::m_shared);
+	ndWireFrameDebugMesh(const ndShaderPrograms& shaderCache, const ndShapeInstance* const collision, ndShapeDebugNotify::ndEdgeType edgeType = ndShapeDebugNotify::ndEdgeType::m_shared);
 	~ndWireFrameDebugMesh();
 
-	void SetColor(const dVector& color)
+	void SetColor(const ndVector& color)
 	{
 		m_color = color;
 	}
 
-	void Render(ndDemoEntityManager* const scene, const dMatrix& modelMatrix);
+	void Render(ndDemoEntityManager* const scene, const ndMatrix& modelMatrix);
 
-	dVector m_color;
-	dInt32 m_indexCount;
-	dInt32 m_shadeColorLocation;
-	dInt32 m_projectionViewModelMatrixLocation;
+	ndVector m_color;
+	ndInt32 m_indexCount;
+	ndInt32 m_shadeColorLocation;
+	ndInt32 m_projectionViewModelMatrixLocation;
 
 	GLuint m_shader;
 	GLuint m_vertexBuffer;

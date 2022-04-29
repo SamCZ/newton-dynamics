@@ -19,38 +19,51 @@
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
-#ifndef __D_SHAPE_STATIC_BVH__
-#define __D_SHAPE_STATIC_BVH__
+#ifndef __ND_SHAPE_STATIC_BVH__
+#define __ND_SHAPE_STATIC_BVH__
 
 #include "ndCollisionStdafx.h"
 #include "ndShapeStaticMesh.h"
 
-class ndShapeStatic_bvh: public ndShapeStaticMesh, public dAabbPolygonSoup
+class ndShapeStatic_bvh: public ndShapeStaticMesh, public ndAabbPolygonSoup
 {
 	public:
 	D_CLASS_REFLECTION(ndShapeStatic_bvh);
-	D_COLLISION_API ndShapeStatic_bvh(const dPolygonSoupBuilder& builder);
-	D_COLLISION_API ndShapeStatic_bvh(const dLoadSaveBase::dLoadDescriptor& desc);
+	D_COLLISION_API ndShapeStatic_bvh(const ndPolygonSoupBuilder& builder);
+	D_COLLISION_API ndShapeStatic_bvh(const ndLoadSaveBase::ndLoadDescriptor& desc);
 	D_COLLISION_API virtual ~ndShapeStatic_bvh();
+
+	void *operator new (size_t size);
+	void operator delete (void* ptr);
 
 	protected:
 	virtual ndShapeInfo GetShapeInfo() const;
 	virtual ndShapeStatic_bvh* GetAsShapeStaticBVH() { return this; }
-	virtual void DebugShape(const dMatrix& matrix, ndShapeDebugCallback& debugCallback) const;
-	virtual dFloat32 RayCast(ndRayCastNotify& callback, const dVector& localP0, const dVector& localP1, dFloat32 maxT, const ndBody* const body, ndContactPoint& contactOut) const;
+	virtual void DebugShape(const ndMatrix& matrix, ndShapeDebugNotify& debugCallback) const;
+	virtual ndFloat32 RayCast(ndRayCastNotify& callback, const ndVector& localP0, const ndVector& localP1, ndFloat32 maxT, const ndBody* const body, ndContactPoint& contactOut) const;
 	virtual void GetCollidingFaces(ndPolygonMeshDesc* const data) const;
-	virtual void Save(const dLoadSaveBase::dSaveDescriptor& desc) const;
+	virtual void Save(const ndLoadSaveBase::ndSaveDescriptor& desc) const;
 	
-	static dFloat32 RayHit(void* const context, const dFloat32* const polygon, dInt32 strideInBytes, const dInt32* const indexArray, dInt32 indexCount);
-	static dIntersectStatus ShowDebugPolygon(void* const context, const dFloat32* const polygon, dInt32 strideInBytes, const dInt32* const indexArray, dInt32 indexCount, dFloat32 hitDistance);
-	static dIntersectStatus GetTriangleCount(void* const context, const dFloat32* const polygon, dInt32 strideInBytes, const dInt32* const indexArray, dInt32 indexCount, dFloat32 hitDistance);
-	static dIntersectStatus GetPolygon(void* const context, const dFloat32* const polygon, dInt32 strideInBytes, const dInt32* const indexArray, dInt32 indexCount, dFloat32 hitDistance);
+	static ndFloat32 RayHit(void* const context, const ndFloat32* const polygon, ndInt32 strideInBytes, const ndInt32* const indexArray, ndInt32 indexCount);
+	static dIntersectStatus ShowDebugPolygon(void* const context, const ndFloat32* const polygon, ndInt32 strideInBytes, const ndInt32* const indexArray, ndInt32 indexCount, ndFloat32 hitDistance);
+	static dIntersectStatus GetTriangleCount(void* const context, const ndFloat32* const polygon, ndInt32 strideInBytes, const ndInt32* const indexArray, ndInt32 indexCount, ndFloat32 hitDistance);
+	static dIntersectStatus GetPolygon(void* const context, const ndFloat32* const polygon, ndInt32 strideInBytes, const ndInt32* const indexArray, ndInt32 indexCount, ndFloat32 hitDistance);
 
 	private: 
-	dInt32 m_trianglesCount;
+	ndInt32 m_trianglesCount;
 
 	friend class ndContactSolver;
 };
+
+inline void* ndShapeStatic_bvh::operator new (size_t size)
+{
+	return ndShapeStaticMesh::operator new (size);
+}
+
+inline void ndShapeStatic_bvh::operator delete (void* ptr)
+{
+	ndShapeStaticMesh::operator delete(ptr);
+}
 
 
 #endif

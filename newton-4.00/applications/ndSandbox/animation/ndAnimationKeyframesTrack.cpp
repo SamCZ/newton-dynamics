@@ -13,12 +13,12 @@
 #include "ndAnimationKeyframesTrack.h"
 
 template<class OBJECT>
-dInt32 ndAnimationKeyFramesTrack::dKeyFramesArray<OBJECT>::GetIndexDebug(dFloat32 time) const
+ndInt32 ndAnimationKeyFramesTrack::dKeyFramesArray<OBJECT>::GetIndexDebug(ndFloat32 param) const
 {
-	dInt32 index = 0;
-	for (dInt32 i = dArray<OBJECT>::GetCount()-1; i >= 0; i --)
+	ndInt32 index = 0;
+	for (ndInt32 i = ndArray<OBJECT>::GetCount()-1; i >= 0; --i)
 	{
-		if (m_time[i] < time)
+		if (m_param[i] < param)
 		{
 			index = i;
 			break;
@@ -28,18 +28,18 @@ dInt32 ndAnimationKeyFramesTrack::dKeyFramesArray<OBJECT>::GetIndexDebug(dFloat3
 }
 
 template<class OBJECT>
-dInt32 ndAnimationKeyFramesTrack::dKeyFramesArray<OBJECT>::GetIndex(dFloat32 time) const
+ndInt32 ndAnimationKeyFramesTrack::dKeyFramesArray<OBJECT>::GetIndex(ndFloat32 param) const
 {
-	dAssert(time >= 0.0f);
-	dInt32 index = dArray<OBJECT>::GetCount() - 1;
-	if (time < m_time[index])
+	dAssert(param >= 0.0f);
+	ndInt32 index = ndArray<OBJECT>::GetCount() - 1;
+	if (param < m_param[index])
 	{
-		dInt32 i0 = 0;
-		dInt32 i1 = index;
+		ndInt32 i0 = 0;
+		ndInt32 i1 = index;
 		while ((i1 - i0) > 4)
 		{
-			const dInt32 mid = (i1 + i0) / 2;
-			if (m_time[mid] < time)
+			const ndInt32 mid = (i1 + i0) / 2;
+			if (m_param[mid] < param)
 			{
 				i0 = mid;
 			}
@@ -48,11 +48,11 @@ dInt32 ndAnimationKeyFramesTrack::dKeyFramesArray<OBJECT>::GetIndex(dFloat32 tim
 				i1 = mid;
 			}
 		}
-		dAssert(m_time[i1] >= time);
+		dAssert(m_param[i1] >= param);
 		index = 0;
-		for (dInt32 i = i1; i >= 0; i--)
+		for (ndInt32 i = i1; i >= 0; --i)
 		{
-			if (m_time[i] < time)
+			if (m_param[i] < param)
 			{
 				index = i;
 				break;
@@ -60,60 +60,62 @@ dInt32 ndAnimationKeyFramesTrack::dKeyFramesArray<OBJECT>::GetIndex(dFloat32 tim
 		}
 	}
 
-	dAssert(index == GetIndexDebug(time));
+	dAssert(index == GetIndexDebug(param));
 	return index;
 }
 
-void ndAnimationKeyFramesTrack::InterpolatePosition(dFloat32 time, dFloat32 length, dVector& posit) const
+void ndAnimationKeyFramesTrack::InterpolatePosition(ndFloat32 param, ndVector& posit) const
 {
 	if (m_position.GetCount()) 
 	{
-		const dInt32 base = m_position.GetIndex(time);
+		const ndInt32 base = m_position.GetIndex(param);
 		if (base < (m_position.GetCount() - 1))
 		{
-			const dFloat32 t0 = m_position.m_time[base + 0];
-			const dFloat32 t1 = m_position.m_time[base + 1];
-			const dVector& p0 = m_position[base + 0];
-			const dVector& p1 = m_position[base + 1];
-			const dFloat32 param = (time - t0) / (t1 - t0 + dFloat32(1.0e-6f));
-			posit = p0 + (p1 - p0).Scale(param);
+			const ndFloat32 t0 = m_position.m_param[base + 0];
+			const ndFloat32 t1 = m_position.m_param[base + 1];
+			const ndVector& p0 = m_position[base + 0];
+			const ndVector& p1 = m_position[base + 1];
+			const ndFloat32 t = (param - t0) / (t1 - t0 + ndFloat32(1.0e-6f));
+			posit = p0 + (p1 - p0).Scale(t);
 		}
 		else
 		{
-			const dFloat32 t1 = length;
-			const dFloat32 t0 = m_position.m_time[base];
-			const dVector& p1 = m_position[0];
-			const dVector& p0 = m_position[base];
-			const dFloat32 param = (time - t0) / (t1 - t0 + dFloat32(1.0e-6f));
-			posit = p0 + (p1 - p0).Scale(param);
+			dAssert(0);
+			//const ndFloat32 t1 = length;
+			//const ndFloat32 t0 = m_position.m_param[base];
+			//const ndVector& p1 = m_position[0];
+			//const ndVector& p0 = m_position[base];
+			//const ndFloat32 t = (param - t0) / (t1 - t0 + ndFloat32(1.0e-6f));
+			//posit = p0 + (p1 - p0).Scale(t);
 		}
 	}
 }
 
-void ndAnimationKeyFramesTrack::InterpolateRotation(dFloat32 time, dFloat32 length, dQuaternion& rotation) const
+void ndAnimationKeyFramesTrack::InterpolateRotation(ndFloat32 param, ndQuaternion& rotation) const
 {
 	if (m_rotation.GetCount()) 
 	{
-		const dInt32 base = m_rotation.GetIndex(time);
+		const ndInt32 base = m_rotation.GetIndex(param);
 		if (base < m_rotation.GetCount() - 1)
 		{
-			const dFloat32 t0 = m_rotation.m_time[base + 0];
-			const dFloat32 t1 = m_rotation.m_time[base + 1];
-			const dQuaternion& rot0 = m_rotation[base + 0];
-			const dQuaternion& rot1 = m_rotation[base + 1];
-			const dFloat32 param = (time - t0) / (t1 - t0 + dFloat32(1.0e-6f));
+			const ndFloat32 t0 = m_rotation.m_param[base + 0];
+			const ndFloat32 t1 = m_rotation.m_param[base + 1];
+			const ndQuaternion& rot0 = m_rotation[base + 0];
+			const ndQuaternion& rot1 = m_rotation[base + 1];
+			const ndFloat32 t = (param - t0) / (t1 - t0 + ndFloat32(1.0e-6f));
 			dAssert(rot0.DotProduct(rot1).GetScalar() > 0.0f);
-			rotation = rot0.Slerp(rot1, param);
+			rotation = rot0.Slerp(rot1, t);
 		}
 		else
 		{
-			const dFloat32 t1 = length;
-			const dFloat32 t0 = m_rotation.m_time[base];
-			const dQuaternion& rot1 = m_rotation[0];
-			const dQuaternion& rot0 = m_rotation[base];
-			const dFloat32 param = (time - t0) / (t1 - t0 + dFloat32(1.0e-6f));
-			dAssert(rot0.DotProduct(rot1).GetScalar() > 0.0f);
-			rotation = rot0.Slerp(rot1, param);
+			dAssert(0);
+			//const ndFloat32 t1 = length;
+			//const ndFloat32 t0 = m_rotation.m_param[base];
+			//const ndQuaternion& rot1 = m_rotation[0];
+			//const ndQuaternion& rot0 = m_rotation[base];
+			//const ndFloat32 t = (param - t0) / (t1 - t0 + ndFloat32(1.0e-6f));
+			//dAssert(rot0.DotProduct(rot1).GetScalar() > 0.0f);
+			//rotation = rot0.Slerp(rot1, t);
 		}
 	}
 }

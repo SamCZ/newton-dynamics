@@ -19,8 +19,8 @@
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
-#ifndef __D_MODEL_H__
-#define __D_MODEL_H__
+#ifndef __ND_MODEL_H__
+#define __ND_MODEL_H__
 
 #include "ndNewtonStdafx.h"
 #include "ndModelList.h"
@@ -29,38 +29,36 @@ class ndMultiBodyVehicle;
 class ndConstraintDebugCallback;
 
 D_MSV_NEWTON_ALIGN_32
-class ndModel: public dClassAlloc
+class ndModel: public ndClassAlloc
 {
 	public:
 	D_CLASS_REFLECTION(ndModel);
 	ndModel();
-	D_NEWTON_API ndModel(const dLoadSaveBase::dLoadDescriptor& desc);
-
+	D_NEWTON_API ndModel(const ndLoadSaveBase::ndLoadDescriptor& desc);
 	virtual ~ndModel ();
 	
-	virtual ndModel* GetAsModel();
 	virtual void AddToWorld(ndWorld* const world);
 	virtual void RemoveFromToWorld(ndWorld* const world);
 
+	virtual ndModel* GetAsModel();
 	virtual ndMultiBodyVehicle* GetAsMultiBodyVehicle();
-
 	virtual void Debug(ndConstraintDebugCallback& context) const;
 
 	protected:
-	virtual void Update(ndWorld* const world, dFloat32 timestep);
-	virtual void PostUpdate(ndWorld* const world, dFloat32 timestep);
-	virtual void PostTransformUpdate(ndWorld* const world, dFloat32 timestep);
+	virtual void Update(ndWorld* const world, ndFloat32 timestep);
+	virtual void PostUpdate(ndWorld* const world, ndFloat32 timestep);
+	virtual void PostTransformUpdate(ndWorld* const world, ndFloat32 timestep);
 
-	D_NEWTON_API virtual void Save(const dLoadSaveBase::dSaveDescriptor& desc) const;
+	D_NEWTON_API virtual void Save(const ndLoadSaveBase::ndSaveDescriptor& desc) const;
 
-	ndModelList::dNode* m_node;
+	ndModelList::ndNode* m_node;
 
 	friend class ndWorld;
 	friend class ndLoadSave;
 } D_GCC_NEWTON_ALIGN_32;
 
 inline ndModel::ndModel()
-	:dClassAlloc()
+	:ndClassAlloc()
 	,m_node(nullptr)
 {
 }
@@ -84,15 +82,15 @@ inline void ndModel::Debug(ndConstraintDebugCallback&) const
 {
 }
 
-inline void ndModel::Update(ndWorld* const, dFloat32)
+inline void ndModel::Update(ndWorld* const, ndFloat32)
 {
 }
 
-inline void ndModel::PostUpdate(ndWorld* const, dFloat32)
+inline void ndModel::PostUpdate(ndWorld* const, ndFloat32)
 {
 }
 
-inline void ndModel::PostTransformUpdate(ndWorld* const, dFloat32)
+inline void ndModel::PostTransformUpdate(ndWorld* const, ndFloat32)
 {
 }
 

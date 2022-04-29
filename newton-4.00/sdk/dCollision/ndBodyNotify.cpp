@@ -19,42 +19,80 @@
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
-#include "dCoreStdafx.h"
+#include "ndCoreStdafx.h"
 #include "ndCollisionStdafx.h"
 #include "ndBodyNotify.h"
 #include "ndBodyKinematic.h"
 
 D_CLASS_REFLECTION_IMPLEMENT_LOADER(ndBodyNotify)
 
-ndBodyNotify::ndBodyNotify(const dLoadSaveBase::dLoadDescriptor& desc)
-	:dContainersFreeListAlloc<ndBodyNotify>()
+
+ndBodyNotify::ndBodyNotify(const ndVector& defualtGravity)
+	:ndContainersFreeListAlloc<ndBodyNotify>()
+	,m_defualtGravity(defualtGravity)
+	,m_body(nullptr)
+{
+}
+
+ndBodyNotify::ndBodyNotify(const ndLoadSaveBase::ndLoadDescriptor& desc)
+	:ndContainersFreeListAlloc<ndBodyNotify>()
 	,m_body(nullptr)
 {
 	const nd::TiXmlNode* const rootNode = desc.m_rootNode;
 	m_defualtGravity = xmlGetVector3(rootNode, "gravity");
 }
 
-void ndBodyNotify::OnApplyExternalForce(dInt32, dFloat32)
+void ndBodyNotify::Save(const ndLoadSaveBase::ndSaveDescriptor& desc) const
 {
-	ndBodyKinematic* const body = GetBody()->GetAsBodyKinematic();
-	dAssert(body);
-	if (body->GetInvMass() > 0.0f)
-	{
-		dVector massMatrix(body->GetMassMatrix());
-		dVector force (m_defualtGravity.Scale(massMatrix.m_w));
-		body->SetForce(force);
-		body->SetTorque(dVector::m_zero);
-
-		//dVector L(body->CalculateAngularMomentum());
-		//dTrace(("%f %f %f\n", L.m_x, L.m_y, L.m_z));
-	}
-}
-
-void ndBodyNotify::Save(const dLoadSaveBase::dSaveDescriptor& desc) const
-{
-	//nd::TiXmlElement* const rootNode, const char* const
 	nd::TiXmlElement* const childNode = new nd::TiXmlElement(ClassName());
 	desc.m_rootNode->LinkEndChild(childNode);
 
 	xmlSaveParam(childNode, "gravity", m_defualtGravity);
 }
+
+
+ndBody* ndBodyNotify::GetBody()
+{ 
+	return m_body; 
+}
+
+const ndBody* ndBodyNotify::GetBody() const
+{ 
+	return m_body; 
+}
+
+void* ndBodyNotify::GetUserData() const
+{ 
+	return nullptr; 
+}
+
+ndVector ndBodyNotify::GetGravity() const
+{
+	return m_defualtGravity;
+}
+
+void ndBodyNotify::SetGravity(const ndVector & defualtGravity)
+{
+	m_defualtGravity = defualtGravity;
+}
+
+void ndBodyNotify::OnTransform(ndInt32, const ndMatrix&)
+{
+}
+
+void ndBodyNotify::OnApplyExternalForce(ndInt32, ndFloat32)
+{
+	ndBodyKinematic* const body = GetBody()->GetAsBodyKinematic();
+	dAssert(body);
+	if (body->GetInvMass() > 0.0f)
+	{
+		ndVector massMatrix(body->GetMassMatrix());
+		ndVector force (m_defualtGravity.Scale(massMatrix.m_w));
+		body->SetForce(force);
+		body->SetTorque(ndVector::m_zero);
+
+		//ndVector L(body->CalculateAngularMomentum());
+		//dTrace(("%f %f %f\n", L.m_x, L.m_y, L.m_z));
+	}
+}
+

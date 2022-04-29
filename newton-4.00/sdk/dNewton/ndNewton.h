@@ -24,10 +24,10 @@
 //      are changed infrequently
 //
 
-#ifndef _D_NEWTON_H__
-#define _D_NEWTON_H__
+#ifndef __ND_NEWTON_H__
+#define __ND_NEWTON_H__
 
-#include <dCore.h>
+#include <ndCore.h>
 #include <ndNewtonStdafx.h>
 #include <ndBody.h>
 #include <ndShape.h>
@@ -35,6 +35,7 @@
 #include <ndScene.h>
 #include <ndModel.h>
 #include <ndContact.h>
+#include <ndIkSolver.h>
 #include <ndShapeBox.h>
 #include <ndLoadSave.h>
 #include <ndShapeNull.h>
@@ -44,13 +45,17 @@
 #include <ndCharacter.h>
 #include <ndConstraint.h>
 #include <ndJointHinge.h>
+#include <ndJointPlane.h>
 #include <ndBodyNotify.h>
 #include <ndJointWheel.h>
+#include <ndJointRoller.h>
 #include <ndJointSlider.h>
 #include <ndJointPulley.h>
 #include <ndShapeConvex.h>
 #include <ndBodyDynamic.h>
-#include <ndContactList.h>
+#include <ndIkJointHinge.h>
+#include <ndBodySphFluid.h>
+#include <ndContactArray.h>
 #include <ndJointFix6dof.h>
 #include <ndBodySphFluid.h>
 #include <ndSkeletonList.h>
@@ -59,22 +64,22 @@
 #include <ndShapeInstance.h>
 #include <ndRayCastNotify.h>
 #include <ndContactNotify.h>
+#include <ndJointCylinder.h>
 #include <ndCharacterNode.h>
+#include <ndIk6DofEffector.h>
+#include <ndJointSpherical.h>
 #include <ndDynamicsUpdate.h>
-#include <ndJointPdActuator.h>
 #include <ndJointFollowPath.h>
 #include <ndBodyParticleSet.h>
+#include <ndIkJointSpherical.h>
 #include <ndJointDoubleHinge.h>
 #include <ndJointFixDistance.h>
 #include <ndMultiBodyVehicle.h>
 #include <ndCharacterRootNode.h>
 #include <ndSkeletonContainer.h>
 #include <ndDynamicsUpdateSoa.h>
-#include <ndJointHingeActuator.h>
-#include <ndJointBallAndSocket.h>
-#include <ndJointKinematicChain.h>
+#include <ndIkJointDoubleHinge.h>
 #include <ndBodyParticleSetList.h>
-#include <ndJointAttachmentPoint.h>
 #include <ndMultiBodyVehicleMotor.h>
 #include <ndMultiBodyVehicleGearBox.h>
 #include <ndJointDryRollingFriction.h>

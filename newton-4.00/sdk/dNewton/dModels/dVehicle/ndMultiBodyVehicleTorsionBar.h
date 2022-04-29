@@ -19,8 +19,8 @@
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
-#ifndef __D_MULTIBODY_VEHICLE_TORSION_BAR_H__
-#define __D_MULTIBODY_VEHICLE_TORSION_BAR_H__
+#ifndef __ND_MULTIBODY_VEHICLE_TORSION_BAR_H__
+#define __ND_MULTIBODY_VEHICLE_TORSION_BAR_H__
 
 #include "ndNewtonStdafx.h"
 #include "ndJointGear.h"
@@ -31,11 +31,11 @@ class ndMultiBodyVehicleTorsionBar : public ndJointBilateralConstraint
 {
 	public: 
 	D_CLASS_REFLECTION(ndMultiBodyVehicleTorsionBar);
-	D_NEWTON_API ndMultiBodyVehicleTorsionBar(const dLoadSaveBase::dLoadDescriptor& desc);
-	D_NEWTON_API ndMultiBodyVehicleTorsionBar(const ndMultiBodyVehicle* const chassis, ndBodyDynamic* const fixedbody);
+	D_NEWTON_API ndMultiBodyVehicleTorsionBar(const ndLoadSaveBase::ndLoadDescriptor& desc);
+	D_NEWTON_API ndMultiBodyVehicleTorsionBar(const ndMultiBodyVehicle* const chassis, ndBodyKinematic* const fixedbody);
 
 	D_NEWTON_API void AddAxel(const ndBodyKinematic* const leftTire, const ndBodyKinematic* const rightTire);
-	D_NEWTON_API void SetTorsionTorque(dFloat32 springK, dFloat32 damperC, dFloat32 springDamperRegularizer);
+	D_NEWTON_API void SetTorsionTorque(ndFloat32 springK, ndFloat32 damperC, ndFloat32 springDamperRegularizer);
 
 	protected:
 	class ndAxles
@@ -44,23 +44,23 @@ class ndMultiBodyVehicleTorsionBar : public ndJointBilateralConstraint
 		ndAxles()
 			:m_leftTire(nullptr)
 			,m_rightTire(nullptr)
-			,m_axleAngle(dFloat32(0.0f))
+			,m_axleAngle(ndFloat32(0.0f))
 		{
 		}
 		const ndBodyKinematic* m_leftTire;
 		const ndBodyKinematic* m_rightTire;
-		dFloat32 m_axleAngle;
+		ndFloat32 m_axleAngle;
 	};
 
 	void DebugJoint(ndConstraintDebugCallback&) const {}
 	void JacobianDerivative(ndConstraintDescritor& desc);
-	void Save(const dLoadSaveBase::dSaveDescriptor& desc) const;
+	void Save(const ndLoadSaveBase::ndSaveDescriptor& desc) const;
 
 	ndAxles m_axles[2];
-	dFloat32 m_springK;
-	dFloat32 m_damperC;
-	dFloat32 m_springDamperRegularizer;
-	dInt32 m_axleCount;
+	ndFloat32 m_springK;
+	ndFloat32 m_damperC;
+	ndFloat32 m_springDamperRegularizer;
+	ndInt32 m_axleCount;
 	friend class ndMultiBodyVehicle;
 };
 

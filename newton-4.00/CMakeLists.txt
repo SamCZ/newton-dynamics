@@ -8,7 +8,7 @@
 # including commercial applications, and to alter it and redistribute it
 # freely.
 
-cmake_minimum_required(VERSION 3.4.0)
+cmake_minimum_required(VERSION 3.9.0 FATAL_ERROR)
 
 option("NEWTON_BUILD_TEST" "generate test project" "OFF")
 option("NEWTON_BUILD_SANDBOX_DEMOS" "generates demos projects" "ON")
@@ -16,6 +16,7 @@ option("NEWTON_BUILD_PROFILER" "build profiler" OFF)
 option("NEWTON_BUILD_SINGLE_THREADED" "single threaded" OFF)
 option("NEWTON_BUILD_SHARED_LIBS" "build shared library" ON)
 option("NEWTON_ENABLE_AVX2_SOLVER" "enable AVX2 solver"  ON)
+option("NEWTON_ENABLE_CUDA_SOLVER" "enable cuda solver" OFF)
 option("NEWTON_ENABLE_OPENCL_SOLVER" "enable gpu solver" OFF)
 option("NEWTON_DOUBLE_PRECISION" "generate double precision" OFF)
 option("NEWTON_BUILD_TOOLS_AND_WRAPERS" "build tools and wrappers" OFF)
@@ -139,7 +140,7 @@ if (MSVC)
 	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /Zi /W4 /Od")
 	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELEASE} /Zi /W4 /O2 /fp:fast")
 	#set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELEASE} /Zi /W4 /Od /fp:fast")
-	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zi /GS- /W4 /Ox /Oi /Ot /Ob2 /Oy /fp:fast")
+	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Zi /GS /W4 /Ox /Oi /Ot /Ob2 /Oy /fp:fast")
 
 	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /wd4201 /wd4324")
 	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /wd4201 /wd4324")
@@ -164,11 +165,5 @@ if(NEWTON_BUILD_PROFILER)
 endif()
 
 add_subdirectory(sdk)
+add_subdirectory(thirdParty)
 add_subdirectory(applications)
-
-if (NEWTON_BUILD_SANDBOX_DEMOS)
-	add_subdirectory(thirdParty)
-endif()
-
-
-

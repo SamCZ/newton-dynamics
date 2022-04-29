@@ -19,8 +19,8 @@
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
-#ifndef __D_MULTIBODY_VEHICLE_GEAR_BOX_H__
-#define __D_MULTIBODY_VEHICLE_GEAR_BOX_H__
+#ifndef __ND_MULTIBODY_VEHICLE_GEAR_BOX_H__
+#define __ND_MULTIBODY_VEHICLE_GEAR_BOX_H__
 
 #include "ndNewtonStdafx.h"
 #include "ndJointGear.h"
@@ -31,20 +31,22 @@ class ndMultiBodyVehicleGearBox : public ndJointGear
 {
 	public: 
 	D_CLASS_REFLECTION(ndMultiBodyVehicleGearBox);
-	D_NEWTON_API ndMultiBodyVehicleGearBox(const dLoadSaveBase::dLoadDescriptor& desc);
+	D_NEWTON_API ndMultiBodyVehicleGearBox(const ndLoadSaveBase::ndLoadDescriptor& desc);
 	D_NEWTON_API ndMultiBodyVehicleGearBox(ndBodyKinematic* const motor, ndBodyKinematic* const differential, ndMultiBodyVehicle* const chassis);
 
-	D_NEWTON_API void SetClutchTorque(dFloat32 torqueInNewtonMeters);
-	D_NEWTON_API void SetInternalLosesTorque(dFloat32 torqueInNewtonMeters);
+	D_NEWTON_API void SetIdleOmega(ndFloat32 rpm);
+	D_NEWTON_API void SetClutchTorque(ndFloat32 torqueInNewtonMeters);
+	D_NEWTON_API void SetInternalLosesTorque(ndFloat32 torqueInNewtonMeters);
 
 	protected:
 	void DebugJoint(ndConstraintDebugCallback&) const {}
 	void JacobianDerivative(ndConstraintDescritor& desc);
-	void Save(const dLoadSaveBase::dSaveDescriptor& desc) const;
+	void Save(const ndLoadSaveBase::ndSaveDescriptor& desc) const;
 
 	ndMultiBodyVehicle* m_chassis;
-	dFloat32 m_clutchTorque;
-	dFloat32 m_driveTrainResistanceTorque;
+	ndFloat32 m_idleOmega;
+	ndFloat32 m_clutchTorque;
+	ndFloat32 m_driveTrainResistanceTorque;
 	friend class ndMultiBodyVehicle;
 };
 

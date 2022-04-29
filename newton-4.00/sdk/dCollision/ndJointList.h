@@ -19,18 +19,18 @@
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
-#ifndef __D_JOINT_LIST_H__
-#define __D_JOINT_LIST_H__
+#ifndef __ND_JOINT_LIST_H__
+#define __ND_JOINT_LIST_H__
 
 #include "ndCollisionStdafx.h"
 
 class ndJointBilateralConstraint;
 
-class ndJointList: public dList<ndJointBilateralConstraint*, dContainersFreeListAlloc<ndJointBilateralConstraint*>>
+class ndJointList: public ndList<ndJointBilateralConstraint*, ndContainersFreeListAlloc<ndJointBilateralConstraint*>>
 {
 	public:
 	ndJointList()
-		:dList<ndJointBilateralConstraint*, dContainersFreeListAlloc<ndJointBilateralConstraint*>>()
+		:ndList<ndJointBilateralConstraint*, ndContainersFreeListAlloc<ndJointBilateralConstraint*>>()
 	{
 	}
 };

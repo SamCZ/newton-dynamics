@@ -9,8 +9,8 @@
 * freely
 */
 
-#ifndef __D_JOINT_WHEEL_H__
-#define __D_JOINT_WHEEL_H__
+#ifndef __ND_JOINT_WHEEL_H__
+#define __ND_JOINT_WHEEL_H__
 
 #include "ndNewtonStdafx.h"
 #include "ndJointBilateralConstraint.h"
@@ -19,32 +19,32 @@ class ndWheelDescriptor
 {
 	public:
 	ndWheelDescriptor()
-		:m_springK(dFloat32(1.0f))
-		,m_damperC(dFloat32(0.0f))
-		,m_upperStop(dFloat32(-0.1f))
-		,m_lowerStop(dFloat32(0.2f))
-		,m_regularizer(dFloat32(0.1f))
-		,m_brakeTorque(dFloat32(0.0f))
-		,m_handBrakeTorque(dFloat32(0.0f))
-		,m_steeringAngle(dFloat32(0.0f))
-		,m_laterialStiffness (dFloat32(0.5f))
-		,m_longitudinalStiffness (dFloat32(0.5f))
+		:m_springK(ndFloat32(1.0f))
+		,m_damperC(ndFloat32(0.0f))
+		,m_upperStop(ndFloat32(-0.1f))
+		,m_lowerStop(ndFloat32(0.2f))
+		,m_regularizer(ndFloat32(0.1f))
+		,m_brakeTorque(ndFloat32(0.0f))
+		,m_handBrakeTorque(ndFloat32(0.0f))
+		,m_steeringAngle(ndFloat32(0.0f))
+		,m_laterialStiffness (ndFloat32(0.5f))
+		,m_longitudinalStiffness (ndFloat32(0.5f))
 	{
 	}
 	
 	D_NEWTON_API void Save(nd::TiXmlNode* const xmlNode) const;
 	D_NEWTON_API void Load(const nd::TiXmlNode* const xmlNode);
 	
-	dFloat32 m_springK;
-	dFloat32 m_damperC;
-	dFloat32 m_upperStop;
-	dFloat32 m_lowerStop;
-	dFloat32 m_regularizer;
-	dFloat32 m_brakeTorque;
-	dFloat32 m_handBrakeTorque;
-	dFloat32 m_steeringAngle;
-	dFloat32 m_laterialStiffness;
-	dFloat32 m_longitudinalStiffness;
+	ndFloat32 m_springK;
+	ndFloat32 m_damperC;
+	ndFloat32 m_upperStop;
+	ndFloat32 m_lowerStop;
+	ndFloat32 m_regularizer;
+	ndFloat32 m_brakeTorque;
+	ndFloat32 m_handBrakeTorque;
+	ndFloat32 m_steeringAngle;
+	ndFloat32 m_laterialStiffness;
+	ndFloat32 m_longitudinalStiffness;
 };
 
 class ndJointWheel: public ndJointBilateralConstraint
@@ -52,16 +52,16 @@ class ndJointWheel: public ndJointBilateralConstraint
 	public:
 
 	D_CLASS_REFLECTION(ndJointWheel);
-	D_NEWTON_API ndJointWheel(const dLoadSaveBase::dLoadDescriptor& desc);
-	D_NEWTON_API ndJointWheel(const dMatrix& pinAndPivotFrame, ndBodyKinematic* const child, ndBodyKinematic* const parent, const ndWheelDescriptor& desc);
+	D_NEWTON_API ndJointWheel(const ndLoadSaveBase::ndLoadDescriptor& desc);
+	D_NEWTON_API ndJointWheel(const ndMatrix& pinAndPivotFrame, ndBodyKinematic* const child, ndBodyKinematic* const parent, const ndWheelDescriptor& desc);
 	D_NEWTON_API virtual ~ndJointWheel();
 
-	D_NEWTON_API void SetBrake(dFloat32 normalizedTorque);
-	D_NEWTON_API void SetHandBrake(dFloat32 normalizedTorque);
-	D_NEWTON_API void SetSteering(dFloat32 normalidedSteering);
+	D_NEWTON_API void SetBrake(ndFloat32 normalizedTorque);
+	D_NEWTON_API void SetHandBrake(ndFloat32 normalizedTorque);
+	D_NEWTON_API void SetSteering(ndFloat32 normalidedSteering);
 	
 	D_NEWTON_API void UpdateTireSteeringAngleMatrix();
-	D_NEWTON_API dMatrix CalculateUpperBumperMatrix() const;
+	D_NEWTON_API ndMatrix CalculateUpperBumperMatrix() const;
 
 	const ndWheelDescriptor& GetInfo() const
 	{
@@ -75,16 +75,16 @@ class ndJointWheel: public ndJointBilateralConstraint
 
 	protected:
 	D_NEWTON_API void JacobianDerivative(ndConstraintDescritor& desc);
-	D_NEWTON_API void Save(const dLoadSaveBase::dSaveDescriptor& desc) const;
+	D_NEWTON_API void Save(const ndLoadSaveBase::ndSaveDescriptor& desc) const;
 
-	dMatrix m_baseFrame;
+	ndMatrix m_baseFrame;
 	ndWheelDescriptor m_info;
-	dFloat32 m_posit;
-	dFloat32 m_speed;
-	dFloat32 m_regularizer;
-	dFloat32 m_normalizedBrake;
-	dFloat32 m_normalidedSteering;
-	dFloat32 m_normalizedHandBrake;
+	ndFloat32 m_posit;
+	ndFloat32 m_speed;
+	ndFloat32 m_regularizer;
+	ndFloat32 m_normalizedBrake;
+	ndFloat32 m_normalidedSteering;
+	ndFloat32 m_normalizedHandBrake;
 	friend class ndMultiBodyVehicle;
 };
 

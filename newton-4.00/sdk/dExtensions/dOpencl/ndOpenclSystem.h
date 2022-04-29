@@ -19,29 +19,24 @@
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
-#include "dCoreStdafx.h"
 #include "ndNewtonStdafx.h"
 #include <CL/cl.h>
-#include "ndWorld.h"
-#include "ndBodyDynamic.h"
-#include "ndSkeletonList.h"
-#include "ndDynamicsUpdateOpencl.h"
-#include "ndJointBilateralConstraint.h"
 
 #define D_USE_GPU_DEVICE
 //#define D_DEBUG_GPU_KERNELS
 
 #define D_OPENCL_BUFFER_SIZE	1024
 
+
 template<class T>
-class dOpenclBuffer: public dArray<T>
+class dOpenclBuffer: public ndArray<T>
 {
 	public:
 	dOpenclBuffer(cl_mem_flags flags);
 	~dOpenclBuffer();
 
 	void Cleanup();
-	void SyncSize(cl_context context, dInt32 size);
+	void SyncSize(cl_context context, ndInt32 size);
 	void ReadData(cl_command_queue commandQueue);
 	void WriteData(cl_command_queue commandQueue);
 
@@ -52,30 +47,37 @@ class dOpenclBuffer: public dArray<T>
 class ndOpenclBodyBuffer
 {
 	public:
+	typedef union 
+	{
+		cl_float8 m_data;
+		struct
+		{
+			cl_float4 m_linear;
+			cl_float4 m_angular;
+		};
+	} ndOpenclJacobian;
+
 	ndOpenclBodyBuffer();
 	~ndOpenclBodyBuffer();
 
 	void Cleanup();
-	void Resize(cl_context context, dArray<ndBodyKinematic*>& bodyArray);
-	void CopyToGpu(cl_command_queue commandQueue, const dArray<ndBodyKinematic*>& bodyArray);
-	void SetKernelParameters(cl_kernel kernel, dFloat32 timestep, const dArray<ndBodyKinematic*>& bodyArray);
+	void Resize(cl_context context, const ndArray<ndInt32>& bodyArray);
+	void CopyToGpu(cl_command_queue commandQueue, const ndArray<ndInt32>& bodyArray);
+	void SetKernelParameters(cl_kernel kernel, ndFloat32 timestep, const ndArray<ndBodyKinematic*>& bodyArray);
 
 #ifdef D_DEBUG_GPU_KERNELS
 	dVector MakeQuat(const dVector& axis, float angle);
 	dVector MultiplyQuat(const dVector& r, const dVector& q);
 	dVector NormalizeQuat(const dVector& r);
-	void DebudKernel(dFloat32 timestepIn, const dArray<ndBodyKinematic*>& bodyArray);
+	void DebudKernel(ndFloat32 timestepIn, const ndArray<ndBodyKinematic*>& bodyArray);
 #endif
 
-	dOpenclBuffer<cl_float4> m_rotation;	// location 2
-	dOpenclBuffer<cl_float4> m_posit;		// location 3
-	dOpenclBuffer<cl_float4> m_omega;
-	dOpenclBuffer<cl_float4> m_veloc;
-	dOpenclBuffer<cl_float4> m_alpha;
-	dOpenclBuffer<cl_float4> m_accel;
+	dOpenclBuffer<ndOpenclJacobian> m_transform;
+	dOpenclBuffer<ndOpenclJacobian> m_veloc;
+	dOpenclBuffer<ndOpenclJacobian> m_accel;
 };
 
-class ndOpenclSystem: public dClassAlloc
+class ndOpenclSystem: public ndClassAlloc
 {
 	public:
 	class ndKernel
@@ -96,12 +98,12 @@ class ndOpenclSystem: public dClassAlloc
 
 	void Finish();
 	cl_program CompileProgram();
-	void Resize(dArray<ndBodyKinematic*>& bodyArray);
+	void Resize(const ndArray<ndInt32>& bodyArray);
+	void CopyToGpu(const ndArray<ndInt32>& bodyArray);
 	void SetKernel(const char* const name, ndKernel& kerner);
-	void CopyToGpu(const dArray<ndBodyKinematic*>& bodyArray);
-	void ExecuteIntegrateBodyPosition(dFloat32 timestep, const dArray<ndBodyKinematic*>& bodyArray);
+	void ExecuteIntegrateBodyPosition(ndFloat32 timestep, const ndArray<ndBodyKinematic*>& bodyArray);
 
-	static ndOpenclSystem* Singleton(dInt32 driveNumber);
+	static ndOpenclSystem* Singleton(ndInt32 driveNumber);
 
 	ndOpenclBodyBuffer m_bodyArray;
 	char m_platformName[128];
@@ -114,12 +116,14 @@ class ndOpenclSystem: public dClassAlloc
 
 	ndKernel m_integrateBodiesPosition;
 	ndKernel m_integrateBodiesVelocity;
+	ndKernel m_integrateUnconstrainedBodies;
 	static const char* m_kernelSource;
+	ndInt32 m_computeUnits;
 };
 
 template<class T>
 dOpenclBuffer<T>::dOpenclBuffer(cl_mem_flags flags)
-	:dArray<T>()
+	:ndArray<T>()
 	,m_gpuBuffer(nullptr)
 	,m_flags(flags)
 {
@@ -139,13 +143,13 @@ void dOpenclBuffer<T>::Cleanup()
 		cl_int err = CL_SUCCESS;
 		err = clReleaseMemObject(m_gpuBuffer);
 		dAssert(err == CL_SUCCESS);
-		Resize(0);
+		ndArray<T>::Resize(0);
 	}
 	m_gpuBuffer = nullptr;
 }
 
 template<class T>
-void dOpenclBuffer<T>::SyncSize(cl_context context, dInt32 size)
+void dOpenclBuffer<T>::SyncSize(cl_context context, ndInt32 size)
 {
 	cl_int err = CL_SUCCESS;
 
@@ -155,14 +159,14 @@ void dOpenclBuffer<T>::SyncSize(cl_context context, dInt32 size)
 		{
 			dAssert(0);
 			//void* const hostBuffer = &(*this)[0];
-			//m_gpuBuffer = clCreateBuffer(context, m_flags, sizeof(T) * dArray<T>::GetCapacity(), hostBuffer, &err);
+			//m_gpuBuffer = clCreateBuffer(context, m_flags, sizeof(T) * ndArray<T>::GetCapacity(), hostBuffer, &err);
 		}
 		else
 		{
 			m_gpuBuffer = clCreateBuffer(context, m_flags, sizeof(T) * size, nullptr, &err);
 		}
 		dAssert(err == CL_SUCCESS);
-		Resize(size);
+		ndArray<T>::Resize(size);
 	}
 	else
 	{
@@ -177,7 +181,7 @@ void dOpenclBuffer<T>::ReadData(cl_command_queue commandQueue)
 	void* const destination = &(*this)[0];
 	err = clEnqueueReadBuffer(
 		commandQueue, m_gpuBuffer,
-		CL_FALSE, 0, sizeof(T) * dArray<T>::GetCount(), destination,
+		CL_FALSE, 0, sizeof(T) * ndArray<T>::GetCount(), destination,
 		0, nullptr, nullptr);
 	dAssert(err == CL_SUCCESS);
 }
@@ -190,7 +194,7 @@ void dOpenclBuffer<T>::WriteData(cl_command_queue commandQueue)
 	cl_int err = CL_SUCCESS;
 	err = clEnqueueWriteBuffer(
 		commandQueue, m_gpuBuffer,
-		CL_FALSE, 0, sizeof(T) * dArray<T>::GetCount(), source,
+		CL_FALSE, 0, sizeof(T) * ndArray<T>::GetCount(), source,
 		0, nullptr, nullptr);
 	dAssert(err == CL_SUCCESS);
 }

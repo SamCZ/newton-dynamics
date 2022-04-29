@@ -9,23 +9,23 @@
 * freely
 */
 
-#include "dCoreStdafx.h"
+#include "ndCoreStdafx.h"
 #include "ndNewtonStdafx.h"
 #include "ndMultiBodyVehicle.h"
 #include "ndMultiBodyVehicleTireJoint.h"
 
 D_CLASS_REFLECTION_IMPLEMENT_LOADER(ndMultiBodyVehicleTireJoint)
 
-ndMultiBodyVehicleTireJoint::ndMultiBodyVehicleTireJoint(const dMatrix& pinAndPivotFrame, ndBodyKinematic* const child, ndBodyKinematic* const parent, const ndWheelDescriptor& info, ndMultiBodyVehicle* const vehicle)
+ndMultiBodyVehicleTireJoint::ndMultiBodyVehicleTireJoint(const ndMatrix& pinAndPivotFrame, ndBodyKinematic* const child, ndBodyKinematic* const parent, const ndWheelDescriptor& info, ndMultiBodyVehicle* const vehicle)
 	:ndJointWheel(pinAndPivotFrame, child, parent, info)
 	,m_vehicle(vehicle)
-	,m_lateralSlip(dFloat32 (0.0f))
-	,m_longitudinalSlip(dFloat32(0.0f))
+	,m_lateralSlip(ndFloat32 (0.0f))
+	,m_longitudinalSlip(ndFloat32(0.0f))
 {
 }
 
-ndMultiBodyVehicleTireJoint::ndMultiBodyVehicleTireJoint(const dLoadSaveBase::dLoadDescriptor& desc)
-	:ndJointWheel(dLoadSaveBase::dLoadDescriptor(desc))
+ndMultiBodyVehicleTireJoint::ndMultiBodyVehicleTireJoint(const ndLoadSaveBase::ndLoadDescriptor& desc)
+	:ndJointWheel(ndLoadSaveBase::ndLoadDescriptor(desc))
 	,m_vehicle(nullptr)
 {
 	const nd::TiXmlNode* const xmlNode = desc.m_rootNode;
@@ -38,12 +38,23 @@ ndMultiBodyVehicleTireJoint::~ndMultiBodyVehicleTireJoint()
 {
 }
 
-dFloat32 ndMultiBodyVehicleTireJoint::GetSideSlip() const
+void ndMultiBodyVehicleTireJoint::Save(const ndLoadSaveBase::ndSaveDescriptor& desc) const
+{
+	nd::TiXmlElement* const childNode = new nd::TiXmlElement(ClassName());
+	desc.m_rootNode->LinkEndChild(childNode);
+	childNode->SetAttribute("hashId", desc.m_nodeNodeHash);
+	ndJointWheel::Save(ndLoadSaveBase::ndSaveDescriptor(desc, childNode));
+
+	xmlSaveParam(childNode, "lateralSlip", m_lateralSlip);
+	xmlSaveParam(childNode, "longitudinalSlip", m_longitudinalSlip);
+}
+
+ndFloat32 ndMultiBodyVehicleTireJoint::GetSideSlip() const
 {
 	return m_lateralSlip;
 }
 
-dFloat32 ndMultiBodyVehicleTireJoint::GetLongitudinalSlip() const
+ndFloat32 ndMultiBodyVehicleTireJoint::GetLongitudinalSlip() const
 {
 	return m_longitudinalSlip;
 }
@@ -54,13 +65,3 @@ void ndMultiBodyVehicleTireJoint::JacobianDerivative(ndConstraintDescritor& desc
 	ndJointWheel::JacobianDerivative(desc);
 }
 
-void ndMultiBodyVehicleTireJoint::Save(const dLoadSaveBase::dSaveDescriptor& desc) const
-{
-	nd::TiXmlElement* const childNode = new nd::TiXmlElement(ClassName());
-	desc.m_rootNode->LinkEndChild(childNode);
-	childNode->SetAttribute("hashId", desc.m_nodeNodeHash);
-	ndJointWheel::Save(dLoadSaveBase::dSaveDescriptor(desc, childNode));
-
-	xmlSaveParam(childNode, "lateralSlip", m_lateralSlip);
-	xmlSaveParam(childNode, "longitudinalSlip", m_longitudinalSlip);
-}

@@ -14,17 +14,17 @@
 
 class ndAnimationPose;
 
-class ndAnimationBlendTreeNode: public dClassAlloc
+class ndAnimationBlendTreeNode: public ndClassAlloc
 {
 	public:
 	ndAnimationBlendTreeNode(ndAnimationBlendTreeNode* const input);
 	virtual ~ndAnimationBlendTreeNode();
 
-	virtual void Evaluate(ndAnimationPose& output, dFloat32 timestep)
+	virtual void Evaluate(ndAnimationPose& output)
 	{
 		if (m_input) 
 		{
-			m_input->Evaluate(output, timestep);
+			m_input->Evaluate(output);
 		}
 	}
 

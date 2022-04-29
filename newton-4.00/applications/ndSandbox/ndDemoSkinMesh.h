@@ -27,7 +27,7 @@ class ndDemoSkinMesh: public ndDemoMeshInterface
 	public:
 	struct dWeightBoneIndex
 	{
-		dInt32 m_boneIndex[4];
+		ndInt32 m_boneIndex[4];
 	};
 
 	ndDemoSkinMesh(const ndDemoSkinMesh& source, ndDemoEntity* const owner);
@@ -36,19 +36,19 @@ class ndDemoSkinMesh: public ndDemoMeshInterface
 
 	protected: 
 	virtual ndDemoMeshInterface* Clone(ndDemoEntity* const owner);
-	void Render(ndDemoEntityManager* const scene, const dMatrix& modelMatrix);
+	void Render(ndDemoEntityManager* const scene, const ndMatrix& modelMatrix);
 	void CreateRenderMesh(
-		const glSkinVertex* const points, dInt32 pointCount,
-		const dInt32* const indices, dInt32 indexCount);
+		const glSkinVertex* const points, ndInt32 pointCount,
+		const ndInt32* const indices, ndInt32 indexCount);
 
-	dInt32 CalculateMatrixPalette(dMatrix* const bindMatrix) const;
+	ndInt32 CalculateMatrixPalette(ndMatrix* const bindMatrix) const;
 
 	ndDemoMesh* m_shareMesh;
 	ndDemoEntity* m_ownerEntity; 
-	dArray<dMatrix> m_bindingMatrixArray;
+	ndArray<ndMatrix> m_bindingMatrixArray;
 	GLuint m_shader;
-	dInt32 m_nodeCount; 
-	dInt32 m_matrixPalette;
+	ndInt32 m_nodeCount; 
+	ndInt32 m_matrixPalette;
 };
 
 #endif 

@@ -37,36 +37,36 @@ class ndPhysicsWorldSettings : public ndWordSettings
 	{
 	}
 
-	ndPhysicsWorldSettings(const dLoadSaveBase::dLoadDescriptor& desc)
-		:ndWordSettings(dLoadSaveBase::dLoadDescriptor(desc))
+	ndPhysicsWorldSettings(const ndLoadSaveBase::ndLoadDescriptor& desc)
+		:ndWordSettings(ndLoadSaveBase::ndLoadDescriptor(desc))
 		,m_world(nullptr)
 	{
 	}
 
-	virtual void Load(const dLoadSaveBase::dLoadDescriptor& desc)
+	virtual void Load(const ndLoadSaveBase::ndLoadDescriptor& desc)
 	{
-		dLoadSaveBase::dLoadDescriptor childDesc(desc);
+		ndLoadSaveBase::ndLoadDescriptor childDesc(desc);
 		ndWordSettings::Load(childDesc);
 		
 		// load application specific settings here
 		m_cameraMatrix = xmlGetMatrix(desc.m_rootNode, "cameraMatrix");
 	}
 
-	virtual void Save(const dLoadSaveBase::dSaveDescriptor& desc) const
+	virtual void Save(const ndLoadSaveBase::ndSaveDescriptor& desc) const
 	{
 		nd::TiXmlElement* const childNode = new nd::TiXmlElement(ClassName());
 		desc.m_rootNode->LinkEndChild(childNode);
-		ndWordSettings::Save(dLoadSaveBase::dSaveDescriptor(desc, childNode));
+		ndWordSettings::Save(ndLoadSaveBase::ndSaveDescriptor(desc, childNode));
 
 		ndDemoEntityManager* const manager = m_world->GetManager();
 		ndDemoCamera* const camera = manager->GetCamera();
 
-		dMatrix cameraMatrix (camera->GetCurrentMatrix());
+		ndMatrix cameraMatrix (camera->GetCurrentMatrix());
 		xmlSaveParam(childNode, "description", "string", "this scene was saved from Newton 4.0 sandbox demos");
 		xmlSaveParam(childNode, "cameraMatrix", cameraMatrix);
 	}
 	
-	dMatrix m_cameraMatrix;
+	ndMatrix m_cameraMatrix;
 	ndPhysicsWorld* m_world;
 };
 
@@ -87,9 +87,16 @@ ndPhysicsWorld::ndPhysicsWorld(ndDemoEntityManager* const manager)
 
 ndPhysicsWorld::~ndPhysicsWorld()
 {
+	CleanUp();
+}
+
+void ndPhysicsWorld::CleanUp()
+{
+	ndWorld::CleanUp();
 	if (m_soundManager)
 	{
 		delete m_soundManager;
+		m_soundManager = nullptr;
 	}
 }
 
@@ -100,7 +107,7 @@ ndDemoEntityManager* ndPhysicsWorld::GetManager() const
 
 void ndPhysicsWorld::QueueBodyForDelete(ndBody* const body)
 {
-	dScopeSpinLock lock(m_deletedLock);
+	ndScopeSpinLock lock(m_deletedLock);
 	m_hasPendingObjectToDelete.store(true);
 	m_deletedBodies.PushBack(body);
 }
@@ -111,39 +118,11 @@ void ndPhysicsWorld::DeletePendingObjects()
 	{
 		Sync();
 		m_hasPendingObjectToDelete.store(false);
-		for (dInt32 i = 0; i < m_deletedBodies.GetCount(); i++)
+		for (ndInt32 i = 0; i < m_deletedBodies.GetCount(); i++)
 		{
 			DeleteBody(m_deletedBodies[i]);
 		}
 		m_deletedBodies.SetCount(0);
-	}
-}
-
-void ndPhysicsWorld::AdvanceTime(dFloat32 timestep)
-{
-	const dFloat32 descreteStep = (1.0f / MAX_PHYSICS_FPS);
-
-	dInt32 maxSteps = MAX_PHYSICS_STEPS;
-	m_timeAccumulator += timestep;
-
-	// if the time step is more than max timestep par frame, throw away the extra steps.
-	if (m_timeAccumulator > descreteStep * maxSteps)
-	{
-		dFloat32 steps = dFloor(m_timeAccumulator / descreteStep) - maxSteps;
-		dAssert(steps >= 0.0f);
-		m_timeAccumulator -= descreteStep * steps;
-	}
-	
-	while (m_timeAccumulator > descreteStep)
-	{
-		Update(descreteStep);
-		m_timeAccumulator -= descreteStep;
-
-		DeletePendingObjects();
-	}
-	if (m_manager->m_synchronousPhysicsUpdate)
-	{
-		Sync();
 	}
 }
 
@@ -152,7 +131,7 @@ ndSoundManager* ndPhysicsWorld::GetSoundManager() const
 	return m_soundManager;
 }
 
-void ndPhysicsWorld::OnPostUpdate(dFloat32 timestep)
+void ndPhysicsWorld::OnPostUpdate(ndFloat32 timestep)
 {
 	m_manager->m_cameraManager->FixUpdate(m_manager, timestep);
 	if (m_manager->m_updateCamera)
@@ -177,7 +156,10 @@ void ndPhysicsWorld::SaveScene(const char* const path)
 void ndPhysicsWorld::SaveSceneModel(const char* const path)
 {
 	ndLoadSave loadScene;
-	loadScene.SaveModel(path, m_manager->m_selectedModel);
+	if (m_manager->m_selectedModel)
+	{
+		loadScene.SaveModel(path, m_manager->m_selectedModel);
+	}
 }
 
 bool ndPhysicsWorld::LoadScene(const char* const path)
@@ -215,7 +197,7 @@ bool ndPhysicsWorld::LoadScene(const char* const path)
 	}
 
 	// add some visualization
-	dMatrix scale(dGetIdentityMatrix());
+	ndMatrix scale(dGetIdentityMatrix());
 	scale[0][0] = 0.5f;
 	scale[1][1] = 0.5f;
 	scale[2][2] = 0.5f;
@@ -225,14 +207,50 @@ bool ndPhysicsWorld::LoadScene(const char* const path)
 		dAssert(body->GetAsBodyKinematic());
 		const ndShapeInstance& collision = body->GetCollisionShape();
 
-		ndDemoMesh* const mesh = new ndDemoMesh("importMesh", m_manager->GetShaderCache(), &collision, "marbleCheckBoard.tga", "marbleCheckBoard.tga", "marbleCheckBoard.tga", 1.0f, scale);
 		ndDemoEntity* const entity = new ndDemoEntity(body->GetMatrix(), nullptr);
-		entity->SetMesh(mesh, dGetIdentityMatrix());
+
+		ndShape* const shape = (ndShape*)collision.GetShape();
+		if (!shape->GetAsShapeStaticProceduralMesh())
+		{
+			ndDemoMesh* const mesh = new ndDemoMesh("importMesh", m_manager->GetShaderCache(), &collision, "marbleCheckBoard.tga", "marbleCheckBoard.tga", "marbleCheckBoard.tga", 1.0f, scale);
+			entity->SetMesh(mesh, dGetIdentityMatrix());
+			mesh->Release();
+		}
+
 		m_manager->AddEntity(entity);
 
 		body->SetNotifyCallback(new ndDemoEntityNotify(m_manager, entity));
-		mesh->Release();
+		
 	}
 
 	return true;
+}
+
+void ndPhysicsWorld::AdvanceTime(ndFloat32 timestep)
+{
+	D_TRACKTIME();
+	const ndFloat32 descreteStep = (1.0f / MAX_PHYSICS_FPS);
+
+	ndInt32 maxSteps = MAX_PHYSICS_STEPS;
+	m_timeAccumulator += timestep;
+
+	// if the time step is more than max timestep par frame, throw away the extra steps.
+	if (m_timeAccumulator > descreteStep * maxSteps)
+	{
+		ndFloat32 steps = ndFloor(m_timeAccumulator / descreteStep) - maxSteps;
+		dAssert(steps >= 0.0f);
+		m_timeAccumulator -= descreteStep * steps;
+	}
+
+	while (m_timeAccumulator > descreteStep)
+	{
+		Update(descreteStep);
+		m_timeAccumulator -= descreteStep;
+
+		DeletePendingObjects();
+	}
+	if (m_manager->m_synchronousPhysicsUpdate)
+	{
+		Sync();
+	}
 }

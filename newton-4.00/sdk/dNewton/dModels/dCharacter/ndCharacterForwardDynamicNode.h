@@ -19,20 +19,20 @@
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
-#ifndef __D_CHARACTER_FORWARD_DYNAMICS_NODE_H__
-#define __D_CHARACTER_FORWARD_DYNAMICS_NODE_H__
+#ifndef __ND_CHARACTER_FORWARD_DYNAMICS_NODE_H__
+#define __ND_CHARACTER_FORWARD_DYNAMICS_NODE_H__
 
 #include "ndNewtonStdafx.h"
 #include "ndCharacterNode.h"
 
-class ndJointPdActuator;
+class ndJointSpherical;
 
 class ndCharacterForwardDynamicNode: public ndCharacterNode 
 {
 	public:
 	D_CLASS_REFLECTION(ndCharacterForwardDynamicNode);
 	D_NEWTON_API ndCharacterForwardDynamicNode(const ndCharacterLoadDescriptor& desc);
-	D_NEWTON_API ndCharacterForwardDynamicNode(const dMatrix& matrixInGlobalSpace, ndBodyDynamic* const body, ndCharacterNode* const parent);
+	D_NEWTON_API ndCharacterForwardDynamicNode(const ndMatrix& matrixInGlobalSpace, ndBodyDynamic* const body, ndCharacterNode* const parent);
 	D_NEWTON_API virtual ~ndCharacterForwardDynamicNode ();
 
 	virtual ndBodyDynamic* GetBody() const;
@@ -42,7 +42,7 @@ class ndCharacterForwardDynamicNode: public ndCharacterNode
 	void Save(const ndCharacterSaveDescriptor& desc) const;
 
 	ndBodyDynamic* m_body;
-	ndJointPdActuator* m_joint;
+	ndJointSpherical* m_joint;
 };
 
 inline ndBodyDynamic* ndCharacterForwardDynamicNode::GetBody() const

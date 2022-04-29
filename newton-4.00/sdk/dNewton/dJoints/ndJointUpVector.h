@@ -9,8 +9,8 @@
 * freely
 */
 
-#ifndef __D_JOINT_UPVECTOR_H__
-#define __D_JOINT_UPVECTOR_H__
+#ifndef __ND_JOINT_UPVECTOR_H__
+#define __ND_JOINT_UPVECTOR_H__
 
 #include "ndNewtonStdafx.h"
 #include "ndJointBilateralConstraint.h"
@@ -20,15 +20,15 @@ class ndJointUpVector: public ndJointBilateralConstraint
 {
 	public:
 	D_CLASS_REFLECTION(ndJointUpVector);
-	D_NEWTON_API ndJointUpVector(const dLoadSaveBase::dLoadDescriptor& desc);
-	D_NEWTON_API ndJointUpVector(const dVector& normal, ndBodyKinematic* const child, ndBodyKinematic* const parent);
+	D_NEWTON_API ndJointUpVector(const ndLoadSaveBase::ndLoadDescriptor& desc);
+	D_NEWTON_API ndJointUpVector(const ndVector& normal, ndBodyKinematic* const child, ndBodyKinematic* const parent);
 	D_NEWTON_API virtual ~ndJointUpVector();
 
-	D_NEWTON_API void SetPinDir (const dVector& pin);
+	D_NEWTON_API void SetPinDir (const ndVector& pin);
 
 	protected:
 	D_NEWTON_API void JacobianDerivative(ndConstraintDescritor& desc);
-	D_NEWTON_API void Save(const dLoadSaveBase::dSaveDescriptor& desc) const;
+	D_NEWTON_API void Save(const ndLoadSaveBase::ndSaveDescriptor& desc) const;
 };
 
 #endif

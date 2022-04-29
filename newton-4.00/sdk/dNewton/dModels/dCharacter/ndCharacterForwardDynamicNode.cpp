@@ -19,19 +19,19 @@
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
-#include "dCoreStdafx.h"
+#include "ndCoreStdafx.h"
 #include "ndNewtonStdafx.h"
 #include "ndCharacter.h"
 #include "ndBodyDynamic.h"
-#include "ndJointPdActuator.h"
+#include "ndJointSpherical.h"
 #include "ndCharacterForwardDynamicNode.h"
 
 D_CLASS_REFLECTION_IMPLEMENT_LOADER(ndCharacterForwardDynamicNode)
 
-ndCharacterForwardDynamicNode::ndCharacterForwardDynamicNode(const dMatrix& matrixInGlobalSpace, ndBodyDynamic* const body, ndCharacterNode* const parent)
+ndCharacterForwardDynamicNode::ndCharacterForwardDynamicNode(const ndMatrix& matrixInGlobalSpace, ndBodyDynamic* const body, ndCharacterNode* const parent)
 	:ndCharacterNode(parent)
 	,m_body(body)
-	,m_joint(new ndJointPdActuator(matrixInGlobalSpace, body, parent->GetBody()))
+	,m_joint(new ndJointSpherical(matrixInGlobalSpace, body, parent->GetBody()))
 {
 	m_localPose = m_body->GetMatrix() * parent->GetBody()->GetMatrix().Inverse();
 }
@@ -44,13 +44,13 @@ ndCharacterForwardDynamicNode::ndCharacterForwardDynamicNode(const ndCharacterLo
 	const char* const name = xmlGetString(xmlNode, "name");
 	SetName(name);
 	m_localPose = xmlGetMatrix(xmlNode, "localPose");
-	dInt32 bodyHash = xmlGetInt(xmlNode, "bodyHash");
-	dInt32 jointHash = xmlGetInt(xmlNode, "jointHash");
+	ndInt32 bodyHash = xmlGetInt(xmlNode, "bodyHash");
+	ndInt32 jointHash = xmlGetInt(xmlNode, "jointHash");
 	
 	const ndBody* const body = desc.m_bodyMap->Find(bodyHash)->GetInfo();
 	const ndJointBilateralConstraint* const joint = desc.m_jointMap->Find(jointHash)->GetInfo();
 	m_body = (ndBodyDynamic*)body;
-	m_joint = (ndJointPdActuator*)joint;
+	m_joint = (ndJointSpherical*)joint;
 }
 
 ndCharacterForwardDynamicNode::~ndCharacterForwardDynamicNode()
@@ -66,14 +66,14 @@ void ndCharacterForwardDynamicNode::Save(const ndCharacterSaveDescriptor& desc) 
 	childNode->SetAttribute("hashId", desc.m_limbMap->GetCount());
 	ndCharacterNode::Save(ndCharacterSaveDescriptor(desc, childNode));
 
-	dTree<dInt32, const ndJointBilateralConstraint*>::dNode* jointNode = desc.m_jointMap->Find(m_joint);
+	ndTree<ndInt32, const ndJointBilateralConstraint*>::ndNode* jointNode = desc.m_jointMap->Find(m_joint);
 	if (!jointNode)
 	{
 		jointNode = desc.m_jointMap->Insert(desc.m_jointMap->GetCount(), m_joint);
 	}
 	dAssert(jointNode);
 
-	dTree<dInt32, const ndBodyKinematic*>::dNode* bodyNode = desc.m_bodyMap->Find(m_body);
+	ndTree<ndInt32, const ndBodyKinematic*>::ndNode* bodyNode = desc.m_bodyMap->Find(m_body);
 	if (!bodyNode)
 	{
 		bodyNode = desc.m_bodyMap->Insert(desc.m_bodyMap->GetCount(), m_body);
@@ -82,6 +82,6 @@ void ndCharacterForwardDynamicNode::Save(const ndCharacterSaveDescriptor& desc) 
 
 	xmlSaveParam(childNode, "name", GetName().GetStr());
 	xmlSaveParam(childNode, "localPose", m_localPose);
-	xmlSaveParam(childNode, "bodyHash", dInt32(bodyNode->GetInfo()));
-	xmlSaveParam(childNode, "jointHash", dInt32(jointNode->GetInfo()));
+	xmlSaveParam(childNode, "bodyHash", ndInt32(bodyNode->GetInfo()));
+	xmlSaveParam(childNode, "jointHash", ndInt32(jointNode->GetInfo()));
 }

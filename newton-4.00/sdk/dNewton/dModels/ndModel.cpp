@@ -19,20 +19,20 @@
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
-#include "dCoreStdafx.h"
+#include "ndCoreStdafx.h"
 #include "ndNewtonStdafx.h"
 #include "ndWorld.h"
 #include "ndModel.h"
 
 D_CLASS_REFLECTION_IMPLEMENT_LOADER(ndModel)
 
-ndModel::ndModel(const dLoadSaveBase::dLoadDescriptor&)
-	:dClassAlloc()
+ndModel::ndModel(const ndLoadSaveBase::ndLoadDescriptor&)
+	:ndClassAlloc()
 	,m_node(nullptr)
 {
 }
 
-void ndModel::Save(const dLoadSaveBase::dSaveDescriptor& desc) const
+void ndModel::Save(const ndLoadSaveBase::ndSaveDescriptor& desc) const
 {
 	nd::TiXmlElement* const childNode = new nd::TiXmlElement(ClassName());
 	desc.m_rootNode->LinkEndChild(childNode);

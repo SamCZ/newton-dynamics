@@ -38,7 +38,7 @@ ndSkyBox::ndSkyBox(GLuint shader)
 
 	// index array for glDrawElements()
 	// A cube requires 36 indices = 6 sides * 2 tris * 3 verts
-	static dInt32 indices[] =
+	static ndInt32 indices[] =
 	{
 		0, 1, 2,   2, 3, 0,    // v0-v1-v2, v2-v3-v0 (front)
 		4, 5, 6,   6, 7, 4,    // v0-v3-v4, v4-v5-v0 (right)
@@ -48,7 +48,7 @@ ndSkyBox::ndSkyBox(GLuint shader)
 		20,21,22,  22,23,20     // v4-v7-v6, v6-v5-v4 (back)
 	};
 
-	dMatrix texMatrix(dGetIdentityMatrix());
+	ndMatrix texMatrix(dGetIdentityMatrix());
 	texMatrix[1][1] = -1.0f;
 	texMatrix[1][3] = size;
 	m_textureMatrix = glMatrix(texMatrix);
@@ -61,7 +61,8 @@ ndSkyBox::ndSkyBox(GLuint shader)
 	glGenBuffers(1, &m_vertexBuffer); //m_vbo
 	glBindBuffer(GL_ARRAY_BUFFER, m_vertexBuffer);
 	
-	//glBufferData(GL_ARRAY_BUFFER, sizeof(VertexPT) * 24, &vtx[0], GL_STATIC_DRAW);
+	// for some reason, this crash in debug mode in window 32 bit 
+	// since to be a problem with glatter
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), &vertices[0], GL_STATIC_DRAW);
 	
 	glEnableVertexAttribArray(0);
@@ -69,7 +70,7 @@ ndSkyBox::ndSkyBox(GLuint shader)
 	
 	glGenBuffers(1, &m_indexBuffer);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_indexBuffer);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, 36 * sizeof(dInt32), &indices[0], GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), &indices[0], GL_STATIC_DRAW);
 	
 	glBindVertexArray(0);
 	
@@ -123,8 +124,8 @@ void ndSkyBox::LoadCubeTexture(GLenum face, const char* const filename)
 	tgaHeader.height = SWAP_INT16(tgaHeader.height);
 	
 	// Get width, height, and depth of texture
-	dInt32 width = tgaHeader.width;
-	dInt32 height = tgaHeader.height;
+	ndInt32 width = tgaHeader.width;
+	ndInt32 height = tgaHeader.height;
 	short sDepth = tgaHeader.bits / 8;
 	dAssert((sDepth == 3) || (sDepth == 4));
 	
@@ -141,7 +142,7 @@ void ndSkyBox::LoadCubeTexture(GLenum face, const char* const filename)
 	unsigned lImageSize = width * height * sDepth;
 	
 	// Allocate memory and check for success
-	char* const pBits = (char*)dMemory::Malloc(width * height * sizeof(dInt32));
+	char* const pBits = (char*)ndMemory::Malloc(width * height * sizeof(ndInt32));
 	if (pBits == nullptr)
 	{
 		dAssert(0);
@@ -149,7 +150,7 @@ void ndSkyBox::LoadCubeTexture(GLenum face, const char* const filename)
 		return;
 	}
 	
-	dInt32 readret = dInt32(fread(pBits, lImageSize, 1, pFile));
+	ndInt32 readret = ndInt32(fread(pBits, lImageSize, 1, pFile));
 	if (readret != 1)
 	{
 		dAssert(0);
@@ -170,7 +171,7 @@ void ndSkyBox::LoadCubeTexture(GLenum face, const char* const filename)
 	
 	// Done with File
 	fclose(pFile);
-	dMemory::Free(pBits);
+	ndMemory::Free(pBits);
 }
 
 void ndSkyBox::SetupCubeMap()
@@ -217,7 +218,7 @@ ndSkyBox::~ndSkyBox()
 	}
 }
 
-void ndSkyBox::Render(dFloat32, ndDemoEntityManager* const scene, const dMatrix&) const
+void ndSkyBox::Render(ndFloat32, ndDemoEntityManager* const scene, const ndMatrix&) const
 {
 	glCullFace(GL_FRONT);
 	glFrontFace(GL_CCW);
@@ -225,11 +226,11 @@ void ndSkyBox::Render(dFloat32, ndDemoEntityManager* const scene, const dMatrix&
 
 	ndDemoCamera* const camera = scene->GetCamera();
 	
-	dMatrix skyMatrix(dGetIdentityMatrix());
-	dMatrix viewMatrix(camera->GetViewMatrix());
-	skyMatrix.m_posit = viewMatrix.UntransformVector(dVector(0.0f, 0.25f, 0.0f, 1.0f));
+	ndMatrix skyMatrix(dGetIdentityMatrix());
+	ndMatrix viewMatrix(camera->GetViewMatrix());
+	skyMatrix.m_posit = viewMatrix.UntransformVector(ndVector(0.0f, 0.25f, 0.0f, 1.0f));
 
-	//dMatrix viewModelMatrix(skyMatrix * camera->GetViewMatrix());
+	//ndMatrix viewModelMatrix(skyMatrix * camera->GetViewMatrix());
 	const glMatrix projectionViewModelMatrix(skyMatrix * camera->GetViewMatrix() * camera->GetProjectionMatrix());
 	
 	glUseProgram(m_shader);

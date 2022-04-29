@@ -19,20 +19,38 @@
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
-#ifndef __D_BODY_LIST_H__
-#define __D_BODY_LIST_H__
+#ifndef __ND_BODY_LIST_H__
+#define __ND_BODY_LIST_H__
 
 #include "ndCollisionStdafx.h"
 
 class ndBodyKinematic;
 
-class ndBodyList: public dList<ndBodyKinematic*, dContainersFreeListAlloc<ndBodyKinematic*>>
+class ndBodyList: public ndList<ndBodyKinematic*, ndContainersFreeListAlloc<ndBodyKinematic*>>
 {
 	public:
 	ndBodyList()
-		:dList<ndBodyKinematic*, dContainersFreeListAlloc<ndBodyKinematic*>>()
+		:ndList<ndBodyKinematic*, ndContainersFreeListAlloc<ndBodyKinematic*>>()
+		,m_view(1024)
 	{
 	}
+
+	ndBodyList(const ndBodyList& src)
+		:ndList<ndBodyKinematic*, ndContainersFreeListAlloc<ndBodyKinematic*>>()
+		,m_view()
+	{
+		ndBodyList* const stealData = (ndBodyList*)&src;
+		ndNode* nextNode;
+		for (ndNode* node = stealData->GetFirst(); node; node = node = nextNode)
+		{
+			nextNode = node->GetNext();
+			stealData->Unlink(node);
+			Append(node);
+		}
+		m_view.Swap(stealData->m_view);
+	}
+
+	ndArray<ndBodyKinematic*> m_view;
 };
 
 

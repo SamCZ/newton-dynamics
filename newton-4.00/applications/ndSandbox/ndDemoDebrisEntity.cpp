@@ -16,7 +16,7 @@
 #include "ndDemoEntityManager.h"
 
 
-ndDemoDebrisMesh::ndDemoDebrisMesh(ndDemoDebrisMesh* const srcMeshconst, const dArray<glDebrisPoint>& vertexArray)
+ndDemoDebrisMesh::ndDemoDebrisMesh(ndDemoDebrisMesh* const srcMeshconst, const ndArray<glDebrisPoint>& vertexArray)
 	:ndDemoMesh("vertexBufferMesh")
 {
 	m_shader = srcMeshconst->m_shader;
@@ -59,7 +59,7 @@ ndDemoDebrisMesh::ndDemoDebrisMesh(ndDemoDebrisMesh* const srcMeshconst, const d
 	glDisableVertexAttribArray(0);
 }
 
-ndDemoDebrisMesh::ndDemoDebrisMesh(const char* const name, ndMeshEffect* const meshNode, const ndShaderPrograms& shaderCache, dInt32 offsetBase, dArray<glDebrisPoint>& vertexArray)
+ndDemoDebrisMesh::ndDemoDebrisMesh(const char* const name, ndMeshEffect* const meshNode, const ndShaderPrograms& shaderCache, ndInt32 offsetBase, ndArray<glDebrisPoint>& vertexArray)
 	:ndDemoMesh(name)
 {
 	m_name = name;
@@ -69,20 +69,20 @@ ndDemoDebrisMesh::ndDemoDebrisMesh(const char* const name, ndMeshEffect* const m
 	ndIndexArray* const geometryHandle = meshNode->MaterialGeometryBegin();
 
 	// extract vertex data  from the newton mesh		
-	dInt32 indexCount = 0;
-	for (dInt32 handle = meshNode->GetFirstMaterial(geometryHandle); handle != -1; handle = meshNode->GetNextMaterial(geometryHandle, handle))
+	ndInt32 indexCount = 0;
+	for (ndInt32 handle = meshNode->GetFirstMaterial(geometryHandle); handle != -1; handle = meshNode->GetNextMaterial(geometryHandle, handle))
 	{
 		indexCount += meshNode->GetMaterialIndexCount(geometryHandle, handle);
 	}
 
-	dInt32* const indices = dAlloca(dInt32, indexCount);
+	ndInt32* const indices = dAlloca(ndInt32, indexCount);
 
-	dInt32 segmentStart = 0;
-	dInt32 materialCount = 0;
-	const dArray<ndMeshEffect::dMaterial>& materialArray = meshNode->GetMaterials();
-	for (dInt32 handle = meshNode->GetFirstMaterial(geometryHandle); handle != -1; handle = meshNode->GetNextMaterial(geometryHandle, handle))
+	ndInt32 segmentStart = 0;
+	ndInt32 materialCount = 0;
+	const ndArray<ndMeshEffect::dMaterial>& materialArray = meshNode->GetMaterials();
+	for (ndInt32 handle = meshNode->GetFirstMaterial(geometryHandle); handle != -1; handle = meshNode->GetNextMaterial(geometryHandle, handle))
 	{
-		dInt32 materialIndex = meshNode->GetMaterialID(geometryHandle, handle);
+		ndInt32 materialIndex = meshNode->GetMaterialID(geometryHandle, handle);
 		const ndMeshEffect::dMaterial& material = materialArray[materialIndex];
 
 		m_material[materialCount].m_ambient = glVector4 (material.m_ambient);
@@ -93,13 +93,13 @@ ndDemoDebrisMesh::ndDemoDebrisMesh(const char* const name, ndMeshEffect* const m
 		strcpy(m_material[materialCount].m_textureName, material.m_textureName);
 		m_material[materialCount].m_textureHandle = LoadTexture(material.m_textureName);
 
-		dInt32 subIndexCount = meshNode->GetMaterialIndexCount(geometryHandle, handle);
+		ndInt32 subIndexCount = meshNode->GetMaterialIndexCount(geometryHandle, handle);
 		meshNode->GetMaterialGetIndexStream(geometryHandle, handle, &indices[segmentStart]);
 
 		GLfloat blend = materialCount ? 0.0f : 1.0f;
-		for (dInt32 i = 0; i < subIndexCount; i++)
+		for (ndInt32 i = 0; i < subIndexCount; i++)
 		{
-			dInt32 index = indices[segmentStart + i] + offsetBase;
+			ndInt32 index = indices[segmentStart + i] + offsetBase;
 			indices[segmentStart + i] = index;
 			vertexArray[index].m_posit.m_w = blend;
 		}
@@ -133,11 +133,11 @@ ndDemoDebrisMesh::ndDemoDebrisMesh(const char* const name, ndMeshEffect* const m
 	m_indexCount = indexCount;
 }
 
-void ndDemoDebrisMesh::Render(ndDemoEntityManager* const scene, const dMatrix& modelMatrix)
+void ndDemoDebrisMesh::Render(ndDemoEntityManager* const scene, const ndMatrix& modelMatrix)
 {
 	ndDemoCamera* const camera = scene->GetCamera();
 
-	const dMatrix& viewMatrix = camera->GetViewMatrix();
+	const ndMatrix& viewMatrix = camera->GetViewMatrix();
 	const glMatrix viewModelMatrix(modelMatrix * viewMatrix);
 
 	glUniformMatrix4fv(m_normalMatrixLocation, 1, false, &viewModelMatrix[0][0]);
@@ -147,22 +147,22 @@ void ndDemoDebrisMesh::Render(ndDemoEntityManager* const scene, const dMatrix& m
 	glDrawElements(GL_TRIANGLES, m_indexCount, GL_UNSIGNED_INT, 0);
 }
 
-ndDemoDebrisEntity::ndDemoDebrisEntity(ndMeshEffect* const meshNode, dArray<glDebrisPoint>& vertexArray, ndDemoDebrisRootEntity* const parent, const ndShaderPrograms& shaderCache)
+ndDemoDebrisEntity::ndDemoDebrisEntity(ndMeshEffect* const meshNode, ndArray<glDebrisPoint>& vertexArray, ndDemoDebrisRootEntity* const parent, const ndShaderPrograms& shaderCache)
 	:ndDemoEntity(dGetIdentityMatrix(), parent)
 {
-	dInt32 vertexCount = meshNode->GetPropertiesCount();
+	ndInt32 vertexCount = meshNode->GetPropertiesCount();
 
-	dInt32 const vertexOffsetBase = vertexArray.GetCount();
+	ndInt32 const vertexOffsetBase = vertexArray.GetCount();
 	vertexArray.SetCount(vertexOffsetBase + vertexCount);
 
 	struct dTmpData
 	{
-		dFloat32 m_posit[4];
-		dFloat32 m_normal[3];
-		dFloat32 m_uv[2];
+		ndFloat32 m_posit[4];
+		ndFloat32 m_normal[3];
+		ndFloat32 m_uv[2];
 	};
 
-	dArray<dTmpData> tmp;
+	ndArray<dTmpData> tmp;
 	tmp.SetCount(vertexCount);
 
 	//meshNode->GetVertexChannel(sizeof(glDebrisPoint), &vertexArray[vertexOffsetBase].m_posit.m_x);
@@ -172,7 +172,7 @@ ndDemoDebrisEntity::ndDemoDebrisEntity(ndMeshEffect* const meshNode, dArray<glDe
 	meshNode->GetNormalChannel(sizeof(dTmpData), &tmp[0].m_normal[0]);
 	meshNode->GetUV0Channel(sizeof(dTmpData), &tmp[0].m_uv[0]);
 
-	for (dInt32 i = 0; i < vertexCount; i++)
+	for (ndInt32 i = 0; i < vertexCount; i++)
 	{
 		vertexArray[vertexOffsetBase + i].m_posit.m_x = GLfloat(tmp[i].m_posit[0]);
 		vertexArray[vertexOffsetBase + i].m_posit.m_y = GLfloat(tmp[i].m_posit[1]);
@@ -199,14 +199,14 @@ ndDemoDebrisEntity::~ndDemoDebrisEntity()
 {
 }
 
-dNodeBaseHierarchy* ndDemoDebrisEntity::CreateClone() const
+ndNodeBaseHierarchy* ndDemoDebrisEntity::CreateClone() const
 {
 	return new ndDemoDebrisEntity(*this);
 }
 
-void ndDemoDebrisEntity::Render(dFloat32, ndDemoEntityManager* const scene, const dMatrix& matrix) const
+void ndDemoDebrisEntity::Render(ndFloat32, ndDemoEntityManager* const scene, const ndMatrix& matrix) const
 {
-	const dMatrix modelMatrix(m_matrix * matrix);
+	const ndMatrix modelMatrix(m_matrix * matrix);
 
 	m_mesh->Render(scene, modelMatrix);
 }
@@ -225,22 +225,22 @@ ndDemoDebrisRootEntity::~ndDemoDebrisRootEntity(void)
 {
 }
 
-void ndDemoDebrisRootEntity::FinalizeConstruction(const dArray<glDebrisPoint>& vertexArray)
+void ndDemoDebrisRootEntity::FinalizeConstruction(const ndArray<glDebrisPoint>& vertexArray)
 {
 	ndDemoDebrisMesh* const shaderMesh = (ndDemoDebrisMesh*)GetChild()->GetMesh();
 	m_mesh = new ndDemoDebrisMesh(shaderMesh, vertexArray);
 }
 
-void ndDemoDebrisRootEntity::Render(dFloat32 timestep, ndDemoEntityManager* const scene, const dMatrix& matrix) const
+void ndDemoDebrisRootEntity::Render(ndFloat32 timestep, ndDemoEntityManager* const scene, const ndMatrix& matrix) const
 {
 	ndDemoDebrisMesh* const shaderMesh = ((ndDemoDebrisMesh*)m_mesh);
 	glUseProgram(shaderMesh->m_shader);
 	glBindVertexArray(shaderMesh->m_vertextArrayBuffer);
 
 	ndDemoCamera* const camera = scene->GetCamera();
-	const dMatrix& viewMatrix = camera->GetViewMatrix();
+	const ndMatrix& viewMatrix = camera->GetViewMatrix();
 	const glMatrix projectionMatrix (camera->GetProjectionMatrix());
-	const glVector4 directionaLight(viewMatrix.RotateVector(dVector(-1.0f, 1.0f, 0.0f, 0.0f)).Normalize());
+	const glVector4 directionaLight(viewMatrix.RotateVector(ndVector(-1.0f, 1.0f, 0.0f, 0.0f)).Normalize());
 
 	glUniform1i(shaderMesh->m_textureLocation, 0);
 	glUniform1i(shaderMesh->m_textureLocation1, 1);
@@ -261,7 +261,7 @@ void ndDemoDebrisRootEntity::Render(dFloat32 timestep, ndDemoEntityManager* cons
 	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 	glBindTexture(GL_TEXTURE_2D, shaderMesh->m_material[0].m_textureHandle);
 	
-	const dMatrix nodeMatrix(m_matrix * matrix);
+	const ndMatrix nodeMatrix(m_matrix * matrix);
 	for (ndDemoEntity* child = GetChild(); child; child = child->GetSibling())
 	{
 		child->Render(timestep, scene, nodeMatrix);

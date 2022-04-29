@@ -24,8 +24,8 @@ class ndDemoEntityNotify: public ndBodyNotify
 {
 	public:
 	D_CLASS_REFLECTION(ndDemoEntityNotify);
-	ndDemoEntityNotify(const dLoadSaveBase::dLoadDescriptor& desc);
-	ndDemoEntityNotify(ndDemoEntityManager* const manager, ndDemoEntity* const entity, ndBodyDynamic* const parentBody = nullptr, dFloat32 gravity = DEMO_GRAVITY);
+	ndDemoEntityNotify(const ndLoadSaveBase::ndLoadDescriptor& desc);
+	ndDemoEntityNotify(ndDemoEntityManager* const manager, ndDemoEntity* const entity, ndBodyDynamic* const parentBody = nullptr, ndFloat32 gravity = DEMO_GRAVITY);
 	virtual ~ndDemoEntityNotify();
 
 	void* GetUserData() const
@@ -34,17 +34,17 @@ class ndDemoEntityNotify: public ndBodyNotify
 	}
 
 	virtual void OnObjectPick() const;
-	virtual void OnTransform(dInt32 threadIndex, const dMatrix& matrix);
-	virtual void OnApplyExternalForce(dInt32 threadIndex, dFloat32 timestep);
+	virtual void OnTransform(ndInt32 threadIndex, const ndMatrix& matrix);
+	virtual void OnApplyExternalForce(ndInt32 threadIndex, ndFloat32 timestep);
 
-	virtual void Save(const dLoadSaveBase::dSaveDescriptor& desc) const;
+	virtual void Save(const ndLoadSaveBase::ndSaveDescriptor& desc) const;
 
 	ndDemoEntity* m_entity;
 	ndBodyDynamic* m_parentBody;
 	ndDemoEntityManager* m_manager;
 };
 
-class ndDemoEntity : public dNodeHierarchy<ndDemoEntity>
+class ndDemoEntity : public ndNodeHierarchy<ndDemoEntity>
 {
 	public:
 
@@ -59,52 +59,55 @@ class ndDemoEntity : public dNodeHierarchy<ndDemoEntity>
 		{
 		}
 		
-		virtual void OnRender (dFloat32 timestep) const = 0;
+		virtual void OnRender (ndFloat32 timestep) const = 0;
 	};
 
 	ndDemoEntity(const ndDemoEntity& copyFrom);
-	ndDemoEntity(const dMatrix& matrix, ndDemoEntity* const parent);
+	ndDemoEntity(const ndMatrix& matrix, ndDemoEntity* const parent);
 	virtual ~ndDemoEntity(void);
 
 	ndDemoMeshInterface* GetMesh() const;
-	void SetMesh (ndDemoMeshInterface* const m_mesh, const dMatrix& meshMatrix);
+	void SetMesh (ndDemoMeshInterface* const m_mesh, const ndMatrix& meshMatrix);
 
-	const dMatrix& GetMeshMatrix() const;  
-	void SetMeshMatrix(const dMatrix& matrix);  
+	const ndMatrix& GetMeshMatrix() const;  
+	void SetMeshMatrix(const ndMatrix& matrix);  
 
 	UserData* GetUserData ();
 	void SetUserData (UserData* const data);
 
-	dNodeBaseHierarchy* CreateClone () const;
+	ndNodeBaseHierarchy* CreateClone () const;
 
-	const dMatrix& GetRenderMatrix () const;
-	dMatrix CalculateGlobalMatrix (const ndDemoEntity* const root = nullptr) const;
+	const ndMatrix& GetRenderMatrix () const;
+	ndMatrix CalculateGlobalMatrix (const ndDemoEntity* const root = nullptr) const;
 
-	dMatrix GetNextMatrix () const;
-	dMatrix GetCurrentMatrix () const;
+	ndMatrix GetNextMatrix () const;
+	ndMatrix GetCurrentMatrix () const;
 	ndAnimKeyframe GetCurrentTransform() const;
-	virtual void SetMatrix(const dQuaternion& rotation, const dVector& position);
-	virtual void SetNextMatrix (const dQuaternion& rotation, const dVector& position);
-	virtual void ResetMatrix(const dMatrix& matrix);
-	virtual void InterpolateMatrix (dFloat32 param);
-	dMatrix CalculateInterpolatedGlobalMatrix (const ndDemoEntity* const root = nullptr) const;
+	virtual void SetMatrix(const ndQuaternion& rotation, const ndVector& position);
+	virtual void SetNextMatrix (const ndQuaternion& rotation, const ndVector& position);
+	virtual void ResetMatrix(const ndMatrix& matrix);
+	virtual void InterpolateMatrix (ndFloat32 param);
+	ndMatrix CalculateInterpolatedGlobalMatrix (const ndDemoEntity* const root = nullptr) const;
 
 	void RenderBone() const;
-	ndShapeInstance* CreateCollisionFromchildren() const;
 
-	virtual void Render(dFloat32 timeStep, ndDemoEntityManager* const scene, const dMatrix& matrix) const;
+	ndShapeInstance* CreateCollisionFromChildren() const;
+	ndShapeInstance* CreateCompoundFromMesh(bool lowDetail = false) const;
+
+	virtual void Render(ndFloat32 timeStep, ndDemoEntityManager* const scene, const ndMatrix& matrix) const;
 
 	protected:
-	mutable dMatrix m_matrix;			// interpolated matrix
-	dVector m_curPosition;				// position one physics simulation step in the future
-	dVector m_nextPosition;             // position at the current physics simulation step
-	dQuaternion m_curRotation;          // rotation one physics simulation step in the future  
-	dQuaternion m_nextRotation;         // rotation at the current physics simulation step  
+	mutable ndMatrix m_matrix;			// interpolated matrix
+	ndVector m_curPosition;				// position one physics simulation step in the future
+	ndVector m_nextPosition;             // position at the current physics simulation step
+	ndQuaternion m_curRotation;          // rotation one physics simulation step in the future  
+	ndQuaternion m_nextRotation;         // rotation at the current physics simulation step  
 
-	dMatrix m_meshMatrix;
+	ndMatrix m_meshMatrix;
 	ndDemoMeshInterface* m_mesh;
 	UserData* m_userData;
-	dList <ndDemoEntity*>::dNode* m_rootNode;
+	ndList <ndDemoEntity*>::ndNode* m_rootNode;
+	ndSpinLock m_lock;
 	bool m_isVisible;
 
 	friend class ndDemoEntityNotify;

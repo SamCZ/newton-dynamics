@@ -19,92 +19,93 @@
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
-#include "dCoreStdafx.h"
+#include "ndCoreStdafx.h"
 #include "ndNewtonStdafx.h"
 #include "ndMultiBodyVehicleDifferential.h"
 
 D_CLASS_REFLECTION_IMPLEMENT_LOADER(ndMultiBodyVehicleDifferential)
 
-ndMultiBodyVehicleDifferential::ndMultiBodyVehicleDifferential(ndBodyKinematic* const differential, ndBodyKinematic* const chassis, dFloat32 slipOmegaLock)
+ndMultiBodyVehicleDifferential::ndMultiBodyVehicleDifferential(ndBodyKinematic* const differential, ndBodyKinematic* const chassis, ndFloat32 slipOmegaLock)
 	:ndJointBilateralConstraint(2, differential, chassis, differential->GetMatrix())
 	,m_limitedSlipOmega(slipOmegaLock)
 {
 	dAssert(slipOmegaLock >= 0.0f);
 }
 
-ndMultiBodyVehicleDifferential::ndMultiBodyVehicleDifferential(const dLoadSaveBase::dLoadDescriptor& desc)
-	:ndJointBilateralConstraint(dLoadSaveBase::dLoadDescriptor(desc))
-	,m_limitedSlipOmega(dFloat32 (0.0f))
+ndMultiBodyVehicleDifferential::ndMultiBodyVehicleDifferential(const ndLoadSaveBase::ndLoadDescriptor& desc)
+	:ndJointBilateralConstraint(ndLoadSaveBase::ndLoadDescriptor(desc))
+	,m_limitedSlipOmega(ndFloat32 (0.0f))
 {
 	const nd::TiXmlNode* const xmlNode = desc.m_rootNode;
 
 	m_limitedSlipOmega = xmlGetFloat(xmlNode, "limitedSlipOmega");
 }
 
+void ndMultiBodyVehicleDifferential::Save(const ndLoadSaveBase::ndSaveDescriptor& desc) const
+{
+	nd::TiXmlElement* const childNode = new nd::TiXmlElement(ClassName());
+	desc.m_rootNode->LinkEndChild(childNode);
+	childNode->SetAttribute("hashId", desc.m_nodeNodeHash);
+	ndJointBilateralConstraint::Save(ndLoadSaveBase::ndSaveDescriptor(desc, childNode));
+
+	xmlSaveParam(childNode, "limitedSlipOmega", m_limitedSlipOmega);
+}
+
 void ndMultiBodyVehicleDifferential::AlignMatrix()
 {
-	dMatrix matrix0;
-	dMatrix matrix1;
+	ndMatrix matrix0;
+	ndMatrix matrix1;
 	CalculateGlobalMatrix(matrix0, matrix1);
 
 	//matrix1.m_posit += matrix1.m_up.Scale(1.0f);
 
-	m_body0->SetMatrix(matrix1);
-	m_body0->SetVelocity(m_body1->GetVelocity());
+	m_body0->SetMatrixNoSleep(matrix1);
+	m_body0->SetVelocityNoSleep(m_body1->GetVelocity());
 
-	dVector omega0(m_body0->GetOmega());
-	dVector omega1(m_body1->GetOmega());
-	dVector omega(
+	ndVector omega0(m_body0->GetOmega());
+	ndVector omega1(m_body1->GetOmega());
+	ndVector omega(
 		matrix1.m_front.Scale(matrix1.m_front.DotProduct(omega0).GetScalar()) +
 		matrix1.m_up.Scale(matrix1.m_up.DotProduct(omega0).GetScalar()) +
 		matrix1.m_right.Scale(matrix1.m_right.DotProduct(omega1).GetScalar()));
 
-	m_body0->SetOmega(omega);
+	m_body0->SetOmegaNoSleep(omega);
 }
 
 void ndMultiBodyVehicleDifferential::JacobianDerivative(ndConstraintDescritor& desc)
 {
-	dMatrix matrix0;
-	dMatrix matrix1;
+	ndMatrix matrix0;
+	ndMatrix matrix1;
 	CalculateGlobalMatrix(matrix0, matrix1);
 
 	//one rows to restrict rotation around around the parent coordinate system
-	const dFloat32 angle = CalculateAngle(matrix0.m_front, matrix1.m_front, matrix1.m_right);
+	const ndFloat32 angle = CalculateAngle(matrix0.m_front, matrix1.m_front, matrix1.m_right);
 	AddAngularRowJacobian(desc, matrix1.m_right, angle);
 
-	const dVector omega0(m_body0->GetOmega());
-	const dVector omega1(m_body1->GetOmega());
+	const ndVector omega0(m_body0->GetOmega());
+	const ndVector omega1(m_body1->GetOmega());
 
-	dFloat32 slipOmega = matrix1.m_up.DotProduct(omega0 - omega1).GetScalar();
+	ndFloat32 slipOmega = matrix1.m_up.DotProduct(omega0 - omega1).GetScalar();
 	if (dAbs(slipOmega) > m_limitedSlipOmega) 
 	{
-		AddAngularRowJacobian(desc, matrix1.m_up, dFloat32 (0.0f));
+		AddAngularRowJacobian(desc, matrix1.m_up, ndFloat32 (0.0f));
 		ndJacobian& jacobian = desc.m_jacobian[desc.m_rowsCount - 1].m_jacobianM1;
-		jacobian.m_angular = dVector::m_zero;
+		jacobian.m_angular = ndVector::m_zero;
 		if (slipOmega > m_limitedSlipOmega)
 		{
 			slipOmega -= m_limitedSlipOmega;
-			dFloat32 alpha = slipOmega * desc.m_invTimestep;
+			ndFloat32 alpha = slipOmega * desc.m_invTimestep;
 			SetMotorAcceleration(desc, -alpha);
-			SetHighFriction(desc, dFloat32(0.0f));
+			SetHighFriction(desc, ndFloat32(0.0f));
 		} 
 		else
 		{
 			dAssert(slipOmega < -m_limitedSlipOmega);
 			slipOmega += m_limitedSlipOmega;
-			dFloat32 alpha = slipOmega * desc.m_invTimestep;
+			ndFloat32 alpha = slipOmega * desc.m_invTimestep;
 			SetMotorAcceleration(desc, -alpha);
-			SetLowerFriction(desc, dFloat32(0.0f));
+			SetLowerFriction(desc, ndFloat32(0.0f));
 		}
 	}
 }
 
-void ndMultiBodyVehicleDifferential::Save(const dLoadSaveBase::dSaveDescriptor& desc) const
-{
-	nd::TiXmlElement* const childNode = new nd::TiXmlElement(ClassName());
-	desc.m_rootNode->LinkEndChild(childNode);
-	childNode->SetAttribute("hashId", desc.m_nodeNodeHash);
-	ndJointBilateralConstraint::Save(dLoadSaveBase::dSaveDescriptor(desc, childNode));
-
-	xmlSaveParam(childNode, "limitedSlipOmega", m_limitedSlipOmega);
-}

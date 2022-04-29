@@ -18,7 +18,7 @@ class ndSoundAsset;
 class ndSoundManager;
 class ndDemoEntityManager;
 
-class ndSoundChannel: public dClassAlloc
+class ndSoundChannel: public ndClassAlloc
 {
 	public:
 	ndSoundChannel();
@@ -32,48 +32,48 @@ class ndSoundChannel: public dClassAlloc
 	bool GetLoop() const;
 	void SetLoop(bool mode);
 	
-	dFloat32 GetPitch() const;
-	void SetPitch(dFloat32 pitch);
+	ndFloat32 GetPitch() const;
+	void SetPitch(ndFloat32 pitch);
 
-	dFloat32 GetVolume() const;
-	void SetVolume(dFloat32 volumne);
+	ndFloat32 GetVolume() const;
+	void SetVolume(ndFloat32 volumne);
 
-	dFloat32 GetLengthInSeconds() const;
-	dFloat32 GetPositionInSeconds() const;
+	ndFloat32 GetLengthInSeconds() const;
+	ndFloat32 GetPositionInSeconds() const;
 
-	const dVector GetPosition() const;
-	void SetPosition(const dVector& posit);
+	const ndVector GetPosition() const;
+	void SetPosition(const ndVector& posit);
 	
-	const dVector GetVelocity() const;
-	void SetVelocity(const dVector& velocity);
+	const ndVector GetVelocity() const;
+	void SetVelocity(const ndVector& velocity);
 
-	void SetAttenuationRefDistance(dFloat32 refDist, dFloat32 minDropOffDist, dFloat32 maxDropOffDist);
+	void SetAttenuationRefDistance(ndFloat32 refDist, ndFloat32 minDropOffDist, ndFloat32 maxDropOffDist);
 
 	private:
-	void ApplyAttenuation(const dVector& listenerPosit);
+	void ApplyAttenuation(const ndVector& listenerPosit);
 
-	dInt32 m_source;
+	ndInt32 m_source;
 	ndSoundAsset* m_asset;
 	ndSoundManager* m_manager;
-	dList<ndSoundChannel*>::dNode* m_assetNode;
-	dList<ndSoundChannel*>::dNode* m_playingNode;
+	ndList<ndSoundChannel*>::ndNode* m_assetNode;
+	ndList<ndSoundChannel*>::ndNode* m_playingNode;
 
 	// since open-al does not check for parameter changes, we have to cache
 	// them to prevent stuttering 
-	dVector m_posit;
-	dVector m_veloc;
+	ndVector m_posit;
+	ndVector m_veloc;
 
-	dFloat32 m_gain;
-	dFloat32 m_pitch;
-	dFloat32 m_volume;
-	dFloat32 m_minDropOffDist;
-	dFloat32 m_maxDropOffDist;
+	ndFloat32 m_gain;
+	ndFloat32 m_pitch;
+	ndFloat32 m_volume;
+	ndFloat32 m_minDropOffDist;
+	ndFloat32 m_maxDropOffDist;
 
 	friend class ndSoundAsset;
 	friend class ndSoundManager;
 };
 
-class ndSoundChannelList: public dList<ndSoundChannel*>
+class ndSoundChannelList: public ndList<ndSoundChannel*>
 {
 };
 
@@ -84,20 +84,20 @@ class ndSoundAsset: public ndSoundChannelList
 	ndSoundAsset(const ndSoundAsset& copy);
 	virtual ~ndSoundAsset();
 
-	dInt32 m_buffer;
-	dFloat32 m_frequecy;
-	dFloat32 m_durationInSeconds;
-	dTree<ndSoundAsset, dUnsigned64>::dNode* m_node;
+	ndInt32 m_buffer;
+	ndFloat32 m_frequecy;
+	ndFloat32 m_durationInSeconds;
+	ndTree<ndSoundAsset, ndUnsigned64>::ndNode* m_node;
 	friend class ndSoundManager;
 };
 
-class ndSoundAssetList: public dTree<ndSoundAsset, dUnsigned64>
+class ndSoundAssetList: public ndTree<ndSoundAsset, ndUnsigned64>
 {
 };
 
-class ndSoundManager: public dClassAlloc
+class ndSoundManager: public ndClassAlloc
 {
-	class ndSoundChannelPlaying: public dList<ndSoundChannel*>
+	class ndSoundChannelPlaying: public ndList<ndSoundChannel*>
 	{
 	};
 	
@@ -111,7 +111,7 @@ class ndSoundManager: public dClassAlloc
 	// sound play tracks or channels 
 	ndSoundChannel* CreateSoundChannel(const char* const fileName);
 
-	void Update(ndWorld* const world, dFloat32 timestep);
+	void Update(ndWorld* const world, ndFloat32 timestep);
 
 	private:
 	void LoadWaveFile(ndSoundAsset* const asset, const char* const fileName);
@@ -121,13 +121,13 @@ class ndSoundManager: public dClassAlloc
 	ndDemoEntityManager* m_scene;
 	ndSoundAssetList m_assets;
 	ndSoundChannelPlaying m_channelPlaying;
-	dMatrix m_coordinateSystem;
+	ndMatrix m_coordinateSystem;
 
-	dVector m_posit;
-	dVector m_veloc;
-	dVector m_posit0;
-	dVector m_upDir;
-	dVector m_frontDir;
+	ndVector m_posit;
+	ndVector m_veloc;
+	ndVector m_posit0;
+	ndVector m_upDir;
+	ndVector m_frontDir;
 	friend ndSoundChannel;
 };
 

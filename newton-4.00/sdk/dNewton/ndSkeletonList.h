@@ -19,26 +19,26 @@
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
-#ifndef __D_SKELETON_LIST_H__
-#define __D_SKELETON_LIST_H__
+#ifndef __ND_SKELETON_LIST_H__
+#define __ND_SKELETON_LIST_H__
 
 #include "ndNewtonStdafx.h"
 #include "ndSkeletonContainer.h"
 
 class ndBodyKinematic;
 
-class ndSkeletonList: public dList<ndSkeletonContainer, dContainersFreeListAlloc<ndSkeletonContainer> >
+class ndSkeletonList: public ndList<ndSkeletonContainer, ndContainersFreeListAlloc<ndSkeletonContainer> >
 {
 	public:
 	ndSkeletonList()
-		:dList<ndSkeletonContainer, dContainersFreeListAlloc<ndSkeletonContainer>>()
+		:ndList<ndSkeletonContainer, ndContainersFreeListAlloc<ndSkeletonContainer>>()
 		,m_skelListIsDirty(false)
 	{
 	}
 
 	ndSkeletonContainer* CreateContatiner(ndBodyKinematic* const rootBody)
 	{
-		dNode* const node = Append();
+		ndNode* const node = Append();
 		ndSkeletonContainer* const container = &node->GetInfo();
 		container->Init(rootBody);
 		return container;

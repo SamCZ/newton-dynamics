@@ -19,14 +19,14 @@
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
-#include "dCoreStdafx.h"
+#include "ndCoreStdafx.h"
 #include "ndNewtonStdafx.h"
 #include "ndWorld.h"
 #include "ndCharacter.h"
 #include "ndBodyDynamic.h"
 #include "ndCharacterNode.h"
+#include "ndIk6DofEffector.h"
 #include "ndCharacterRootNode.h"
-#include "ndJointKinematicChain.h"
 #include "ndCharacterForwardDynamicNode.h"
 #include "ndCharacterInverseDynamicNode.h"
 
@@ -40,15 +40,15 @@ ndCharacter::ndCharacter()
 {
 }
 
-ndCharacter::ndCharacter(const dLoadSaveBase::dLoadDescriptor& desc)
-	:ndModel(dLoadSaveBase::dLoadDescriptor(desc))
+ndCharacter::ndCharacter(const ndLoadSaveBase::ndLoadDescriptor& desc)
+	:ndModel(ndLoadSaveBase::ndLoadDescriptor(desc))
 	,m_rootNode(nullptr)
 	,m_effectors()
 	,m_extraJointAttachments()
 {
 	const nd::TiXmlNode* const xmlNode = desc.m_rootNode;
 
-	dTree<const ndCharacterNode*, dUnsigned32> limbMap;
+	ndTree<const ndCharacterNode*, ndUnsigned32> limbMap;
 	for (const nd::TiXmlNode* node = xmlNode->FirstChild(); node; node = node->NextSibling())
 	{
 		const char* const partName = node->Value();
@@ -64,13 +64,13 @@ ndCharacter::ndCharacter(const dLoadSaveBase::dLoadDescriptor& desc)
 
 ndCharacter::~ndCharacter()
 {
-	for (dList<ndEffetorInfo>::dNode* node = m_effectors.GetFirst(); node; node = node->GetNext())
+	for (ndList<ndEffetorInfo>::ndNode* node = m_effectors.GetFirst(); node; node = node->GetNext())
 	{
 		ndJointBilateralConstraint* const joint = node->GetInfo().m_effector;
 		delete joint;
 	}
 
-	for (dList<ndJointBilateralConstraint*>::dNode* node = m_extraJointAttachments.GetFirst(); node; node = node->GetNext())
+	for (ndList<ndJointBilateralConstraint*>::ndNode* node = m_extraJointAttachments.GetFirst(); node; node = node->GetNext())
 	{
 		ndJointBilateralConstraint* const joint = node->GetInfo();
 		delete joint;
@@ -82,16 +82,16 @@ ndCharacter::~ndCharacter()
 	}
 }
 
-void ndCharacter::Save(const dLoadSaveBase::dSaveDescriptor& desc) const
+void ndCharacter::Save(const ndLoadSaveBase::ndSaveDescriptor& desc) const
 {
 	nd::TiXmlElement* const childNode = new nd::TiXmlElement(ClassName());
 	desc.m_rootNode->LinkEndChild(childNode);
 	childNode->SetAttribute("hashId", desc.m_nodeNodeHash);
-	ndModel::Save(dLoadSaveBase::dSaveDescriptor(desc, childNode));
+	ndModel::Save(ndLoadSaveBase::ndSaveDescriptor(desc, childNode));
 
 	if (m_rootNode)
 	{
-		dTree<dInt32, const ndCharacterNode*> limbMap;
+		ndTree<ndInt32, const ndCharacterNode*> limbMap;
 		ndCharacterSaveDescriptor childDesc(desc);
 		childDesc.m_rootNode = childNode;
 		childDesc.m_limbMap = &limbMap;
@@ -105,7 +105,7 @@ void ndCharacter::AddToWorld(ndWorld* const world)
 	{
 		world->AddBody(m_rootNode->GetBody());
 
-		dInt32 stack = 0;
+		ndInt32 stack = 0;
 		ndCharacterNode* nodePool[32];
 		for (ndCharacterNode* child = m_rootNode->GetChild(); child; child = child->GetSibling())
 		{
@@ -135,13 +135,13 @@ void ndCharacter::AddToWorld(ndWorld* const world)
 		}
 	}
 
-	for (dList<ndEffetorInfo>::dNode* node = m_effectors.GetFirst(); node; node = node->GetNext())
+	for (ndList<ndEffetorInfo>::ndNode* node = m_effectors.GetFirst(); node; node = node->GetNext())
 	{
 		ndJointBilateralConstraint* const joint = node->GetInfo().m_effector;
 		world->AddJoint(joint);
 	}
 
-	for (dList<ndJointBilateralConstraint*>::dNode* node = m_extraJointAttachments.GetFirst(); node; node = node->GetNext())
+	for (ndList<ndJointBilateralConstraint*>::ndNode* node = m_extraJointAttachments.GetFirst(); node; node = node->GetNext())
 	{
 		ndJointBilateralConstraint* const joint = node->GetInfo();
 		world->AddJoint(joint);
@@ -150,13 +150,13 @@ void ndCharacter::AddToWorld(ndWorld* const world)
 
 void ndCharacter::RemoveFromToWorld(ndWorld* const world)
 {
-	for (dList<ndEffetorInfo>::dNode* node = m_effectors.GetFirst(); node; node = node->GetNext())
+	for (ndList<ndEffetorInfo>::ndNode* node = m_effectors.GetFirst(); node; node = node->GetNext())
 	{
 		ndJointBilateralConstraint* const joint = node->GetInfo().m_effector;
 		world->RemoveJoint(joint);
 	}
 
-	for (dList<ndJointBilateralConstraint*>::dNode* node = m_extraJointAttachments.GetFirst(); node; node = node->GetNext())
+	for (ndList<ndJointBilateralConstraint*>::ndNode* node = m_extraJointAttachments.GetFirst(); node; node = node->GetNext())
 	{
 		ndJointBilateralConstraint* const joint = node->GetInfo();
 		world->RemoveJoint(joint);
@@ -166,7 +166,7 @@ void ndCharacter::RemoveFromToWorld(ndWorld* const world)
 	{
 		world->RemoveBody(m_rootNode->GetBody());
 
-		dInt32 stack = 0;
+		ndInt32 stack = 0;
 		ndCharacterNode* nodePool[32];
 		for (ndCharacterNode* child = m_rootNode->GetChild(); child; child = child->GetSibling())
 		{
@@ -203,19 +203,19 @@ ndCharacterRootNode* ndCharacter::CreateRoot(ndBodyDynamic* const body)
 	return m_rootNode;
 }
 
-ndCharacterForwardDynamicNode* ndCharacter::CreateForwardDynamicLimb(const dMatrix& matrixInGlobalSpase, ndBodyDynamic* const body, ndCharacterNode* const parent)
+ndCharacterForwardDynamicNode* ndCharacter::CreateForwardDynamicLimb(const ndMatrix& matrixInGlobalSpase, ndBodyDynamic* const body, ndCharacterNode* const parent)
 {
 	ndCharacterForwardDynamicNode* const limb = new ndCharacterForwardDynamicNode(matrixInGlobalSpase, body, parent);
 	return limb;
 }
 
-ndCharacterInverseDynamicNode* ndCharacter::CreateInverseDynamicLimb(const dMatrix& matrixInGlobalSpace, ndBodyDynamic* const body, ndCharacterNode* const parent)
+ndCharacterInverseDynamicNode* ndCharacter::CreateInverseDynamicLimb(const ndMatrix& matrixInGlobalSpace, ndBodyDynamic* const body, ndCharacterNode* const parent)
 {
 	ndCharacterInverseDynamicNode* const limb = new ndCharacterInverseDynamicNode(matrixInGlobalSpace, body, parent);
 	return limb;
 }
 
-//ndCharacterEffectorNode* ndCharacter::CreateInverseDynamicEffector(const dMatrix& matrixInGlobalSpace, ndCharacterNode* const parent)
+//ndCharacterEffectorNode* ndCharacter::CreateInverseDynamicEffector(const ndMatrix& matrixInGlobalSpace, ndCharacterNode* const parent)
 //{
 //	ndCharacterEffectorNode* const effector = new ndCharacterEffectorNode(matrixInGlobalSpace, parent);
 //	return effector;
@@ -223,14 +223,14 @@ ndCharacterInverseDynamicNode* ndCharacter::CreateInverseDynamicLimb(const dMatr
 
 //ndCharacterCentreOfMassState ndCharacter::CalculateCentreOfMassState() const
 //{
-//	dInt32 stack = 1;
+//	ndInt32 stack = 1;
 //	ndCharacterNode* nodePool[32];
 //	
 //	nodePool[0] = m_rootNode;
 //
-//	dVector com(dVector::m_zero);
-//	dVector veloc(dVector::m_zero);
-//	dFloat32 mass = dFloat32(0.0f);
+//	ndVector com(ndVector::m_zero);
+//	ndVector veloc(ndVector::m_zero);
+//	ndFloat32 mass = ndFloat32(0.0f);
 //
 //	while (stack)
 //	{
@@ -241,9 +241,9 @@ ndCharacterInverseDynamicNode* ndCharacter::CreateInverseDynamicLimb(const dMatr
 //			ndBodyDynamic* const body = node->GetBody();
 //			if (body)
 //			{
-//				dFloat32 partMass = body->GetMassMatrix().m_w;
+//				ndFloat32 partMass = body->GetMassMatrix().m_w;
 //				mass += partMass;
-//				dMatrix bodyMatrix(body->GetMatrix());
+//				ndMatrix bodyMatrix(body->GetMatrix());
 //				com += bodyMatrix.TransformVector(body->GetCentreOfMass()).Scale(partMass);
 //				veloc += body->GetVelocity().Scale(partMass);
 //			}
@@ -255,12 +255,12 @@ ndCharacterInverseDynamicNode* ndCharacter::CreateInverseDynamicLimb(const dMatr
 //			stack++;
 //		}
 //	}
-//	//inertia.m_posit.m_w = dFloat32(1.0f);
-//	dVector invMass (dFloat32(1.0f) / mass);
+//	//inertia.m_posit.m_w = ndFloat32(1.0f);
+//	ndVector invMass (ndFloat32(1.0f) / mass);
 //	com = com * invMass;
 //	veloc = veloc * invMass;
-//	com.m_w = dFloat32(1.0f);
-//	veloc.m_w = dFloat32(0.0f);
+//	com.m_w = ndFloat32(1.0f);
+//	veloc.m_w = ndFloat32(0.0f);
 //
 //	ndCharacterCentreOfMassState state;
 //	state.m_mass = mass;
@@ -271,10 +271,10 @@ ndCharacterInverseDynamicNode* ndCharacter::CreateInverseDynamicLimb(const dMatr
 
 void ndCharacter::Debug(ndConstraintDebugCallback& context) const
 {
-	dFloat32 scale = context.GetScale();
+	ndFloat32 scale = context.GetScale();
 	context.SetScale(scale * 0.25f);
 
-	for (dList<ndEffetorInfo>::dNode* node = m_effectors.GetFirst(); node; node = node->GetNext())
+	for (ndList<ndEffetorInfo>::ndNode* node = m_effectors.GetFirst(); node; node = node->GetNext())
 	{
 		ndJointBilateralConstraint* const joint = node->GetInfo().m_effector;
 		joint->DebugJoint(context);
@@ -300,7 +300,7 @@ void ndCharacter::AddAttachment(ndJointBilateralConstraint* const joint)
 
 void ndCharacter::RemoveAttachment(ndJointBilateralConstraint* const joint)
 {
-	for (dList<ndJointBilateralConstraint*>::dNode* node = m_extraJointAttachments.GetFirst(); node; node = node->GetNext())
+	for (ndList<ndJointBilateralConstraint*>::ndNode* node = m_extraJointAttachments.GetFirst(); node; node = node->GetNext())
 	{
 		if (node->GetInfo() == joint)
 		{
@@ -310,33 +310,35 @@ void ndCharacter::RemoveAttachment(ndJointBilateralConstraint* const joint)
 	}
 }
 
-void ndCharacter::CreateKinematicChain(const dMatrix& globalOrientation, const ndCharacterNode* const footNode)
+//void ndCharacter::CreateKinematicChain(const ndMatrix& globalOrientation, const ndCharacterNode* const footNode)
+void ndCharacter::CreateKinematicChain(const ndMatrix&, const ndCharacterNode* const)
 {
-	ndCharacterNode* const calf = footNode->GetParent();
-	ndCharacterNode* const leg = calf->GetParent();
-	ndCharacterNode* const hip = leg->GetParent();
-
-	dMatrix pinAndPivot(globalOrientation);
-	dVector hipPivot(leg->GetBody()->GetMatrix().m_posit);
-	pinAndPivot.m_posit = footNode->GetBody()->GetMatrix().m_posit;
-	ndJointKinematicChain* const joint = new ndJointKinematicChain(hipPivot, pinAndPivot, footNode->GetBody(), hip->GetBody());
-
-
-	ndEffetorInfo& info = m_effectors.Append()->GetInfo();
-	//dMatrix localPivot1(footNode->GetBody()->GetMatrix() * hip->GetBody()->GetMatrix().Inverse());
-	//dMatrix localPivot0(pinAndPivot * hip->GetBody()->GetMatrix().Inverse());
-
-	const dMatrix localPivot0(pinAndPivot);
-	const dMatrix localPivot1(footNode->GetBody()->GetMatrix());
-
-	info.m_bindMatrix = localPivot0 * localPivot1.Inverse();
-	info.m_effector = joint;
-	info.m_controlNode = (ndCharacterNode*)footNode;
+	dAssert(0);
+	//ndCharacterNode* const calf = footNode->GetParent();
+	//ndCharacterNode* const leg = calf->GetParent();
+	//ndCharacterNode* const hip = leg->GetParent();
+	//
+	//ndMatrix pinAndPivot(globalOrientation);
+	//ndVector hipPivot(leg->GetBody()->GetMatrix().m_posit);
+	//pinAndPivot.m_posit = footNode->GetBody()->GetMatrix().m_posit;
+	//ndJointKinematicChain* const joint = new ndJointKinematicChain(hipPivot, pinAndPivot, footNode->GetBody(), hip->GetBody());
+	//
+	//
+	//ndEffetorInfo& info = m_effectors.Append()->GetInfo();
+	////ndMatrix localPivot1(footNode->GetBody()->GetMatrix() * hip->GetBody()->GetMatrix().Inverse());
+	////ndMatrix localPivot0(pinAndPivot * hip->GetBody()->GetMatrix().Inverse());
+	//
+	//const ndMatrix localPivot0(pinAndPivot);
+	//const ndMatrix localPivot1(footNode->GetBody()->GetMatrix());
+	//
+	//info.m_bindMatrix = localPivot0 * localPivot1.Inverse();
+	//info.m_effector = joint;
+	//info.m_controlNode = (ndCharacterNode*)footNode;
 }
 
-//void ndCharacter::UpdateGlobalPose(ndWorld* const world, dFloat32 timestep)
+//void ndCharacter::UpdateGlobalPose(ndWorld* const world, ndFloat32 timestep)
 //{
-//	dInt32 stack = 1;
+//	ndInt32 stack = 1;
 //	ndCharacterNode* nodePool[32];
 //	nodePool[0] = m_rootNode;
 //
@@ -354,9 +356,9 @@ void ndCharacter::CreateKinematicChain(const dMatrix& globalOrientation, const n
 //	}
 //}
 
-//void ndCharacter::CalculateLocalPose(ndWorld* const world, dFloat32 timestep)
+//void ndCharacter::CalculateLocalPose(ndWorld* const world, ndFloat32 timestep)
 //{
-//	dInt32 stack = 1;
+//	ndInt32 stack = 1;
 //	ndCharacterNode* nodePool[32];
 //	nodePool[0] = m_rootNode;
 //
@@ -374,12 +376,12 @@ void ndCharacter::CreateKinematicChain(const dMatrix& globalOrientation, const n
 //	}
 //}
 
-void ndCharacter::PostUpdate(ndWorld* const, dFloat32)
+void ndCharacter::PostUpdate(ndWorld* const, ndFloat32)
 {
 }
 
-//void ndCharacter::Update(ndWorld* const world, dFloat32 timestep)
-void ndCharacter::Update(ndWorld* const, dFloat32)
+//void ndCharacter::Update(ndWorld* const world, ndFloat32 timestep)
+void ndCharacter::Update(ndWorld* const, ndFloat32)
 {
 	//if (m_controller)
 	//{
@@ -391,7 +393,7 @@ void ndCharacter::Update(ndWorld* const, dFloat32)
 //{
 //	dAssert(0);
 //	return nullptr;
-//	//dInt32 stack = 0;
+//	//ndInt32 stack = 0;
 //	//ndCharacterNode* nodePool[32];
 //	//ndCharacterSkeleton* parentPool[32];
 //	//
@@ -408,7 +410,7 @@ void ndCharacter::Update(ndWorld* const, dFloat32)
 //	//	stack--;
 //	//	ndCharacterNode* const node = nodePool[stack];
 //	//	ndCharacterSkeleton* const boneParent = parentPool[stack];
-//	//	dMatrix matrix(node->GetBoneMatrix() * boneParent->m_node->GetBoneMatrix().Inverse());
+//	//	ndMatrix matrix(node->GetBoneMatrix() * boneParent->m_node->GetBoneMatrix().Inverse());
 //	//	ndCharacterSkeleton* const parent = new ndCharacterSkeleton(node, matrix, boneParent);
 //	//
 //	//	for (ndCharacterNode* child = node->GetChild(); child; child = child->GetSibling())
@@ -424,16 +426,17 @@ void ndCharacter::Update(ndWorld* const, dFloat32)
 
 void ndCharacter::SetPose()
 {
-	for (dList<ndEffetorInfo>::dNode* node = m_effectors.GetFirst(); node; node = node->GetNext())
-	{
-		ndEffetorInfo& info = node->GetInfo();
-		ndJointKinematicChain* const joint = info.m_effector;
-		
-		dMatrix matrix(info.m_bindMatrix * info.m_controlNode->GetLocalPose());
-		for (ndCharacterNode* bone = info.m_controlNode->GetParent(); bone->GetBody() != joint->GetBody1(); bone = bone->GetParent())
-		{
-			matrix = matrix * bone->GetLocalPose();
-		}
-		joint->SetTargetLocalMatrix(matrix);
-	}
+	dAssert(0);
+	//for (ndList<ndEffetorInfo>::ndNode* node = m_effectors.GetFirst(); node; node = node->GetNext())
+	//{
+	//	ndEffetorInfo& info = node->GetInfo();
+	//	ndJointKinematicChain* const joint = info.m_effector;
+	//	
+	//	ndMatrix matrix(info.m_bindMatrix * info.m_controlNode->GetLocalPose());
+	//	for (ndCharacterNode* bone = info.m_controlNode->GetParent(); bone->GetBody() != joint->GetBody1(); bone = bone->GetParent())
+	//	{
+	//		matrix = matrix * bone->GetLocalPose();
+	//	}
+	//	joint->SetTargetLocalMatrix(matrix);
+	//}
 }

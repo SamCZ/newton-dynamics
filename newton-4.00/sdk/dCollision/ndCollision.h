@@ -24,10 +24,10 @@
 //      are changed infrequently
 //
 
-#ifndef _D_COLLISION_H__
-#define _D_COLLISION_H__
+#ifndef __ND_COLLISION_H__
+#define __ND_COLLISION_H__
 
-#include <dCore.h>
+#include <ndCore.h>
 #include <ndCollisionStdafx.h>
 #include <ndBody.h>
 #include <ndScene.h>
@@ -45,7 +45,7 @@
 #include <ndShapePoint.h>
 #include <ndShapeSphere.h>
 #include <ndShapeConvex.h>
-#include <ndContactList.h>
+#include <ndContactArray.h>
 #include <ndShapeCapsule.h>
 #include <ndShapeCylinder.h>
 #include <ndBodyKinematic.h>

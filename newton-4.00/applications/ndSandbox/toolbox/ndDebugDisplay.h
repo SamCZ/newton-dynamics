@@ -14,10 +14,27 @@
 #define __DEBUG_DISPLAY_H__
 
 #include "ndSandboxStdafx.h"
-#include <dVector.h>
-#include <dMatrix.h>
 
 class ndDemoEntityManager;
+
+class ndDebugNotify : public ndShapeDebugNotify
+{
+	public:
+	ndDebugNotify(ndDemoEntityManager* const manager = nullptr, ndBodyKinematic* const body = nullptr)
+		:ndShapeDebugNotify()
+		,m_body(body)
+		,m_manager(manager)
+	{
+	}
+
+	void DrawPolygon(ndInt32, const ndVector* const, const ndEdgeType* const)
+	{
+	}
+
+	ndBodyKinematic* m_body;
+	ndDemoEntityManager* m_manager;
+	
+};
 
 #if 0
 void RenderBodyFrame (NewtonWorld* const world);
@@ -37,7 +54,6 @@ void ClearDebugDisplay(NewtonWorld* const world);
 void ShowMeshCollidingFaces (const NewtonBody* const staticCollisionBody, const NewtonBody* const body, dInt32 faceID, dInt32 vertexCount, const dFloat32* const vertex, dInt32 vertexstrideInBytes);
 #endif
 
-
 void RenderParticles(ndDemoEntityManager* const scene);
 void RenderWorldScene(ndDemoEntityManager* const scene);
 void RenderBodiesAABB(ndDemoEntityManager* const scene);
@@ -46,6 +62,7 @@ void RenderCenterOfMass(ndDemoEntityManager* const scene);
 void RenderContactPoints(ndDemoEntityManager* const scene);
 void RenderJointsDebugInfo(ndDemoEntityManager* const scene);
 void RenderModelsDebugInfo(ndDemoEntityManager* const scene);
+void RenderPolygon(ndDemoEntityManager* const scene, const ndVector* const points, ndInt32 count, const ndVector& color);
 
 #endif
 

@@ -19,8 +19,8 @@
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
-#ifndef __D_MULTIBODY_VEHICLE_MOTOR_H__
-#define __D_MULTIBODY_VEHICLE_MOTOR_H__
+#ifndef __ND_MULTIBODY_VEHICLE_MOTOR_H__
+#define __ND_MULTIBODY_VEHICLE_MOTOR_H__
 
 #include "ndNewtonStdafx.h"
 #include "ndJointBilateralConstraint.h"
@@ -31,48 +31,33 @@ class ndMultiBodyVehicleMotor: public ndJointBilateralConstraint
 {
 	public:
 	D_CLASS_REFLECTION(ndMultiBodyVehicleMotor);
-	D_NEWTON_API ndMultiBodyVehicleMotor(const dLoadSaveBase::dLoadDescriptor& desc);
+	D_NEWTON_API ndMultiBodyVehicleMotor(const ndLoadSaveBase::ndLoadDescriptor& desc);
 	D_NEWTON_API ndMultiBodyVehicleMotor(ndBodyKinematic* const motor, ndMultiBodyVehicle* const vehicelModel);
 
-	bool GetStart() const;
-	dFloat32 GetRpm() const;
-
-	D_NEWTON_API void SetStart(bool startkey);
-	D_NEWTON_API void SetThrottle(dFloat32 param);
-
-	D_NEWTON_API void SetRpmLimits(dFloat32 idle, dFloat32 redLineRpm);
-
-	D_NEWTON_API void SetFuelRate(dFloat32 radPerSecondsStep);
-	D_NEWTON_API void SetTorque(dFloat32 torqueInNewtonMeters);
+	D_NEWTON_API ndFloat32 GetRpm() const;
+	D_NEWTON_API void SetMaxRpm(ndFloat32 redLineRpm);
+	D_NEWTON_API void SetOmegaAccel(ndFloat32 rpmStep);
+	D_NEWTON_API void SetFrictionLose(ndFloat32 newtonMeters);
+	D_NEWTON_API void SetTorqueAndRpm(ndFloat32 rpm, ndFloat32 newtonMeters);
 
 	private:
 	void AlignMatrix();
 	void DebugJoint(ndConstraintDebugCallback&) const {}
 	void JacobianDerivative(ndConstraintDescritor& desc);
-	void Save(const dLoadSaveBase::dSaveDescriptor& desc) const;
-	dFloat32 CalculateAcceleration(ndConstraintDescritor& desc);
+	void Save(const ndLoadSaveBase::ndSaveDescriptor& desc) const;
+	ndFloat32 CalculateAcceleration(ndConstraintDescritor& desc);
 
 	protected:
-	dFloat32 m_omega;
-	dFloat32 m_maxOmega;
-	dFloat32 m_idleOmega;
-	dFloat32 m_throttle;
-	dFloat32 m_engineTorque;
-	dFloat32 m_fuelValveRate;
+	ndFloat32 m_omega;
+	ndFloat32 m_maxOmega;
+	ndFloat32 m_omegaStep;
+	ndFloat32 m_targetOmega;
+	ndFloat32 m_engineTorque;
+	ndFloat32 m_internalFriction;
+	
 	ndMultiBodyVehicle* m_vehicelModel;
-	bool m_startEngine;
 	friend class ndMultiBodyVehicle;
 	friend class ndMultiBodyVehicleGearBox;
 };
-
-inline bool ndMultiBodyVehicleMotor::GetStart() const
-{
-	return m_startEngine;
-}
-
-inline dFloat32 ndMultiBodyVehicleMotor::GetRpm() const
-{
-	return m_omega * dRadPerSecToRpm;
-}
 
 #endif

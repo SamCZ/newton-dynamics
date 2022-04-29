@@ -19,7 +19,7 @@
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
-#include "dCoreStdafx.h"
+#include "ndCoreStdafx.h"
 #include "ndNewtonStdafx.h"
 #include "ndWorld.h"
 #include "ndBodyDynamic.h"
@@ -28,7 +28,7 @@
 D_CLASS_REFLECTION_IMPLEMENT_LOADER(ndCharacterNode)
 
 ndCharacterNode::ndCharacterNode(ndCharacterNode* const parent)
-	:dNodeHierarchy<ndCharacterNode>()
+	:ndNodeHierarchy<ndCharacterNode>()
 	,m_localPose(dGetIdentityMatrix())
 {
 	if (parent)
@@ -38,7 +38,7 @@ ndCharacterNode::ndCharacterNode(ndCharacterNode* const parent)
 }
 
 ndCharacterNode::ndCharacterNode(const ndCharacterLoadDescriptor& desc)
-	:dNodeHierarchy<ndCharacterNode>()
+	:ndNodeHierarchy<ndCharacterNode>()
 {
 	if (desc.m_parentModelNode)
 	{
@@ -47,7 +47,7 @@ ndCharacterNode::ndCharacterNode(const ndCharacterLoadDescriptor& desc)
 
 	const nd::TiXmlNode* const xmlNode = desc.m_rootNode;
 
-	dInt32 hashId;
+	ndInt32 hashId;
 	const nd::TiXmlElement* const element = (nd::TiXmlElement*) xmlNode;
 	element->Attribute("hashId", &hashId);
 	desc.m_limbMap->Insert(this, hashId);
@@ -81,7 +81,7 @@ void ndCharacterNode::Save(const ndCharacterSaveDescriptor& desc) const
 	}
 }
 
-dNodeBaseHierarchy* ndCharacterNode::CreateClone() const
+ndNodeBaseHierarchy* ndCharacterNode::CreateClone() const
 {
 	dAssert(0);
 	return nullptr;

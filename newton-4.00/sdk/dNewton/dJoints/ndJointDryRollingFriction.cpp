@@ -9,25 +9,25 @@
 * freely
 */
 
-#include "dCoreStdafx.h"
+#include "ndCoreStdafx.h"
 #include "ndNewtonStdafx.h"
 #include "ndJointDryRollingFriction.h"
 
 D_CLASS_REFLECTION_IMPLEMENT_LOADER(ndJointDryRollingFriction)
 
-ndJointDryRollingFriction::ndJointDryRollingFriction(ndBodyKinematic* const body0, ndBodyKinematic* const body1, dFloat32 coefficient)
+ndJointDryRollingFriction::ndJointDryRollingFriction(ndBodyKinematic* const body0, ndBodyKinematic* const body1, ndFloat32 coefficient)
 	:ndJointBilateralConstraint(1, body0, body1, dGetIdentityMatrix())
-	,m_coefficient(dClamp (coefficient, dFloat32(0.0f), dFloat32 (1.0f)))
-	,m_contactTrail(dFloat32 (0.1f))
+	,m_coefficient(dClamp (coefficient, ndFloat32(0.0f), ndFloat32 (1.0f)))
+	,m_contactTrail(ndFloat32 (0.1f))
 {
-	dMatrix matrix(body0->GetMatrix());
+	ndMatrix matrix(body0->GetMatrix());
 	CalculateLocalMatrix(matrix, m_localMatrix0, m_localMatrix1);
 
 	SetSolverModel(m_jointIterativeSoft);
 }
 
-ndJointDryRollingFriction::ndJointDryRollingFriction(const dLoadSaveBase::dLoadDescriptor& desc)
-	:ndJointBilateralConstraint(dLoadSaveBase::dLoadDescriptor(desc))
+ndJointDryRollingFriction::ndJointDryRollingFriction(const ndLoadSaveBase::ndLoadDescriptor& desc)
+	:ndJointBilateralConstraint(ndLoadSaveBase::ndLoadDescriptor(desc))
 {
 	const nd::TiXmlNode* const xmlNode = desc.m_rootNode;
 
@@ -35,9 +35,19 @@ ndJointDryRollingFriction::ndJointDryRollingFriction(const dLoadSaveBase::dLoadD
 	m_contactTrail = xmlGetFloat(xmlNode, "contactTrail");
 }
 
-
 ndJointDryRollingFriction::~ndJointDryRollingFriction()
 {
+}
+
+void ndJointDryRollingFriction::Save(const ndLoadSaveBase::ndSaveDescriptor& desc) const
+{
+	nd::TiXmlElement* const childNode = new nd::TiXmlElement(ClassName());
+	desc.m_rootNode->LinkEndChild(childNode);
+	childNode->SetAttribute("hashId", desc.m_nodeNodeHash);
+	ndJointBilateralConstraint::Save(ndLoadSaveBase::ndSaveDescriptor(desc, childNode));
+
+	xmlSaveParam(childNode, "coefficient", m_coefficient);
+	xmlSaveParam(childNode, "contactTrail", m_contactTrail);
 }
 
 // rolling friction works as follow: the idealization of the contact of a spherical object 
@@ -53,7 +63,7 @@ void ndJointDryRollingFriction::JacobianDerivative(ndConstraintDescritor& desc)
 {
 	const ndBodyKinematic::ndContactMap& contactMap = m_body0->GetContactMap();
 
-	dFloat32 maxForce = dFloat32 (0.0f);
+	ndFloat32 maxForce = ndFloat32 (0.0f);
 	ndBodyKinematic::ndContactMap::Iterator it(contactMap);
 	for (it.Begin(); it; it++)
 	{
@@ -61,31 +71,31 @@ void ndJointDryRollingFriction::JacobianDerivative(ndConstraintDescritor& desc)
 		if (contact->IsActive())
 		{
 			const ndContactPointList& contactPoints = contact->GetContactPoints();
-			for (ndContactPointList::dNode* node = contactPoints.GetFirst(); node; node = node->GetNext())
+			for (ndContactPointList::ndNode* node = contactPoints.GetFirst(); node; node = node->GetNext())
 			{
 				const ndForceImpactPair& normalForce = node->GetInfo().m_normal_Force;
-				dFloat32 force = normalForce.GetInitialGuess();
+				ndFloat32 force = normalForce.GetInitialGuess();
 				maxForce = dMax(force, maxForce);
 			}
 		}
 	}
 	
-	if (maxForce > dFloat32 (0.0f))
+	if (maxForce > ndFloat32 (0.0f))
 	{
-		dVector omega(m_body0->GetOmega());
+		ndVector omega(m_body0->GetOmega());
 
-		dFloat32 omegaMag = omega.DotProduct(omega).GetScalar();
-		if (omegaMag > dFloat32(0.1f * 0.1f))
+		ndFloat32 omegaMag = omega.DotProduct(omega).GetScalar();
+		if (omegaMag > ndFloat32(0.1f * 0.1f))
 		{
 			// tell newton to used this the friction of the omega vector to apply the rolling friction
-			dVector pin(omega.Normalize());
+			ndVector pin(omega.Normalize());
 
-			AddAngularRowJacobian(desc, pin, dFloat32(0.0f));
+			AddAngularRowJacobian(desc, pin, ndFloat32(0.0f));
 
-			dFloat32 stopAccel = GetMotorZeroAcceleration(desc);
+			ndFloat32 stopAccel = GetMotorZeroAcceleration(desc);
 			SetMotorAcceleration(desc, stopAccel);
 			
-			dFloat32 torqueFriction = maxForce * m_coefficient * m_contactTrail;
+			ndFloat32 torqueFriction = maxForce * m_coefficient * m_contactTrail;
 			SetLowerFriction(desc, -torqueFriction);
 			SetHighFriction(desc, torqueFriction);
 		}
@@ -98,15 +108,5 @@ void ndJointDryRollingFriction::JacobianDerivative(ndConstraintDescritor& desc)
 	}
 }
 
-void ndJointDryRollingFriction::Save(const dLoadSaveBase::dSaveDescriptor& desc) const
-{
-	nd::TiXmlElement* const childNode = new nd::TiXmlElement(ClassName());
-	desc.m_rootNode->LinkEndChild(childNode);
-	childNode->SetAttribute("hashId", desc.m_nodeNodeHash);
-	ndJointBilateralConstraint::Save(dLoadSaveBase::dSaveDescriptor(desc, childNode));
-
-	xmlSaveParam(childNode, "coefficient", m_coefficient);
-	xmlSaveParam(childNode, "contactTrail", m_contactTrail);
-}
 
 

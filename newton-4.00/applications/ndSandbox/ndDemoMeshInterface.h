@@ -38,31 +38,31 @@ class ndDemoSubMesh
 	public:
 	ndDemoSubMesh();
 	~ndDemoSubMesh();
-	void SetOpacity(dFloat32 opacity);
+	void SetOpacity(ndFloat32 opacity);
 
 	ndDemoSubMeshMaterial m_material;
-	dInt32 m_indexCount;
-	dInt32 m_segmentStart;
+	ndInt32 m_indexCount;
+	ndInt32 m_segmentStart;
 	bool m_hasTranparency;
 };
 
-class ndDemoMeshInterface: public dRefCounter<ndDemoMeshInterface>
+class ndDemoMeshInterface: public ndRefCounter<ndDemoMeshInterface>
 {
 	public:
 	ndDemoMeshInterface();
 	~ndDemoMeshInterface();
-	const dString& GetName () const;
+	const ndString& GetName () const;
 
-	dInt32 Release();
+	ndInt32 Release();
 	bool GetVisible () const;
 	void SetVisible (bool visibilityFlag);
 
 	virtual ndDemoMeshInterface* Clone(ndDemoEntity* const) { dAssert(0); return nullptr; }
 
-	virtual void Render (ndDemoEntityManager* const scene, const dMatrix& modelMatrix) = 0;
-	virtual void RenderTransparency(ndDemoEntityManager* const, const dMatrix&) {}
+	virtual void Render (ndDemoEntityManager* const scene, const ndMatrix& modelMatrix) = 0;
+	virtual void RenderTransparency(ndDemoEntityManager* const, const ndMatrix&) {}
 
-	dString m_name;
+	ndString m_name;
 	bool m_isVisible;
 };
 

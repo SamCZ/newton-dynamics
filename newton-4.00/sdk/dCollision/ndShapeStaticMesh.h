@@ -19,8 +19,8 @@
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
-#ifndef __D_SHAPE_STATIC_MESH_H__
-#define __D_SHAPE_STATIC_MESH_H__
+#ifndef __ND_SHAPE_STATIC_MESH_H__
+#define __ND_SHAPE_STATIC_MESH_H__
 
 #include "ndCollisionStdafx.h"
 #include "ndShape.h"
@@ -34,82 +34,83 @@ class ndContactSolver;
 
 
 class ndShapeStaticMesh;
-typedef void (*dgCollisionMeshCollisionCallback) (const ndBodyKinematic* const bodyWithTreeCollision, const ndBodyKinematic* const body, dInt32 faceID, 
-												  dInt32 vertexCount, const dFloat32* const vertex, dInt32 vertexStrideInBytes); 
+typedef void (*dgCollisionMeshCollisionCallback) (const ndBodyKinematic* const bodyWithTreeCollision, const ndBodyKinematic* const body, ndInt32 faceID, 
+												  ndInt32 vertexCount, const ndFloat32* const vertex, ndInt32 vertexStrideInBytes); 
 
 D_MSV_NEWTON_ALIGN_32 
-class ndPolygonMeshDesc: public dFastAabb
+class ndPolygonMeshDesc: public ndFastAabb
 {
 	public:
 	class ndMesh
 	{
 		public:
-		dInt32 m_globalFaceIndexCount[D_MAX_COLLIDING_FACES];
-		dInt32 m_globalFaceIndexStart[D_MAX_COLLIDING_FACES];
-		dFloat32 m_globalHitDistance[D_MAX_COLLIDING_FACES];
+		ndInt32 m_globalFaceIndexCount[D_MAX_COLLIDING_FACES];
+		ndInt32 m_globalFaceIndexStart[D_MAX_COLLIDING_FACES];
+		ndFloat32 m_globalHitDistance[D_MAX_COLLIDING_FACES];
 	};
 
 	// colliding box in polygonSoup local space
 	ndPolygonMeshDesc()
-		:dFastAabb()
-		,m_boxDistanceTravelInMeshSpace(dFloat32 (0.0f))
-		,m_maxT(dFloat32 (1.0f))
-		,m_doContinuesCollisionTest(false)
+		:ndFastAabb()
+		,m_boxDistanceTravelInMeshSpace(ndFloat32 (0.0f))
+		,m_maxT(ndFloat32 (1.0f))
+		,m_threadId(0)
+		,m_doContinueCollisionTest(false)
 	{
 	}
 
 	D_COLLISION_API ndPolygonMeshDesc(ndContactSolver& proxy, bool ccdMode);
 
 	D_COLLISION_API void SortFaceArray();
-	dFloat32 GetSeparetionDistance() const;
-	void SetDistanceTravel(const dVector& distanceInGlobalSpace);
+	ndFloat32 GetSeparetionDistance() const;
+	void SetDistanceTravel(const ndVector& distanceInGlobalSpace);
 
-	dInt32 GetFaceIndexCount(dInt32 indexCount) const
+	ndInt32 GetFaceIndexCount(ndInt32 indexCount) const
 	{
 		return indexCount * 2 + 3;
 	}
 
-	const dInt32* GetAdjacentFaceEdgeNormalArray(const dInt32* const faceIndexArray, dInt32 indexCount) const
+	const ndInt32* GetAdjacentFaceEdgeNormalArray(const ndInt32* const faceIndexArray, ndInt32 indexCount) const
 	{
 		return &faceIndexArray[indexCount + 2];
 	}
 
-	dInt32 GetNormalIndex(const dInt32* const faceIndexArray, dInt32 indexCount) const
+	ndInt32 GetNormalIndex(const ndInt32* const faceIndexArray, ndInt32 indexCount) const
 	{
 		return faceIndexArray[indexCount + 1];
 	}
 
-	dInt32 GetFaceId(const dInt32* const faceIndexArray, dInt32 indexCount) const
+	ndInt32 GetFaceId(const ndInt32* const faceIndexArray, ndInt32 indexCount) const
 	{
 		return faceIndexArray[indexCount];
 	}
 
-	dFloat32 GetFaceSize(const dInt32* const faceIndexArray, dInt32 indexCount) const
+	ndFloat32 GetFaceSize(const ndInt32* const faceIndexArray, ndInt32 indexCount) const
 	{
-		dInt32 size = faceIndexArray[indexCount * 2 + 2];
-		return dFloat32 ((size >= 1) ? size : dFloat32 (1.0f));
+		ndInt32 size = faceIndexArray[indexCount * 2 + 2];
+		return ndFloat32 ((size >= 1) ? size : ndFloat32 (1.0f));
 	}
 
-	dVector m_boxDistanceTravelInMeshSpace;
-	dInt32 m_faceCount;
-	dInt32 m_vertexStrideInBytes;
-	dFloat32 m_skinThickness;
-	void* m_userData;
+	ndVector m_boxDistanceTravelInMeshSpace;
+	ndInt32 m_faceCount;
+	ndInt32 m_vertexStrideInBytes;
+	ndFloat32 m_skinMargin;
 	ndShapeInstance* m_convexInstance;
 	ndShapeInstance* m_polySoupInstance;
-	dFloat32* m_vertex;
-	dInt32* m_faceIndexCount;
-	dInt32* m_faceVertexIndex;
+	ndFloat32* m_vertex;
+	ndInt32* m_faceIndexCount;
+	ndInt32* m_faceVertexIndex;
 
 	// private data;
-	dInt32* m_faceIndexStart;
-	dFloat32* m_hitDistance;
-	const ndShapeStaticMesh* m_me;
-	dInt32 m_globalIndexCount;
-	dFloat32 m_maxT;
-	bool m_doContinuesCollisionTest;
-	dInt32 m_globalFaceVertexIndex[D_MAX_COLLIDING_INDICES];
 	ndMesh m_meshData;
+	ndInt32* m_faceIndexStart;
+	ndFloat32* m_hitDistance;
+	const ndShapeStaticMesh* m_me;
+	ndInt32 m_globalFaceVertexIndex[D_MAX_COLLIDING_INDICES];
+	ndFloat32 m_maxT;
+	ndInt32 m_globalIndexCount;
+	ndInt32 m_threadId;
+	bool m_doContinueCollisionTest;
 } D_GCC_NEWTON_ALIGN_32;
 
 class ndShapeStaticMesh: public ndShape
@@ -117,83 +118,82 @@ class ndShapeStaticMesh: public ndShape
 	public:
 	D_CLASS_REFLECTION(ndShapeStaticMesh);
 	D_COLLISION_API ndShapeStaticMesh(ndShapeID id);
-	D_COLLISION_API ndShapeStaticMesh(const dLoadSaveBase::dLoadDescriptor& desc);
+	D_COLLISION_API ndShapeStaticMesh(const ndLoadSaveBase::ndLoadDescriptor& desc);
 	D_COLLISION_API virtual ~ndShapeStaticMesh();
 
+	virtual void DebugShape(const ndMatrix& matrix, ndShapeDebugNotify& debugCallback) const;
+	virtual ndFloat32 RayCast(ndRayCastNotify& callback, const ndVector& localP0, const ndVector& localP1, ndFloat32 maxT, const ndBody* const body, ndContactPoint& contactOut) const;
 	virtual void GetCollidingFaces(ndPolygonMeshDesc* const data) const;
+	D_COLLISION_API void Save(const ndLoadSaveBase::ndSaveDescriptor& desc) const;
 
 	protected:
-	virtual dFloat32 GetVolume() const;
-	virtual dFloat32 GetBoxMinRadius() const;
-	virtual dFloat32 GetBoxMaxRadius() const;
+	virtual ndFloat32 GetVolume() const;
+	virtual ndFloat32 GetBoxMinRadius() const;
+	virtual ndFloat32 GetBoxMaxRadius() const;
 	virtual ndShapeStaticMesh* GetAsShapeStaticMesh();
-	virtual dVector SupportVertex(const dVector& dir, dInt32* const vertexIndex) const;
-	virtual dVector SupportVertexSpecial(const dVector& dir, dFloat32 skinThickness, dInt32* const vertexIndex) const;
-	virtual dVector SupportVertexSpecialProjectPoint(const dVector& point, const dVector& dir) const;
-	virtual dInt32 CalculatePlaneIntersection(const dVector& normal, const dVector& point, dVector* const contactsOut) const;
-	virtual dVector CalculateVolumeIntegral(const dMatrix& globalMatrix, const dVector& plane, const ndShapeInstance& parentScale) const;
+	virtual ndVector SupportVertex(const ndVector& dir, ndInt32* const vertexIndex) const;
+	virtual ndVector SupportVertexSpecial(const ndVector& dir, ndFloat32 skinMargin, ndInt32* const vertexIndex) const;
+	virtual ndVector SupportVertexSpecialProjectPoint(const ndVector& point, const ndVector& dir) const;
+	virtual ndInt32 CalculatePlaneIntersection(const ndVector& normal, const ndVector& point, ndVector* const contactsOut) const;
+	virtual ndVector CalculateVolumeIntegral(const ndMatrix& globalMatrix, const ndVector& plane, const ndShapeInstance& parentScale) const;
 
-	D_COLLISION_API virtual void CalculateAabb(const dMatrix& matrix, dVector& p0, dVector& p1) const;
-	D_COLLISION_API dInt32 CalculatePlaneIntersection(const dFloat32* const vertex, const dInt32* const index, dInt32 indexCount, dInt32 strideInFloat, const dPlane& localPlane, dVector* const contactsOut) const;
-	D_COLLISION_API void Save(const dLoadSaveBase::dSaveDescriptor& desc) const;
-
-	virtual void DebugShape(const dMatrix& matrix, ndShapeDebugCallback& debugCallback) const;
-	virtual dFloat32 RayCast(ndRayCastNotify& callback, const dVector& localP0, const dVector& localP1, dFloat32 maxT, const ndBody* const body, ndContactPoint& contactOut) const;
+	D_COLLISION_API virtual void CalculateAabb(const ndMatrix& matrix, ndVector& p0, ndVector& p1) const;
+	D_COLLISION_API ndInt32 CalculatePlaneIntersection(const ndFloat32* const vertex, const ndInt32* const index, ndInt32 indexCount, ndInt32 strideInFloat, const ndPlane& localPlane, ndVector* const contactsOut) const;
 
 	D_MSV_NEWTON_ALIGN_32 
 	class ndMeshVertexListIndexList
 	{
 		public:
-		dInt32* m_indexList;
-		dInt32* m_userDataList;
-		dFloat32* m_veterxArray;
-		dInt32 m_triangleCount; 
-		dInt32 m_maxIndexCount;
-		dInt32 m_vertexCount;
-		dInt32 m_vertexStrideInBytes;
+		ndInt32* m_indexList;
+		ndInt32* m_userDataList;
+		ndFloat32* m_veterxArray;
+		ndInt32 m_triangleCount; 
+		ndInt32 m_maxIndexCount;
+		ndInt32 m_vertexCount;
+		ndInt32 m_vertexStrideInBytes;
 	} D_GCC_NEWTON_ALIGN_32;
 };
 
-inline dFloat32 ndShapeStaticMesh::GetVolume() const
+inline ndFloat32 ndShapeStaticMesh::GetVolume() const
 {
-	return dFloat32(0.0f);
+	return ndFloat32(0.0f);
 }
 
-inline dFloat32 ndShapeStaticMesh::GetBoxMinRadius() const
+inline ndFloat32 ndShapeStaticMesh::GetBoxMinRadius() const
 {
-	return dFloat32(0.0f);
+	return ndFloat32(0.0f);
 }
 
-inline dFloat32 ndShapeStaticMesh::GetBoxMaxRadius() const
+inline ndFloat32 ndShapeStaticMesh::GetBoxMaxRadius() const
 {
-	return dFloat32(0.0f);
+	return ndFloat32(0.0f);
 }
 
-inline dVector ndShapeStaticMesh::SupportVertex(const dVector&, dInt32* const) const
+inline ndVector ndShapeStaticMesh::SupportVertex(const ndVector&, ndInt32* const) const
 {
 	dAssert(0);
-	return dVector::m_zero;
+	return ndVector::m_zero;
 }
 
-inline dVector ndShapeStaticMesh::SupportVertexSpecial(const dVector& dir, dFloat32, dInt32* const vertexIndex) const
+inline ndVector ndShapeStaticMesh::SupportVertexSpecial(const ndVector& dir, ndFloat32, ndInt32* const vertexIndex) const
 {
 	dAssert(0);
 	return SupportVertex(dir, vertexIndex);
 }
 
-inline dVector ndShapeStaticMesh::SupportVertexSpecialProjectPoint(const dVector& point, const dVector&) const
+inline ndVector ndShapeStaticMesh::SupportVertexSpecialProjectPoint(const ndVector& point, const ndVector&) const
 { 
 	return point; 
 }
 
-inline dInt32 ndShapeStaticMesh::CalculatePlaneIntersection(const dVector&, const dVector&, dVector* const) const
+inline ndInt32 ndShapeStaticMesh::CalculatePlaneIntersection(const ndVector&, const ndVector&, ndVector* const) const
 {
 	return 0;
 }
 
-inline dVector ndShapeStaticMesh::CalculateVolumeIntegral(const dMatrix&, const dVector&, const ndShapeInstance&) const
+inline ndVector ndShapeStaticMesh::CalculateVolumeIntegral(const ndMatrix&, const ndVector&, const ndShapeInstance&) const
 {
-	return dVector::m_zero;
+	return ndVector::m_zero;
 }
 
 inline ndShapeStaticMesh* ndShapeStaticMesh::GetAsShapeStaticMesh()
@@ -201,28 +201,28 @@ inline ndShapeStaticMesh* ndShapeStaticMesh::GetAsShapeStaticMesh()
 	return this; 
 }
 
-inline dFloat32 ndPolygonMeshDesc::GetSeparetionDistance() const
+inline ndFloat32 ndPolygonMeshDesc::GetSeparetionDistance() const
 {
 	return m_separationDistance[0] * m_polySoupInstance->GetScale().GetScalar();
 }
 
-inline void ndPolygonMeshDesc::SetDistanceTravel(const dVector& distanceInGlobalSpace)
+inline void ndPolygonMeshDesc::SetDistanceTravel(const ndVector& distanceInGlobalSpace)
 {
-	const dMatrix& soupMatrix = m_polySoupInstance->GetGlobalMatrix();
+	const ndMatrix& soupMatrix = m_polySoupInstance->GetGlobalMatrix();
 	m_boxDistanceTravelInMeshSpace = m_polySoupInstance->GetInvScale() * soupMatrix.UnrotateVector(distanceInGlobalSpace * m_convexInstance->GetInvScale());
-	if (m_boxDistanceTravelInMeshSpace.DotProduct(m_boxDistanceTravelInMeshSpace).GetScalar() < dFloat32(1.0e-2f))
+	if (m_boxDistanceTravelInMeshSpace.DotProduct(m_boxDistanceTravelInMeshSpace).GetScalar() < ndFloat32(1.0e-2f))
 	{
-		m_doContinuesCollisionTest = false;
+		m_doContinueCollisionTest = false;
 	}
 }
 
-inline void ndShapeStaticMesh::DebugShape(const dMatrix&, ndShapeDebugCallback&) const
+inline void ndShapeStaticMesh::DebugShape(const ndMatrix&, ndShapeDebugNotify&) const
 {
 }
 
-inline dFloat32 ndShapeStaticMesh::RayCast(ndRayCastNotify&, const dVector&, const dVector&, dFloat32, const ndBody* const, ndContactPoint&) const
+inline ndFloat32 ndShapeStaticMesh::RayCast(ndRayCastNotify&, const ndVector&, const ndVector&, ndFloat32, const ndBody* const, ndContactPoint&) const
 {
-	return dFloat32(1.2f);
+	return ndFloat32(1.2f);
 }
 
 inline void ndShapeStaticMesh::GetCollidingFaces(ndPolygonMeshDesc* const) const

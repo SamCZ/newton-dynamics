@@ -29,11 +29,11 @@ class ndConvexFractureModel_4: public ndModel
 		ndAtom(const ndAtom& atom);
 		~ndAtom();
 
-		dVector m_centerOfMass;
-		dVector m_momentOfInertia;
+		ndVector m_centerOfMass;
+		ndVector m_momentOfInertia;
 		ndDemoDebrisEntity* m_mesh;
 		ndShapeInstance* m_collision;
-		dFloat32 m_massFraction;
+		ndFloat32 m_massFraction;
 	};
 
 	public:
@@ -50,15 +50,15 @@ class ndConvexFractureModel_4: public ndModel
 		{
 		}
 
-		dArray<dVector> m_pointCloud;
+		ndArray<ndVector> m_pointCloud;
 		ndShapeInstance* m_outerShape;
 		ndShapeInstance* m_innerShape;
 		const char* m_outTexture;
 		const char* m_innerTexture;
-		dFloat32 m_breakImpactSpeed;
+		ndFloat32 m_breakImpactSpeed;
 	};
 
-	class ndEffect : public dList<ndAtom>
+	class ndEffect : public ndList<ndAtom>
 	{
 		public:
 		ndEffect(ndConvexFractureModel_4* const manager, const ndDesc& desc);
@@ -70,7 +70,7 @@ class ndConvexFractureModel_4: public ndModel
 		ndShapeInstance* m_shape;
 		ndDemoMesh* m_visualMesh;
 		ndDemoDebrisRootEntity* m_debrisRootEnt;
-		dFloat32 m_breakImpactSpeed;
+		ndFloat32 m_breakImpactSpeed;
 		friend ndConvexFractureModel_4;
 	};
 
@@ -78,19 +78,19 @@ class ndConvexFractureModel_4: public ndModel
 	ndConvexFractureModel_4(ndDemoEntityManager* const scene);
 	~ndConvexFractureModel_4();
 
-	void AddEffect(const ndEffect& effect, dFloat32 mass, const dMatrix& location);
+	void AddEffect(const ndEffect& effect, ndFloat32 mass, const ndMatrix& location);
 
-	virtual void Update(ndWorld* const world, dFloat32 timestep);
-	virtual void PostUpdate(ndWorld* const world, dFloat32 timestep);
+	virtual void Update(ndWorld* const world, ndFloat32 timestep);
+	virtual void PostUpdate(ndWorld* const world, ndFloat32 timestep);
 
 	void UpdateEffect(ndWorld* const world, ndEffect& effect);
 
-	void ExplodeLocation(ndBodyDynamic* const body, const dMatrix& matrix, dFloat32 factor) const;
+	void ExplodeLocation(ndBodyDynamic* const body, const ndMatrix& matrix, ndFloat32 factor) const;
 
-	dList<ndEffect> m_effectList;
-	dList<ndEffect> m_pendingEffect;
+	ndList<ndEffect> m_effectList;
+	ndList<ndEffect> m_pendingEffect;
 	ndDemoEntityManager* m_scene;
-	dSpinLock m_lock;
+	ndSpinLock m_lock;
 };
 
 #endif

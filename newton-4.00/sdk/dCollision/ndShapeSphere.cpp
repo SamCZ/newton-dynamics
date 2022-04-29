@@ -19,7 +19,7 @@
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
-#include "dCoreStdafx.h"
+#include "ndCoreStdafx.h"
 #include "ndCollisionStdafx.h"
 #include "ndContact.h"
 #include "ndShapeSphere.h"
@@ -28,21 +28,21 @@
 #define D_SPHERE_EDGE_COUNT 96
 D_CLASS_REFLECTION_IMPLEMENT_LOADER(ndShapeSphere)
 
-dInt32 ndShapeSphere::m_shapeRefCount = 0;
-dVector ndShapeSphere::m_unitSphere[D_SPHERE_VERTEX_COUNT];
+ndInt32 ndShapeSphere::m_shapeRefCount = 0;
+ndVector ndShapeSphere::m_unitSphere[D_SPHERE_VERTEX_COUNT];
 ndShapeConvex::ndConvexSimplexEdge ndShapeSphere::m_edgeArray[D_SPHERE_EDGE_COUNT];
 
-ndShapeSphere::ndShapeSphere(dFloat32 radius)
+ndShapeSphere::ndShapeSphere(ndFloat32 radius)
 	:ndShapeConvex(m_sphere)
 {
 	Init(radius);
 }
 
-ndShapeSphere::ndShapeSphere(const dLoadSaveBase::dLoadDescriptor& desc)
+ndShapeSphere::ndShapeSphere(const ndLoadSaveBase::ndLoadDescriptor& desc)
 	:ndShapeConvex(m_sphere)
 {
 	const nd::TiXmlNode* const xmlNode = desc.m_rootNode;
-	dFloat32 radius = xmlGetFloat(xmlNode, "radius");
+	ndFloat32 radius = xmlGetFloat(xmlNode, "radius");
 	Init(radius);
 }
 
@@ -55,24 +55,34 @@ ndShapeSphere::~ndShapeSphere()
 	ndShapeConvex::m_vertex = nullptr;
 }
 
-void ndShapeSphere::TesselateTriangle(dInt32 level, const dVector& p0, const dVector& p1, const dVector& p2, dInt32& count, dVector* const ouput) const
+void ndShapeSphere::Save(const ndLoadSaveBase::ndSaveDescriptor& desc) const
+{
+	nd::TiXmlElement* const childNode = new nd::TiXmlElement(ClassName());
+	desc.m_rootNode->LinkEndChild(childNode);
+	childNode->SetAttribute("hashId", desc.m_nodeNodeHash);
+	ndShapeConvex::Save(ndLoadSaveBase::ndSaveDescriptor(desc, childNode));
+
+	xmlSaveParam(childNode, "radius", m_radius);
+}
+
+void ndShapeSphere::TesselateTriangle(ndInt32 level, const ndVector& p0, const ndVector& p1, const ndVector& p2, ndInt32& count, ndVector* const ouput) const
 {
 	if (level) 
 	{
-		dAssert(dAbs(p0.DotProduct(p0).GetScalar() - dFloat32(1.0f)) < dFloat32(1.0e-4f));
-		dAssert(dAbs(p1.DotProduct(p1).GetScalar() - dFloat32(1.0f)) < dFloat32(1.0e-4f));
-		dAssert(dAbs(p2.DotProduct(p2).GetScalar() - dFloat32(1.0f)) < dFloat32(1.0e-4f));
-		dVector p01(p0 + p1);
-		dVector p12(p1 + p2);
-		dVector p20(p2 + p0);
+		dAssert(dAbs(p0.DotProduct(p0).GetScalar() - ndFloat32(1.0f)) < ndFloat32(1.0e-4f));
+		dAssert(dAbs(p1.DotProduct(p1).GetScalar() - ndFloat32(1.0f)) < ndFloat32(1.0e-4f));
+		dAssert(dAbs(p2.DotProduct(p2).GetScalar() - ndFloat32(1.0f)) < ndFloat32(1.0e-4f));
+		ndVector p01(p0 + p1);
+		ndVector p12(p1 + p2);
+		ndVector p20(p2 + p0);
 
 		p01 = p01.Normalize();
 		p12 = p12.Normalize();
 		p20 = p20.Normalize();
 
-		dAssert(dAbs(p01.DotProduct(p01).GetScalar() - dFloat32(1.0f)) < dFloat32(1.0e-4f));
-		dAssert(dAbs(p12.DotProduct(p12).GetScalar() - dFloat32(1.0f)) < dFloat32(1.0e-4f));
-		dAssert(dAbs(p20.DotProduct(p20).GetScalar() - dFloat32(1.0f)) < dFloat32(1.0e-4f));
+		dAssert(dAbs(p01.DotProduct(p01).GetScalar() - ndFloat32(1.0f)) < ndFloat32(1.0e-4f));
+		dAssert(dAbs(p12.DotProduct(p12).GetScalar() - ndFloat32(1.0f)) < ndFloat32(1.0e-4f));
+		dAssert(dAbs(p20.DotProduct(p20).GetScalar() - ndFloat32(1.0f)) < ndFloat32(1.0e-4f));
 
 		TesselateTriangle(level - 1, p0, p01, p20, count, ouput);
 		TesselateTriangle(level - 1, p1, p12, p01, count, ouput);
@@ -87,7 +97,7 @@ void ndShapeSphere::TesselateTriangle(dInt32 level, const dVector& p0, const dVe
 	}
 }
 
-void ndShapeSphere::Init(dFloat32 radius)
+void ndShapeSphere::Init(ndFloat32 radius)
 {
 	m_radius = dMax(dAbs(radius), D_MIN_CONVEX_SHAPE_SIZE);
 	
@@ -97,17 +107,17 @@ void ndShapeSphere::Init(dFloat32 radius)
 	
 	if (!m_shapeRefCount) 
 	{
-		dVector p0(dFloat32(1.0f), dFloat32(0.0f), dFloat32(0.0f), dFloat32(0.0f));
-		dVector p1(-dFloat32(1.0f), dFloat32(0.0f), dFloat32(0.0f), dFloat32(0.0f));
-		dVector p2(dFloat32(0.0f), dFloat32(1.0f), dFloat32(0.0f), dFloat32(0.0f));
-		dVector p3(dFloat32(0.0f), -dFloat32(1.0f), dFloat32(0.0f), dFloat32(0.0f));
-		dVector p4(dFloat32(0.0f), dFloat32(0.0f), dFloat32(1.0f), dFloat32(0.0f));
-		dVector p5(dFloat32(0.0f), dFloat32(0.0f), -dFloat32(1.0f), dFloat32(0.0f));
+		ndVector p0(ndFloat32(1.0f), ndFloat32(0.0f), ndFloat32(0.0f), ndFloat32(0.0f));
+		ndVector p1(-ndFloat32(1.0f), ndFloat32(0.0f), ndFloat32(0.0f), ndFloat32(0.0f));
+		ndVector p2(ndFloat32(0.0f), ndFloat32(1.0f), ndFloat32(0.0f), ndFloat32(0.0f));
+		ndVector p3(ndFloat32(0.0f), -ndFloat32(1.0f), ndFloat32(0.0f), ndFloat32(0.0f));
+		ndVector p4(ndFloat32(0.0f), ndFloat32(0.0f), ndFloat32(1.0f), ndFloat32(0.0f));
+		ndVector p5(ndFloat32(0.0f), ndFloat32(0.0f), -ndFloat32(1.0f), ndFloat32(0.0f));
 
-		dVector tmpVectex[256];
-		dInt32 indexList[256];
-		dInt32 index = 1;
-		dInt32 count = 0;
+		ndVector tmpVectex[256];
+		ndInt32 indexList[256];
+		ndInt32 index = 1;
+		ndInt32 count = 0;
 		TesselateTriangle(index, p4, p0, p2, count, tmpVectex);
 		TesselateTriangle(index, p4, p2, p1, count, tmpVectex);
 		TesselateTriangle(index, p4, p1, p3, count, tmpVectex);
@@ -117,21 +127,21 @@ void ndShapeSphere::Init(dFloat32 radius)
 		TesselateTriangle(index, p5, p3, p1, count, tmpVectex);
 		TesselateTriangle(index, p5, p0, p3, count, tmpVectex);
 
-		dInt32 vertexCount = dVertexListToIndexList(&tmpVectex[0].m_x, sizeof(dVector), 3, count, indexList, 0.001f);
+		ndInt32 vertexCount = dVertexListToIndexList(&tmpVectex[0].m_x, sizeof(ndVector), 3, count, indexList, 0.001f);
 
 		dAssert(vertexCount == D_SPHERE_VERTEX_COUNT);
-		for (dInt32 i = 0; i < vertexCount; i++) 
+		for (ndInt32 i = 0; i < vertexCount; i++) 
 		{
 			m_unitSphere[i] = tmpVectex[i];
 		}
 		
-		dPolyhedra polyhedra;
+		ndPolyhedra polyhedra;
 		
 		polyhedra.BeginFace();
-		for (dInt32 i = 0; i < count; i += 3) 
+		for (ndInt32 i = 0; i < count; i += 3) 
 		{
 			#ifdef _DEBUG
-			dEdge* const edge = polyhedra.AddFace(indexList[i], indexList[i + 1], indexList[i + 2]);
+			ndEdge* const edge = polyhedra.AddFace(indexList[i], indexList[i + 1], indexList[i + 2]);
 			dAssert(edge);
 			#else 
 			polyhedra.AddFace(indexList[i], indexList[i + 1], indexList[i + 2]);
@@ -139,18 +149,18 @@ void ndShapeSphere::Init(dFloat32 radius)
 		}
 		polyhedra.EndFace();
 		
-		dUnsigned64 i1 = 0;
-		dPolyhedra::Iterator iter(polyhedra);
+		ndUnsigned64 i1 = 0;
+		ndPolyhedra::Iterator iter(polyhedra);
 		for (iter.Begin(); iter; iter++) 
 		{
-			dEdge* const edge = &(*iter);
+			ndEdge* const edge = &(*iter);
 			edge->m_userData = i1;
 			i1++;
 		}
 		
 		for (iter.Begin(); iter; iter++) 
 		{
-			dEdge* const edge = &(*iter);
+			ndEdge* const edge = &(*iter);
 		
 			ndConvexSimplexEdge* const ptr = &m_edgeArray[edge->m_userData];
 		
@@ -161,7 +171,7 @@ void ndShapeSphere::Init(dFloat32 radius)
 		}
 	}
 	
-	for (dInt32 i = 0; i < D_SPHERE_VERTEX_COUNT; i++) 
+	for (ndInt32 i = 0; i < D_SPHERE_VERTEX_COUNT; i++) 
 	{
 		m_vertex[i] = m_unitSphere[i].Scale(m_radius);
 	}
@@ -173,58 +183,58 @@ void ndShapeSphere::Init(dFloat32 radius)
 
 void ndShapeSphere::MassProperties()
 {
-	m_centerOfMass = dVector::m_zero;
-	m_crossInertia = dVector::m_zero;
-	dFloat32 volume = dFloat32(4.0f * dPi / 3.0f) * m_radius *  m_radius * m_radius;
-	dFloat32 II = dFloat32(2.0f / 5.0f) * m_radius *  m_radius;
-	m_inertia = dVector(II, II, II, dFloat32(0.0f));
+	m_centerOfMass = ndVector::m_zero;
+	m_crossInertia = ndVector::m_zero;
+	ndFloat32 volume = ndFloat32(4.0f * ndPi / 3.0f) * m_radius *  m_radius * m_radius;
+	ndFloat32 II = ndFloat32(2.0f / 5.0f) * m_radius *  m_radius;
+	m_inertia = ndVector(II, II, II, ndFloat32(0.0f));
 	m_centerOfMass.m_w = volume;
 }
 
-void ndShapeSphere::CalculateAabb(const dMatrix& matrix, dVector &p0, dVector &p1) const
+void ndShapeSphere::CalculateAabb(const ndMatrix& matrix, ndVector &p0, ndVector &p1) const
 {
-	//dMatrix transp(matrix.Transpose4X4());
-	////dVector size(matrix.m_front.Abs().Scale(m_radius) + matrix.m_up.Abs().Scale(m_radius) + matrix.m_right.Abs().Scale(m_radius));
-	//dVector size(transp.m_front.Abs() + transp.m_up.Abs() + transp.m_right.Abs());
+	//ndMatrix transp(matrix.Transpose4X4());
+	////ndVector size(matrix.m_front.Abs().Scale(m_radius) + matrix.m_up.Abs().Scale(m_radius) + matrix.m_right.Abs().Scale(m_radius));
+	//ndVector size(transp.m_front.Abs() + transp.m_up.Abs() + transp.m_right.Abs());
 	//size = size.Scale(m_radius);
-	dVector size(m_radius);
-	p0 = (matrix[3] - size) & dVector::m_triplexMask;
-	p1 = (matrix[3] + size) & dVector::m_triplexMask;
+	ndVector size(m_radius);
+	p0 = (matrix[3] - size) & ndVector::m_triplexMask;
+	p1 = (matrix[3] + size) & ndVector::m_triplexMask;
 }
 
-dVector ndShapeSphere::SupportVertexSpecialProjectPoint(const dVector&, const dVector& dir) const
+ndVector ndShapeSphere::SupportVertexSpecialProjectPoint(const ndVector&, const ndVector& dir) const
 {
 	return dir.Scale(m_radius - D_PENETRATION_TOL);
 }
 
-dVector ndShapeSphere::SupportVertexSpecial(const dVector&, dFloat32, dInt32* const) const
+ndVector ndShapeSphere::SupportVertexSpecial(const ndVector&, ndFloat32, ndInt32* const) const
 {
-	return dVector::m_zero;
+	return ndVector::m_zero;
 }
 
-dVector ndShapeSphere::SupportVertex(const dVector& dir, dInt32* const) const
+ndVector ndShapeSphere::SupportVertex(const ndVector& dir, ndInt32* const) const
 {
-	dAssert(dir.m_w == dFloat32(0.0f));
-	dAssert(dAbs(dir.DotProduct(dir).GetScalar() - dFloat32(1.0f)) < dFloat32(1.0e-3f));
+	dAssert(dir.m_w == ndFloat32(0.0f));
+	dAssert(dAbs(dir.DotProduct(dir).GetScalar() - ndFloat32(1.0f)) < ndFloat32(1.0e-3f));
 	dAssert(dir.m_w == 0.0f);
 	return dir.Scale(m_radius);
 }
 
-dInt32 ndShapeSphere::CalculatePlaneIntersection(const dVector& normal, const dVector& point, dVector* const contactsOut) const
+ndInt32 ndShapeSphere::CalculatePlaneIntersection(const ndVector& normal, const ndVector& point, ndVector* const contactsOut) const
 {
 	dAssert(normal.m_w == 0.0f);
-	dAssert(normal.DotProduct(normal).GetScalar() > dFloat32(0.999f));
+	dAssert(normal.DotProduct(normal).GetScalar() > ndFloat32(0.999f));
 	contactsOut[0] = normal * normal.DotProduct(point);
 	return 1;
 }
 
-dFloat32 ndShapeSphere::RayCast(ndRayCastNotify&, const dVector& localP0, const dVector& localP1, dFloat32 maxT, const ndBody* const, ndContactPoint& contactOut) const
+ndFloat32 ndShapeSphere::RayCast(ndRayCastNotify&, const ndVector& localP0, const ndVector& localP1, ndFloat32 maxT, const ndBody* const, ndContactPoint& contactOut) const
 {
-	dFloat32 t = dRayCastSphere(localP0, localP1, dVector::m_zero, m_radius);
+	ndFloat32 t = dRayCastSphere(localP0, localP1, ndVector::m_zero, m_radius);
 	if (t < maxT) 
 	{
-		dVector contact(localP0 + (localP1 - localP0).Scale(t));
-		dAssert(contact.m_w == dFloat32(0.0f));
+		ndVector contact(localP0 + (localP1 - localP0).Scale(t));
+		dAssert(contact.m_w == ndFloat32(0.0f));
 		//contactOut.m_normal = contact.Scale (dgRsqrt (contact.DotProduct(contact).GetScalar()));
 		contactOut.m_normal = contact.Normalize();
 		//contactOut.m_userId = SetUserDataID();
@@ -239,20 +249,20 @@ ndShapeInfo ndShapeSphere::GetShapeInfo() const
 	return info;
 }
 
-void ndShapeSphere::DebugShape(const dMatrix& matrix, ndShapeDebugCallback& debugCallback) const
+void ndShapeSphere::DebugShape(const ndMatrix& matrix, ndShapeDebugNotify& debugCallback) const
 {
-	dVector tmpVectex[1024 * 2];
-	ndShapeDebugCallback::ndEdgeType edgeType[1024 * 2];
+	ndVector tmpVectex[1024 * 2];
+	ndShapeDebugNotify::ndEdgeType edgeType[1024 * 2];
 
-	dVector p0(dFloat32(1.0f), dFloat32(0.0f), dFloat32(0.0f), dFloat32(0.0f));
-	dVector p1(-dFloat32(1.0f), dFloat32(0.0f), dFloat32(0.0f), dFloat32(0.0f));
-	dVector p2(dFloat32(0.0f), dFloat32(1.0f), dFloat32(0.0f), dFloat32(0.0f));
-	dVector p3(dFloat32(0.0f), -dFloat32(1.0f), dFloat32(0.0f), dFloat32(0.0f));
-	dVector p4(dFloat32(0.0f), dFloat32(0.0f), dFloat32(1.0f), dFloat32(0.0f));
-	dVector p5(dFloat32(0.0f), dFloat32(0.0f), -dFloat32(1.0f), dFloat32(0.0f));
+	ndVector p0(ndFloat32(1.0f), ndFloat32(0.0f), ndFloat32(0.0f), ndFloat32(0.0f));
+	ndVector p1(-ndFloat32(1.0f), ndFloat32(0.0f), ndFloat32(0.0f), ndFloat32(0.0f));
+	ndVector p2(ndFloat32(0.0f), ndFloat32(1.0f), ndFloat32(0.0f), ndFloat32(0.0f));
+	ndVector p3(ndFloat32(0.0f), -ndFloat32(1.0f), ndFloat32(0.0f), ndFloat32(0.0f));
+	ndVector p4(ndFloat32(0.0f), ndFloat32(0.0f), ndFloat32(1.0f), ndFloat32(0.0f));
+	ndVector p5(ndFloat32(0.0f), ndFloat32(0.0f), -ndFloat32(1.0f), ndFloat32(0.0f));
 
-	dInt32 index = 3;
-	dInt32 count = 0;
+	ndInt32 index = 3;
+	ndInt32 count = 0;
 	TesselateTriangle(index, p4, p0, p2, count, tmpVectex);
 	TesselateTriangle(index, p4, p2, p1, count, tmpVectex);
 	TesselateTriangle(index, p4, p1, p3, count, tmpVectex);
@@ -262,24 +272,15 @@ void ndShapeSphere::DebugShape(const dMatrix& matrix, ndShapeDebugCallback& debu
 	TesselateTriangle(index, p5, p3, p1, count, tmpVectex);
 	TesselateTriangle(index, p5, p0, p3, count, tmpVectex);
 
-	for (dInt32 i = 0; i < count; i++) 
+	for (ndInt32 i = 0; i < count; i++) 
 	{
-		edgeType[i] = ndShapeDebugCallback::m_shared;
-		tmpVectex[i] = matrix.TransformVector(tmpVectex[i].Scale(m_radius)) & dVector::m_triplexMask;
+		edgeType[i] = ndShapeDebugNotify::m_shared;
+		tmpVectex[i] = matrix.TransformVector(tmpVectex[i].Scale(m_radius)) & ndVector::m_triplexMask;
 	}
 
-	for (dInt32 i = 0; i < count; i += 3) 
+	for (ndInt32 i = 0; i < count; i += 3) 
 	{
 		debugCallback.DrawPolygon(3, &tmpVectex[i], &edgeType[i]);
 	}
 }
 
-void ndShapeSphere::Save(const dLoadSaveBase::dSaveDescriptor& desc) const
-{
-	nd::TiXmlElement* const childNode = new nd::TiXmlElement(ClassName());
-	desc.m_rootNode->LinkEndChild(childNode);
-	childNode->SetAttribute("hashId", desc.m_nodeNodeHash);
-	ndShapeConvex::Save(dLoadSaveBase::dSaveDescriptor(desc, childNode));
-	
-	xmlSaveParam(childNode, "radius", m_radius);
-}

@@ -19,7 +19,7 @@
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
-#include "dCoreStdafx.h"
+#include "ndCoreStdafx.h"
 #include "ndCollisionStdafx.h"
 #include "ndContact.h"
 #include "ndShapeCapsule.h"
@@ -30,55 +30,67 @@
 
 D_CLASS_REFLECTION_IMPLEMENT_LOADER(ndShapeCapsule)
 
-ndShapeCapsule::ndShapeCapsule(dFloat32 radius0, dFloat32 radius1, dFloat32 height)
+ndShapeCapsule::ndShapeCapsule(ndFloat32 radius0, ndFloat32 radius1, ndFloat32 height)
 	:ndShapeConvex(m_capsule)
 {
 	Init(radius0, radius1, height);
 }
 
-ndShapeCapsule::ndShapeCapsule(const dLoadSaveBase::dLoadDescriptor& desc)
+ndShapeCapsule::ndShapeCapsule(const ndLoadSaveBase::ndLoadDescriptor& desc)
 	:ndShapeConvex(m_capsule)
 {
 	const nd::TiXmlNode* const xmlNode = desc.m_rootNode;
-	dFloat32 radius0 = xmlGetFloat(xmlNode, "radius0");
-	dFloat32 radius1 = xmlGetFloat(xmlNode, "radius1");
-	dFloat32 height = xmlGetFloat(xmlNode, "height");
+	ndFloat32 radius0 = xmlGetFloat(xmlNode, "radius0");
+	ndFloat32 radius1 = xmlGetFloat(xmlNode, "radius1");
+	ndFloat32 height = xmlGetFloat(xmlNode, "height");
 	Init(radius0, radius1, height);
 }
 
-void ndShapeCapsule::Init(dFloat32 radio0, dFloat32 radio1, dFloat32 height)
+void ndShapeCapsule::Save(const ndLoadSaveBase::ndSaveDescriptor& desc) const
+{
+	nd::TiXmlElement* const childNode = new nd::TiXmlElement(ClassName());
+	desc.m_rootNode->LinkEndChild(childNode);
+	childNode->SetAttribute("hashId", desc.m_nodeNodeHash);
+	ndShapeConvex::Save(ndLoadSaveBase::ndSaveDescriptor(desc, childNode));
+
+	xmlSaveParam(childNode, "radius0", m_radius0);
+	xmlSaveParam(childNode, "radius1", m_radius0);
+	xmlSaveParam(childNode, "height", m_height * ndFloat32(2.0f));
+}
+
+void ndShapeCapsule::Init(ndFloat32 radio0, ndFloat32 radio1, ndFloat32 height)
 {
 	radio0 = dMax(dAbs(radio0), D_MIN_CONVEX_SHAPE_SIZE);
 	radio1 = dMax(dAbs(radio1), D_MIN_CONVEX_SHAPE_SIZE);
 	height = dMax(dAbs(height), D_MIN_CONVEX_SHAPE_SIZE);
 
-	m_transform = dVector(dFloat32(1.0f), dFloat32(1.0f), dFloat32(1.0f), dFloat32(0.0f));
+	m_transform = ndVector(ndFloat32(1.0f), ndFloat32(1.0f), ndFloat32(1.0f), ndFloat32(0.0f));
 	if (radio0 > radio1) 
 	{
-		m_transform.m_x = dFloat32(-1.0f);
-		m_transform.m_y = dFloat32(-1.0f);
+		m_transform.m_x = ndFloat32(-1.0f);
+		m_transform.m_y = ndFloat32(-1.0f);
 		dSwap(radio0, radio1);
 	}
 
 	m_radius0 = radio0;
 	m_radius1 = radio1;
-	m_height = height * dFloat32(0.5f);
+	m_height = height * ndFloat32(0.5f);
 
-	m_p0 = dVector(-m_height, m_radius0, dFloat32(0.0f), dFloat32(0.0f));
-	m_p1 = dVector( m_height, m_radius1, dFloat32(0.0f), dFloat32(0.0f));
-	m_normal = dVector(dFloat32(0.0f), dFloat32(1.0f), dFloat32(0.0f), dFloat32(0.0f));
-	dVector side(dFloat32(0.0f), dFloat32(0.0f), dFloat32(1.0f), dFloat32(0.0f));
+	m_p0 = ndVector(-m_height, m_radius0, ndFloat32(0.0f), ndFloat32(0.0f));
+	m_p1 = ndVector( m_height, m_radius1, ndFloat32(0.0f), ndFloat32(0.0f));
+	m_normal = ndVector(ndFloat32(0.0f), ndFloat32(1.0f), ndFloat32(0.0f), ndFloat32(0.0f));
+	ndVector side(ndFloat32(0.0f), ndFloat32(0.0f), ndFloat32(1.0f), ndFloat32(0.0f));
 
-	for (dInt32 i = 0; i < 16; i++) 
+	for (ndInt32 i = 0; i < 16; i++) 
 	{
-		dVector p1p0(m_p1 - m_p0);
+		ndVector p1p0(m_p1 - m_p0);
 		m_normal = side.CrossProduct(p1p0).Normalize();
-		dVector support0(m_normal.Scale(m_radius0));
-		dVector support1(m_normal.Scale(m_radius1));
+		ndVector support0(m_normal.Scale(m_radius0));
+		ndVector support1(m_normal.Scale(m_radius1));
 		support0.m_x -= m_height;
 		support1.m_x += m_height;
-		dFloat32 distance0 = support0.DotProduct(m_normal).GetScalar();
-		dFloat32 distance1 = support1.DotProduct(m_normal).GetScalar();
+		ndFloat32 distance0 = support0.DotProduct(m_normal).GetScalar();
+		ndFloat32 distance1 = support1.DotProduct(m_normal).GetScalar();
 
 		if (distance1 > distance0) 
 		{
@@ -94,66 +106,66 @@ void ndShapeCapsule::Init(dFloat32 radio0, dFloat32 radio1, dFloat32 height)
 		}
 	}
 
-	dVector tempVertex[4 * DG_CAPSULE_CAP_SEGMENTS * DG_CAPSULE_SEGMENTS + 100];
-	dInt32 index = 0;
-	dInt32 dx0 = dInt32(dFloor(DG_CAPSULE_SEGMENTS * ((m_p0.m_x + m_height + m_radius0) / m_radius0)) + dFloat32(1.0f));
-	dFloat32 step = m_radius0 / DG_CAPSULE_SEGMENTS;
-	dFloat32 x0 = m_p0.m_x - step * dx0;
-	for (dInt32 j = 0; j < dx0; j++) 
+	ndVector tempVertex[4 * DG_CAPSULE_CAP_SEGMENTS * DG_CAPSULE_SEGMENTS + 100];
+	ndInt32 index = 0;
+	ndInt32 dx0 = ndInt32(ndFloor(DG_CAPSULE_SEGMENTS * ((m_p0.m_x + m_height + m_radius0) / m_radius0)) + ndFloat32(1.0f));
+	ndFloat32 step = m_radius0 / DG_CAPSULE_SEGMENTS;
+	ndFloat32 x0 = m_p0.m_x - step * dx0;
+	for (ndInt32 j = 0; j < dx0; j++) 
 	{
 		x0 += step;
-		dFloat32 x = x0 + m_height;
-		dFloat32 arg = dMax(m_radius0 * m_radius0 - x * x, dFloat32(1.0e-3f));
-		dFloat32 r0 = dSqrt(arg);
+		ndFloat32 x = x0 + m_height;
+		ndFloat32 arg = dMax(m_radius0 * m_radius0 - x * x, ndFloat32(1.0e-3f));
+		ndFloat32 r0 = ndSqrt(arg);
 
-		dFloat32 angle = dFloat32(0.0f);
-		for (dInt32 i = 0; i < DG_CAPSULE_CAP_SEGMENTS; i++) 
+		ndFloat32 angle = ndFloat32(0.0f);
+		for (ndInt32 i = 0; i < DG_CAPSULE_CAP_SEGMENTS; i++) 
 		{
-			dFloat32 z = dSin(angle);
-			dFloat32 y = dCos(angle);
-			tempVertex[index] = dVector(x0, y * r0, z * r0, dFloat32(0.0f));
+			ndFloat32 z = ndSin(angle);
+			ndFloat32 y = ndCos(angle);
+			tempVertex[index] = ndVector(x0, y * r0, z * r0, ndFloat32(0.0f));
 			index++;
-			angle += (dFloat32(2.0f) * dPi) / DG_CAPSULE_CAP_SEGMENTS;
-			dAssert(index < dInt32 (sizeof(tempVertex) / sizeof(tempVertex[0])));
+			angle += (ndFloat32(2.0f) * ndPi) / DG_CAPSULE_CAP_SEGMENTS;
+			dAssert(index < ndInt32 (sizeof(tempVertex) / sizeof(tempVertex[0])));
 		}
 	}
 
-	dFloat32 x1 = m_p1.m_x;
-	dInt32 dx1 = dInt32(dFloor(DG_CAPSULE_SEGMENTS * ((m_height + m_radius1 - m_p1.m_x) / m_radius1)) + dFloat32(1.0f));
+	ndFloat32 x1 = m_p1.m_x;
+	ndInt32 dx1 = ndInt32(ndFloor(DG_CAPSULE_SEGMENTS * ((m_height + m_radius1 - m_p1.m_x) / m_radius1)) + ndFloat32(1.0f));
 	step = m_radius1 / DG_CAPSULE_SEGMENTS;
-	for (dInt32 j = 0; j < dx1; j++) 
+	for (ndInt32 j = 0; j < dx1; j++) 
 	{
-		dFloat32 x = x1 - m_height;
-		dFloat32 arg = dMax(m_radius1 * m_radius1 - x * x, dFloat32(1.0e-3f));
-		dFloat32 r1 = dSqrt(arg);
-		dFloat32 angle = dFloat32(0.0f);
-		for (dInt32 i = 0; i < DG_CAPSULE_CAP_SEGMENTS; i++) 
+		ndFloat32 x = x1 - m_height;
+		ndFloat32 arg = dMax(m_radius1 * m_radius1 - x * x, ndFloat32(1.0e-3f));
+		ndFloat32 r1 = ndSqrt(arg);
+		ndFloat32 angle = ndFloat32(0.0f);
+		for (ndInt32 i = 0; i < DG_CAPSULE_CAP_SEGMENTS; i++) 
 		{
-			dFloat32 z = dSin(angle);
-			dFloat32 y = dCos(angle);
-			tempVertex[index] = dVector(x1, y * r1, z * r1, dFloat32(0.0f));
+			ndFloat32 z = ndSin(angle);
+			ndFloat32 y = ndCos(angle);
+			tempVertex[index] = ndVector(x1, y * r1, z * r1, ndFloat32(0.0f));
 			index++;
-			angle += (dFloat32(2.0f) * dPi) / DG_CAPSULE_CAP_SEGMENTS;
-			dAssert(index < dInt32 (sizeof(tempVertex) / sizeof(tempVertex[0])));
+			angle += (ndFloat32(2.0f) * ndPi) / DG_CAPSULE_CAP_SEGMENTS;
+			dAssert(index < ndInt32 (sizeof(tempVertex) / sizeof(tempVertex[0])));
 		}
 		x1 += step;
 	}
 
-	m_vertexCount = dInt16(index);
-	ndShapeConvex::m_vertex = (dVector*)dMemory::Malloc(dInt32(m_vertexCount * sizeof(dVector)));
-	memcpy(ndShapeConvex::m_vertex, tempVertex, m_vertexCount * sizeof(dVector));
+	m_vertexCount = ndInt16(index);
+	ndShapeConvex::m_vertex = (ndVector*)ndMemory::Malloc(ndInt32(m_vertexCount * sizeof(ndVector)));
+	memcpy(ndShapeConvex::m_vertex, tempVertex, m_vertexCount * sizeof(ndVector));
 
-	dPolyhedra polyhedra;
+	ndPolyhedra polyhedra;
 	polyhedra.BeginFace();
 
-	dInt32 wireframe[DG_CAPSULE_SEGMENTS + 10];
+	ndInt32 wireframe[DG_CAPSULE_SEGMENTS + 10];
 
-	dInt32 i1 = 0;
-	dInt32 i0 = DG_CAPSULE_CAP_SEGMENTS - 1;
-	const dInt32 n = index / DG_CAPSULE_CAP_SEGMENTS - 1;
-	for (dInt32 j = 0; j < n; j++) 
+	ndInt32 i1 = 0;
+	ndInt32 i0 = DG_CAPSULE_CAP_SEGMENTS - 1;
+	const ndInt32 n = index / DG_CAPSULE_CAP_SEGMENTS - 1;
+	for (ndInt32 j = 0; j < n; j++) 
 	{
-		for (dInt32 i = 0; i < DG_CAPSULE_CAP_SEGMENTS; i++) 
+		for (ndInt32 i = 0; i < DG_CAPSULE_CAP_SEGMENTS; i++) 
 		{
 			wireframe[0] = i0;
 			wireframe[1] = i1;
@@ -166,13 +178,13 @@ void ndShapeCapsule::Init(dFloat32 radio0, dFloat32 radio1, dFloat32 height)
 		i0 = i1 + DG_CAPSULE_CAP_SEGMENTS - 1;
 	}
 
-	for (dInt32 i = 0; i < DG_CAPSULE_CAP_SEGMENTS; i++) 
+	for (ndInt32 i = 0; i < DG_CAPSULE_CAP_SEGMENTS; i++) 
 	{
 		wireframe[i] = DG_CAPSULE_CAP_SEGMENTS - i - 1;
 	}
 	polyhedra.AddFace(DG_CAPSULE_CAP_SEGMENTS, wireframe);
 
-	for (dInt32 i = 0; i < DG_CAPSULE_CAP_SEGMENTS; i++) 
+	for (ndInt32 i = 0; i < DG_CAPSULE_CAP_SEGMENTS; i++) 
 	{
 		wireframe[i] = index - DG_CAPSULE_CAP_SEGMENTS + i;
 	}
@@ -181,21 +193,21 @@ void ndShapeCapsule::Init(dFloat32 radio0, dFloat32 radio1, dFloat32 height)
 
 	dAssert(SanityCheck(polyhedra));
 
-	m_edgeCount = dInt16(polyhedra.GetEdgeCount());
-	m_simplex = (ndConvexSimplexEdge*)dMemory::Malloc(dInt32(m_edgeCount * sizeof(ndConvexSimplexEdge)));
+	m_edgeCount = ndInt16(polyhedra.GetEdgeCount());
+	m_simplex = (ndConvexSimplexEdge*)ndMemory::Malloc(ndInt32(m_edgeCount * sizeof(ndConvexSimplexEdge)));
 
-	dUnsigned64 i = 0;
-	dPolyhedra::Iterator iter(polyhedra);
+	ndUnsigned64 i = 0;
+	ndPolyhedra::Iterator iter(polyhedra);
 	for (iter.Begin(); iter; iter++) 
 	{
-		dEdge* const edge = &(*iter);
+		ndEdge* const edge = &(*iter);
 		edge->m_userData = i;
 		i++;
 	}
 
 	for (iter.Begin(); iter; iter++) 
 	{
-		dEdge* const edge = &(*iter);
+		ndEdge* const edge = &(*iter);
 
 		ndConvexSimplexEdge* const ptr = &m_simplex[edge->m_userData];
 
@@ -213,33 +225,33 @@ ndShapeInfo ndShapeCapsule::GetShapeInfo() const
 
 	info.m_capsule.m_radio0 = m_radius0;
 	info.m_capsule.m_radio1 = m_radius1;
-	info.m_capsule.m_height = dFloat32(2.0f) * m_height;
+	info.m_capsule.m_height = ndFloat32(2.0f) * m_height;
 
-	if (m_transform.m_x < dFloat32(0.0f)) 
+	if (m_transform.m_x < ndFloat32(0.0f)) 
 	{
 		dSwap(info.m_capsule.m_radio0, info.m_capsule.m_radio1);
 	}
 	return info;
 }
 
-void ndShapeCapsule::TesselateTriangle(dInt32 level, const dVector& p0, const dVector& p1, const dVector& p2, dInt32& count, dVector* ouput) const
+void ndShapeCapsule::TesselateTriangle(ndInt32 level, const ndVector& p0, const ndVector& p1, const ndVector& p2, ndInt32& count, ndVector* ouput) const
 {
 	if (level) 
 	{
-		dAssert(dAbs(p0.DotProduct(p0).GetScalar() - dFloat32(1.0f)) < dFloat32(1.0e-4f));
-		dAssert(dAbs(p1.DotProduct(p1).GetScalar() - dFloat32(1.0f)) < dFloat32(1.0e-4f));
-		dAssert(dAbs(p2.DotProduct(p2).GetScalar() - dFloat32(1.0f)) < dFloat32(1.0e-4f));
-		dVector p01(p0 + p1);
-		dVector p12(p1 + p2);
-		dVector p20(p2 + p0);
+		dAssert(dAbs(p0.DotProduct(p0).GetScalar() - ndFloat32(1.0f)) < ndFloat32(1.0e-4f));
+		dAssert(dAbs(p1.DotProduct(p1).GetScalar() - ndFloat32(1.0f)) < ndFloat32(1.0e-4f));
+		dAssert(dAbs(p2.DotProduct(p2).GetScalar() - ndFloat32(1.0f)) < ndFloat32(1.0e-4f));
+		ndVector p01(p0 + p1);
+		ndVector p12(p1 + p2);
+		ndVector p20(p2 + p0);
 
-		p01 = p01.Scale(dRsqrt(p01.DotProduct(p01).GetScalar()));
-		p12 = p12.Scale(dRsqrt(p12.DotProduct(p12).GetScalar()));
-		p20 = p20.Scale(dRsqrt(p20.DotProduct(p20).GetScalar()));
+		p01 = p01.Scale(ndRsqrt(p01.DotProduct(p01).GetScalar()));
+		p12 = p12.Scale(ndRsqrt(p12.DotProduct(p12).GetScalar()));
+		p20 = p20.Scale(ndRsqrt(p20.DotProduct(p20).GetScalar()));
 
-		dAssert(dAbs(p01.DotProduct(p01).GetScalar() - dFloat32(1.0f)) < dFloat32(1.0e-4f));
-		dAssert(dAbs(p12.DotProduct(p12).GetScalar() - dFloat32(1.0f)) < dFloat32(1.0e-4f));
-		dAssert(dAbs(p20.DotProduct(p20).GetScalar() - dFloat32(1.0f)) < dFloat32(1.0e-4f));
+		dAssert(dAbs(p01.DotProduct(p01).GetScalar() - ndFloat32(1.0f)) < ndFloat32(1.0e-4f));
+		dAssert(dAbs(p12.DotProduct(p12).GetScalar() - ndFloat32(1.0f)) < ndFloat32(1.0e-4f));
+		dAssert(dAbs(p20.DotProduct(p20).GetScalar() - ndFloat32(1.0f)) < ndFloat32(1.0e-4f));
 
 		TesselateTriangle(level - 1, p0, p01, p20, count, ouput);
 		TesselateTriangle(level - 1, p1, p12, p01, count, ouput);
@@ -255,21 +267,21 @@ void ndShapeCapsule::TesselateTriangle(dInt32 level, const dVector& p0, const dV
 	}
 }
 
-void ndShapeCapsule::DebugShape(const dMatrix& matrix, ndShapeDebugCallback& debugCallback) const
+void ndShapeCapsule::DebugShape(const ndMatrix& matrix, ndShapeDebugNotify& debugCallback) const
 {
 	if (m_radius0 == m_radius1) 
 	{
 		#define POWER 2
-		dVector tmpVectex[512];
+		ndVector tmpVectex[512];
 
-		dVector p0(dFloat32(1.0f), dFloat32(0.0f), dFloat32(0.0f), dFloat32(0.0f));
-		dVector p1(-dFloat32(1.0f), dFloat32(0.0f), dFloat32(0.0f), dFloat32(0.0f));
-		dVector p2(dFloat32(0.0f), dFloat32(1.0f), dFloat32(0.0f), dFloat32(0.0f));
-		dVector p3(dFloat32(0.0f), -dFloat32(1.0f), dFloat32(0.0f), dFloat32(0.0f));
-		dVector p4(dFloat32(0.0f), dFloat32(0.0f), dFloat32(1.0f), dFloat32(0.0f));
-		dVector p5(dFloat32(0.0f), dFloat32(0.0f), -dFloat32(1.0f), dFloat32(0.0f));
+		ndVector p0(ndFloat32(1.0f), ndFloat32(0.0f), ndFloat32(0.0f), ndFloat32(0.0f));
+		ndVector p1(-ndFloat32(1.0f), ndFloat32(0.0f), ndFloat32(0.0f), ndFloat32(0.0f));
+		ndVector p2(ndFloat32(0.0f), ndFloat32(1.0f), ndFloat32(0.0f), ndFloat32(0.0f));
+		ndVector p3(ndFloat32(0.0f), -ndFloat32(1.0f), ndFloat32(0.0f), ndFloat32(0.0f));
+		ndVector p4(ndFloat32(0.0f), ndFloat32(0.0f), ndFloat32(1.0f), ndFloat32(0.0f));
+		ndVector p5(ndFloat32(0.0f), ndFloat32(0.0f), -ndFloat32(1.0f), ndFloat32(0.0f));
 
-		dInt32 count = 0;
+		ndInt32 count = 0;
 		TesselateTriangle(POWER, p0, p2, p4, count, tmpVectex);
 		TesselateTriangle(POWER, p0, p4, p3, count, tmpVectex);
 		TesselateTriangle(POWER, p0, p3, p5, count, tmpVectex);
@@ -280,16 +292,16 @@ void ndShapeCapsule::DebugShape(const dMatrix& matrix, ndShapeDebugCallback& deb
 		TesselateTriangle(POWER, p1, p5, p3, count, tmpVectex);
 		TesselateTriangle(POWER, p1, p2, p5, count, tmpVectex);
 
-		dVector face[4];
-		ndShapeDebugCallback::ndEdgeType edgeType[4];
-		memset(edgeType, ndShapeDebugCallback::m_shared, sizeof(edgeType));
+		ndVector face[4];
+		ndShapeDebugNotify::ndEdgeType edgeType[4];
+		memset(edgeType, ndShapeDebugNotify::m_shared, sizeof(edgeType));
 
-		for (dInt32 i = 0; i < count; i += 3) 
+		for (ndInt32 i = 0; i < count; i += 3) 
 		{
-			dInt32 positive = 0;
-			for (dInt32 j = 0; j < 3; j++) 
+			ndInt32 positive = 0;
+			for (ndInt32 j = 0; j < 3; j++) 
 			{
-				if (tmpVectex[i + j].m_x > dFloat32(0.0f)) 
+				if (tmpVectex[i + j].m_x > ndFloat32(0.0f)) 
 				{
 					positive++;
 				}
@@ -303,7 +315,7 @@ void ndShapeCapsule::DebugShape(const dMatrix& matrix, ndShapeDebugCallback& deb
 				face[0].m_x += m_height;
 				face[1].m_x += m_height;
 				face[2].m_x += m_height;
-				matrix.TransformTriplex(&face[0].m_x, sizeof(dVector), &face[0].m_x, sizeof(dVector), 3);
+				matrix.TransformTriplex(&face[0].m_x, sizeof(ndVector), &face[0].m_x, sizeof(ndVector), 3);
 
 				debugCallback.DrawPolygon(3, face, edgeType);
 			}
@@ -316,20 +328,20 @@ void ndShapeCapsule::DebugShape(const dMatrix& matrix, ndShapeDebugCallback& deb
 				face[0].m_x -= m_height;
 				face[1].m_x -= m_height;
 				face[2].m_x -= m_height;
-				matrix.TransformTriplex(&face[0].m_x, sizeof(dVector), &face[0].m_x, sizeof(dVector), 3);
+				matrix.TransformTriplex(&face[0].m_x, sizeof(ndVector), &face[0].m_x, sizeof(ndVector), 3);
 
 				debugCallback.DrawPolygon(3, face, edgeType);
 			}
 			if (positive == 1) 
 			{
-				dVector q0(tmpVectex[i + 0]);
-				dVector q1(tmpVectex[i + 1]);
-				if ((tmpVectex[i + 1].m_x == dFloat32(0.0f)) && (tmpVectex[i + 2].m_x == dFloat32(0.0f))) 
+				ndVector q0(tmpVectex[i + 0]);
+				ndVector q1(tmpVectex[i + 1]);
+				if ((tmpVectex[i + 1].m_x == ndFloat32(0.0f)) && (tmpVectex[i + 2].m_x == ndFloat32(0.0f))) 
 				{
 					q0 = tmpVectex[i + 1];
 					q1 = tmpVectex[i + 2];
 				}
-				else if ((tmpVectex[i + 2].m_x == dFloat32(0.0f)) && (tmpVectex[i + 0].m_x == dFloat32(0.0f))) 
+				else if ((tmpVectex[i + 2].m_x == ndFloat32(0.0f)) && (tmpVectex[i + 0].m_x == ndFloat32(0.0f))) 
 				{
 					q0 = tmpVectex[i + 2];
 					q1 = tmpVectex[i + 0];
@@ -343,7 +355,7 @@ void ndShapeCapsule::DebugShape(const dMatrix& matrix, ndShapeDebugCallback& deb
 				face[1].m_x += m_height;
 				face[2].m_x -= m_height;
 				face[3].m_x -= m_height;
-				matrix.TransformTriplex(&face[0].m_x, sizeof(dVector), &face[0].m_x, sizeof(dVector), 4);
+				matrix.TransformTriplex(&face[0].m_x, sizeof(ndVector), &face[0].m_x, sizeof(ndVector), 4);
 
 				debugCallback.DrawPolygon(4, face, edgeType);
 			}
@@ -351,7 +363,7 @@ void ndShapeCapsule::DebugShape(const dMatrix& matrix, ndShapeDebugCallback& deb
 	}
 	else 
 	{
-		dMatrix transform(matrix);
+		ndMatrix transform(matrix);
 		transform[0] = transform[0].Scale(m_transform.m_x);
 		transform[1] = transform[1].Scale(m_transform.m_y);
 		transform[2] = transform[2].Scale(m_transform.m_z);
@@ -359,27 +371,27 @@ void ndShapeCapsule::DebugShape(const dMatrix& matrix, ndShapeDebugCallback& deb
 	}
 }
 
-dVector ndShapeCapsule::SupportVertexSpecialProjectPoint(const dVector& testPoint, const dVector& direction) const
+ndVector ndShapeCapsule::SupportVertexSpecialProjectPoint(const ndVector& testPoint, const ndVector& direction) const
 {
-	dVector dir(direction * m_transform);
-	dVector point(testPoint * m_transform);
+	ndVector dir(direction * m_transform);
+	ndVector point(testPoint * m_transform);
 	point += dir.Scale(m_radius0 - D_PENETRATION_TOL);
 	return m_transform * point;
 }
 
 
-dVector ndShapeCapsule::SupportVertex(const dVector& direction, dInt32* const) const
+ndVector ndShapeCapsule::SupportVertex(const ndVector& direction, ndInt32* const) const
 {
-	dVector dir(direction * m_transform);
-	dAssert(dir.m_w == dFloat32(0.0f));
-	dAssert(dAbs(dir.DotProduct(dir).GetScalar() - dFloat32(1.0f)) < dFloat32(1.0e-3f));
+	ndVector dir(direction * m_transform);
+	dAssert(dir.m_w == ndFloat32(0.0f));
+	dAssert(dAbs(dir.DotProduct(dir).GetScalar() - ndFloat32(1.0f)) < ndFloat32(1.0e-3f));
 
-	dVector p0(dir.Scale(m_radius0));
-	dVector p1(dir.Scale(m_radius1));
+	ndVector p0(dir.Scale(m_radius0));
+	ndVector p1(dir.Scale(m_radius1));
 	p0.m_x -= m_height;
 	p1.m_x += m_height;
-	dFloat32 dir0 = p0.DotProduct(dir).GetScalar();
-	dFloat32 dir1 = p1.DotProduct(dir).GetScalar();
+	ndFloat32 dir0 = p0.DotProduct(dir).GetScalar();
+	ndFloat32 dir1 = p1.DotProduct(dir).GetScalar();
 	if (dir1 > dir0) 
 	{
 		p0 = p1;
@@ -387,18 +399,18 @@ dVector ndShapeCapsule::SupportVertex(const dVector& direction, dInt32* const) c
 	return p0 * m_transform;
 }
 
-dVector ndShapeCapsule::SupportVertexSpecial(const dVector& direction, dFloat32, dInt32* const) const
+ndVector ndShapeCapsule::SupportVertexSpecial(const ndVector& direction, ndFloat32, ndInt32* const) const
 {
-	dVector dir(direction * m_transform);
-	dAssert(dir.m_w == dFloat32(0.0f));
-	dAssert(dAbs(dir.DotProduct(dir).GetScalar() - dFloat32(1.0f)) < dFloat32(1.0e-3f));
+	ndVector dir(direction * m_transform);
+	dAssert(dir.m_w == ndFloat32(0.0f));
+	dAssert(dAbs(dir.DotProduct(dir).GetScalar() - ndFloat32(1.0f)) < ndFloat32(1.0e-3f));
 
-	dVector p0(dVector::m_zero);
-	dVector p1(dir.Scale(m_radius1 - m_radius0));
+	ndVector p0(ndVector::m_zero);
+	ndVector p1(dir.Scale(m_radius1 - m_radius0));
 	p0.m_x -= m_height;
 	p1.m_x += m_height;
-	dFloat32 dir0 = p0.DotProduct(dir).GetScalar();
-	dFloat32 dir1 = p1.DotProduct(dir).GetScalar();
+	ndFloat32 dir0 = p0.DotProduct(dir).GetScalar();
+	ndFloat32 dir1 = p1.DotProduct(dir).GetScalar();
 	if (dir1 > dir0) 
 	{
 		p0 = p1;
@@ -406,88 +418,88 @@ dVector ndShapeCapsule::SupportVertexSpecial(const dVector& direction, dFloat32,
 	return p0 * m_transform;
 }
 
-dFloat32 ndShapeCapsule::RayCast(ndRayCastNotify& callback, const dVector& r0, const dVector& r1, dFloat32 maxT, const ndBody* const body, ndContactPoint& contactOut) const
+ndFloat32 ndShapeCapsule::RayCast(ndRayCastNotify& callback, const ndVector& r0, const ndVector& r1, ndFloat32 maxT, const ndBody* const body, ndContactPoint& contactOut) const
 {
-	dVector q0(r0 * m_transform);
-	dVector q1(r1 * m_transform);
+	ndVector q0(r0 * m_transform);
+	ndVector q1(r1 * m_transform);
 
-	dVector origin0(-m_height, dFloat32(0.0f), dFloat32(0.0f), dFloat32(0.0f));
-	dVector origin1(m_height, dFloat32(0.0f), dFloat32(0.0f), dFloat32(0.0f));
-	dFloat32 t0 = dRayCastSphere(q0, q1, origin0, m_radius0);
-	dFloat32 t1 = dRayCastSphere(q0, q1, origin1, m_radius1);
-	if ((t0 < dFloat32(1.0f)) && (t1 < dFloat32 (1.0f)))
+	ndVector origin0(-m_height, ndFloat32(0.0f), ndFloat32(0.0f), ndFloat32(0.0f));
+	ndVector origin1(m_height, ndFloat32(0.0f), ndFloat32(0.0f), ndFloat32(0.0f));
+	ndFloat32 t0 = dRayCastSphere(q0, q1, origin0, m_radius0);
+	ndFloat32 t1 = dRayCastSphere(q0, q1, origin1, m_radius1);
+	if ((t0 < ndFloat32(1.0f)) && (t1 < ndFloat32 (1.0f)))
 	{
 		if (t0 < t1) 
 		{
-			dVector q(q0 + (q1 - q0).Scale(t0));
-			dVector n(q - origin0);
-			dAssert(n.m_w == dFloat32(0.0f));
+			ndVector q(q0 + (q1 - q0).Scale(t0));
+			ndVector n(q - origin0);
+			dAssert(n.m_w == ndFloat32(0.0f));
 			//contactOut.m_normal = m_transform * n * n.DotProduct(n).InvSqrt();
 			contactOut.m_normal = m_transform * n.Normalize();
 			return t0;
 		}
 		else 
 		{
-			dVector q(q0 + (q1 - q0).Scale(t1));
-			dVector n(q - origin1);
-			dAssert(n.m_w == dFloat32(0.0f));
+			ndVector q(q0 + (q1 - q0).Scale(t1));
+			ndVector n(q - origin1);
+			dAssert(n.m_w == ndFloat32(0.0f));
 			//contactOut.m_normal = m_transform * n * n.DotProduct(n).InvSqrt();
 			contactOut.m_normal = m_transform * n.Normalize();
 			return t1;
 		}
 	}
-	else if (t1 < dFloat32(1.0f))
+	else if (t1 < ndFloat32(1.0f))
 	{
-		dVector q(q0 + (q1 - q0).Scale(t1));
+		ndVector q(q0 + (q1 - q0).Scale(t1));
 		if (q.m_x >= m_p1.m_x) 
 		{
-			dVector n(q - origin1);
-			dAssert(n.m_w == dFloat32(0.0f));
+			ndVector n(q - origin1);
+			dAssert(n.m_w == ndFloat32(0.0f));
 			//contactOut.m_normal = m_transform * n * n.DotProduct(n).InvSqrt();
 			contactOut.m_normal = m_transform * n.Normalize();
 			return t1;
 		}
 	}
-	else if (t0 < dFloat32(1.0f))
+	else if (t0 < ndFloat32(1.0f))
 	{
-		dVector q(q0 + (q1 - q0).Scale(t0));
+		ndVector q(q0 + (q1 - q0).Scale(t0));
 		if (q.m_x <= m_p0.m_x) 
 		{
-			dVector n(q - origin0);
-			dAssert(n.m_w == dFloat32(0.0f));
+			ndVector n(q - origin0);
+			dAssert(n.m_w == ndFloat32(0.0f));
 			//contactOut.m_normal = m_transform * n * n.DotProduct(n).InvSqrt();
 			contactOut.m_normal = m_transform * n.Normalize();
 			return t0;
 		}
 	}
 
-	dFloat32 ret = ndShapeConvex::RayCast(callback, q0, q1, maxT, body, contactOut);
-	if (ret <= dFloat32(1.0f)) 
+	ndFloat32 ret = ndShapeConvex::RayCast(callback, q0, q1, maxT, body, contactOut);
+	if (ret <= ndFloat32(1.0f)) 
 	{
 		contactOut.m_normal = m_transform * contactOut.m_normal;
 	}
 	return ret;
 }
 
-dInt32 ndShapeCapsule::CalculatePlaneIntersection(const dVector& direction, const dVector& point, dVector* const contactsOut) const
+ndInt32 ndShapeCapsule::CalculatePlaneIntersection(const ndVector& direction, const ndVector& point, ndVector* const contactsOut) const
 {
-	dVector normal(direction * m_transform);
-	dVector origin(point * m_transform);
+	ndVector normal(direction * m_transform);
+	ndVector origin(point * m_transform);
 
-	dInt32 count = 0;
-	dVector p0(-m_height, dFloat32(0.0f), dFloat32(0.0f), dFloat32(0.0f));
-	dVector dir0(p0 - origin);
-	dFloat32 dist0 = dir0.DotProduct(normal).GetScalar();
-	if ((dist0 * dist0 - dFloat32(5.0e-5f)) < (m_radius0 * m_radius0)) 
+	ndInt32 count = 0;
+	ndVector p0(-m_height, ndFloat32(0.0f), ndFloat32(0.0f), ndFloat32(0.0f));
+	ndVector dir0(p0 - origin);
+	ndFloat32 dist0 = dir0.DotProduct(normal).GetScalar();
+	if ((dist0 * dist0 - ndFloat32(5.0e-5f)) < (m_radius0 * m_radius0)) 
 	{
 		contactsOut[count] = m_transform * (p0 - normal.Scale(dist0));
 		count++;
 	}
 
-	dVector p1(m_height, dFloat32(0.0f), dFloat32(0.0f), dFloat32(0.0f));
-	dVector dir1(p1 - origin);
-	dFloat32 dist1 = dir1.DotProduct(normal).GetScalar();
-	if ((dist1 * dist1 - dFloat32(5.0e-5f)) < (m_radius1 * m_radius1)) 
+	ndVector p1(m_height, ndFloat32(0.0f), ndFloat32(0.0f), ndFloat32(0.0f));
+	ndVector dir1(p1 - origin);
+	ndFloat32 dist1 = dir1.DotProduct(normal).GetScalar();
+	if ((dist1 * dist1 - ndFloat32(5.0e-5f)) < (m_radius1 * m_radius1)) 
 	{
 		contactsOut[count] = m_transform * (p1 - normal.Scale(dist1));
 		count++;
@@ -495,35 +507,20 @@ dInt32 ndShapeCapsule::CalculatePlaneIntersection(const dVector& direction, cons
 	return count;
 }
 
-void ndShapeCapsule::CalculateAabb(const dMatrix& matrix, dVector& p0, dVector& p1) const
+void ndShapeCapsule::CalculateAabb(const ndMatrix& matrix, ndVector& p0, ndVector& p1) const
 {
-	dVector size0(m_radius0);
-	dVector size1(m_radius1);
-	dVector q0(matrix.m_posit - matrix.m_front.Scale(m_height));
-	dVector q1(matrix.m_posit + matrix.m_front.Scale(m_height));
+	ndVector size0(m_radius0);
+	ndVector size1(m_radius1);
+	ndVector q0(matrix.m_posit - matrix.m_front.Scale(m_height));
+	ndVector q1(matrix.m_posit + matrix.m_front.Scale(m_height));
 
-	dVector min_q0(q0 - size0);
-	dVector min_q1(q1 - size1);
+	ndVector min_q0(q0 - size0);
+	ndVector min_q1(q1 - size1);
 
-	dVector max_q0(q0 + size1);
-	dVector max_q1(q1 + size1);
+	ndVector max_q0(q0 + size1);
+	ndVector max_q1(q1 + size1);
 
-	p0 = min_q0.GetMin(min_q1) & dVector::m_triplexMask;
-	p1 = max_q0.GetMax(max_q1) & dVector::m_triplexMask;
+	p0 = min_q0.GetMin(min_q1) & ndVector::m_triplexMask;
+	p1 = max_q0.GetMax(max_q1) & ndVector::m_triplexMask;
 }
 
-void ndShapeCapsule::Save(const dLoadSaveBase::dSaveDescriptor& desc) const
-{
-	nd::TiXmlElement* const childNode = new nd::TiXmlElement(ClassName());
-	desc.m_rootNode->LinkEndChild(childNode);
-	childNode->SetAttribute("hashId", desc.m_nodeNodeHash);
-	ndShapeConvex::Save(dLoadSaveBase::dSaveDescriptor(desc, childNode));
-
-	xmlSaveParam(childNode, "radius0", m_radius0);
-	xmlSaveParam(childNode, "radius1", m_radius0);
-	xmlSaveParam(childNode, "height", m_height * dFloat32 (2.0f));
-
-
-//__classLoader__.CreateClass(childNode);
-
-}

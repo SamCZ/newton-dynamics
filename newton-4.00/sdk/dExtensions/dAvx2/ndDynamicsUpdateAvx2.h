@@ -24,7 +24,7 @@
 
 #include <ndNewton.h>
 
-class dAvxMatrixArray;
+class ndAvxMatrixArray;
 
 D_MSV_NEWTON_ALIGN_32
 class ndDynamicsUpdateAvx2: public ndDynamicsUpdate
@@ -39,6 +39,13 @@ class ndDynamicsUpdateAvx2: public ndDynamicsUpdate
 	virtual void Update();
 
 	private:
+	class ndGroupType
+	{
+		public:
+		ndInt8 m_rows____;
+		ndInt8 m_isUniformGroup;
+	};
+
 	void SortJoints();
 	void SortIslands();
 	void BuildIsland();
@@ -56,12 +63,12 @@ class ndDynamicsUpdateAvx2: public ndDynamicsUpdate
 	void IntegrateUnconstrainedBodies();
 	
 	void DetermineSleepStates();
-	void UpdateIslandState(const ndIsland& island);
 	void GetJacobianDerivatives(ndConstraint* const joint);
 
-	dVector m_zero;
-	dArray<dInt32> m_avxJointRows;
-	dAvxMatrixArray* m_avxMassMatrixArray;
+	ndArray<ndInt8> m_groupType;
+	ndArray<ndJacobian> m_jointMask;
+	ndArray<ndInt32> m_avxJointRows;
+	ndAvxMatrixArray* m_avxMassMatrixArray;
 
 } D_GCC_NEWTON_ALIGN_32;
 

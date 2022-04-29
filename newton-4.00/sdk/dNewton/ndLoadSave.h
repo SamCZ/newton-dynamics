@@ -19,21 +19,21 @@
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
-#ifndef __D_ND_LOAD_SAVE_H__
-#define __D_ND_LOAD_SAVE_H__
+#ifndef __ND_ND_LOAD_SAVE_H__
+#define __ND_ND_LOAD_SAVE_H__
 
 #include "ndNewtonStdafx.h"
 
 class ndWorld;
 class ndLoadSaveInfo;
 
-class ndWordSettings : public dClassAlloc
+class ndWordSettings : public ndClassAlloc
 {
 	public:
 	D_CLASS_REFLECTION(ndWordSettings);
 
 	ndWordSettings()
-		:dClassAlloc()
+		:ndClassAlloc()
 		,m_subSteps(2)
 		,m_solverIterations(4)
 	{
@@ -43,16 +43,16 @@ class ndWordSettings : public dClassAlloc
 	{
 	}
 
-	D_NEWTON_API ndWordSettings(const dLoadSaveBase::dLoadDescriptor& desc);
-	D_NEWTON_API virtual void Load(const dLoadSaveBase::dLoadDescriptor& desc);
-	D_NEWTON_API virtual void Save(const dLoadSaveBase::dSaveDescriptor& desc) const;
+	D_NEWTON_API ndWordSettings(const ndLoadSaveBase::ndLoadDescriptor& desc);
+	D_NEWTON_API virtual void Load(const ndLoadSaveBase::ndLoadDescriptor& desc);
+	D_NEWTON_API virtual void Save(const ndLoadSaveBase::ndSaveDescriptor& desc) const;
 
-	dInt32 m_subSteps;
-	dInt32 m_solverIterations;
+	ndInt32 m_subSteps;
+	ndInt32 m_solverIterations;
 };
 
 D_MSV_NEWTON_ALIGN_32
-class ndLoadSave: public dClassAlloc
+class ndLoadSave: public ndClassAlloc
 {
 	public:
 	ndLoadSave();
@@ -84,7 +84,7 @@ class ndLoadSave: public dClassAlloc
 
 
 inline ndLoadSave::ndLoadSave()
-	:dClassAlloc()	
+	:ndClassAlloc()	
 	,m_setting(nullptr)
 	,m_bodyMap()
 	,m_jointMap()

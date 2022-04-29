@@ -31,14 +31,14 @@ void *operator new (size_t size)
 	// this should not happens on this test
 	// newton should never use global operator new and delete.
 	//dAssert(0);
-	void* const ptr = dMemory::Malloc(size);
-	dAssert((dUnsigned64(ptr) & (0x1f)) == 0);
+	void* const ptr = ndMemory::Malloc(size);
+	dAssert((ndUnsigned64(ptr) & (0x1f)) == 0);
 	return ptr;
 }
 
 void operator delete (void* ptr) noexcept
 {
-	dMemory::Free(ptr);
+	ndMemory::Free(ptr);
 }
 
 class CheckMemoryLeaks
@@ -49,7 +49,10 @@ class CheckMemoryLeaks
 		#if defined(_DEBUG) && defined(_MSC_VER)
 			// Track all memory leaks at the operating system level.
 			// make sure no Newton tool or utility leaves leaks behind.
-			_CrtSetDbgFlag(_CRTDBG_LEAK_CHECK_DF | _CRTDBG_REPORT_FLAG);
+			ndUnsigned32 flags = _CrtSetDbgFlag(_CRTDBG_LEAK_CHECK_DF) & 0xffff;
+			flags = flags | _CRTDBG_REPORT_FLAG;
+			flags = flags | _CRTDBG_CHECK_EVERY_1024_DF;
+			_CrtSetDbgFlag(flags);
 			//_CrtSetBreakAlloc (2488);
 		#endif
 
@@ -57,7 +60,7 @@ class CheckMemoryLeaks
 		// Set the memory allocation function before creation the newton world
 		// this is the only function that can be called before the creation of the newton world.
 		// it should be called once, and the the call is optional 
-		dMemory::SetMemoryAllocators(PhysicsAlloc, PhysicsFree);
+		ndMemory::SetMemoryAllocators(PhysicsAlloc, PhysicsFree);
 	}
 
 	static void CheckMemoryLeaksCallback()

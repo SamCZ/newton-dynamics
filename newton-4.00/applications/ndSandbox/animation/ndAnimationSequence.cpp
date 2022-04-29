@@ -16,7 +16,6 @@
 ndAnimationSequence::ndAnimationSequence()
 	:m_name("")
 	,m_tracks()
-	,m_period(dFloat32 (1.0f))
 {
 }
 
@@ -24,24 +23,39 @@ ndAnimationSequence::~ndAnimationSequence()
 {
 }
 
+const ndString& ndAnimationSequence::GetName() const
+{
+	return m_name;
+}
+
+void ndAnimationSequence::SetName(const char* const name)
+{
+	m_name = name;
+}
+
+ndList<ndAnimationKeyFramesTrack>& ndAnimationSequence::GetTracks()
+{
+	return m_tracks;
+}
+
 ndAnimationKeyFramesTrack* ndAnimationSequence::AddTrack()
 {
-	dList<ndAnimationKeyFramesTrack>::dNode* const node = m_tracks.Append();
+	ndList<ndAnimationKeyFramesTrack>::ndNode* const node = m_tracks.Append();
 	return &node->GetInfo();
 }
 
-void ndAnimationSequence::CalculatePose(ndAnimationPose& output, dFloat32 t) const
+void ndAnimationSequence::CalculatePose(ndAnimationPose& output, ndFloat32 param) const
 {
 	if (output.GetCount())
 	{
-		dInt32 index = 0;
+		ndInt32 index = 0;
 		ndAnimKeyframe* const keyFrames = &output[0];
-		for (dList<ndAnimationKeyFramesTrack>::dNode* srcNode = m_tracks.GetFirst(); srcNode; srcNode = srcNode->GetNext())
+		for (ndList<ndAnimationKeyFramesTrack>::ndNode* srcNode = m_tracks.GetFirst(); srcNode; srcNode = srcNode->GetNext())
 		{
 			const ndAnimationKeyFramesTrack& track = srcNode->GetInfo();
 			ndAnimKeyframe& keyFrame = keyFrames[index];
-			track.InterpolatePosition(t, m_period, keyFrame.m_posit);
-			track.InterpolateRotation(t, m_period, keyFrame.m_rotation);
+			track.InterpolatePosition(param, keyFrame.m_posit);
+			track.InterpolateRotation(param, keyFrame.m_rotation);
 			dAssert(keyFrame.m_rotation.DotProduct(keyFrame.m_rotation).GetScalar() > 0.999f);
 			dAssert(keyFrame.m_rotation.DotProduct(keyFrame.m_rotation).GetScalar() < 1.001f);
 

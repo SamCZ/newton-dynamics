@@ -9,51 +9,51 @@
 * freely
 */
 
-#ifndef __D_JOINT_HINGE_H__
-#define __D_JOINT_HINGE_H__
+#ifndef __ND_JOINT_HINGE_H__
+#define __ND_JOINT_HINGE_H__
 
 #include "ndNewtonStdafx.h"
 #include "ndJointBilateralConstraint.h"
-
-#define D_HINGE_PENETRATION_RECOVERY_SPEED	dFloat32 (0.1f) 
-#define D_HINGE_PENETRATION_LIMIT			dFloat32 (10.0f * dDegreeToRad) 
 
 class ndJointHinge: public ndJointBilateralConstraint
 {
 	public:
 	D_CLASS_REFLECTION(ndJointHinge);
-	D_NEWTON_API ndJointHinge(const dLoadSaveBase::dLoadDescriptor& desc);
-	D_NEWTON_API ndJointHinge(const dMatrix& pinAndPivotFrame, ndBodyKinematic* const child, ndBodyKinematic* const parent);
-	D_NEWTON_API ndJointHinge(const dMatrix& pinAndPivotInChild, const dMatrix& pinAndPivotInParent, ndBodyKinematic* const child, ndBodyKinematic* const parent);
+	D_NEWTON_API ndJointHinge(const ndLoadSaveBase::ndLoadDescriptor& desc);
+	D_NEWTON_API ndJointHinge(const ndMatrix& pinAndPivotFrame, ndBodyKinematic* const child, ndBodyKinematic* const parent);
+	D_NEWTON_API ndJointHinge(const ndMatrix& pinAndPivotInChild, const ndMatrix& pinAndPivotInParent, ndBodyKinematic* const child, ndBodyKinematic* const parent);
 	D_NEWTON_API virtual ~ndJointHinge();
 
-	D_NEWTON_API dFloat32 GetAngle() const;
-	D_NEWTON_API dFloat32 GetOmega() const;
-	D_NEWTON_API dFloat32 GetFriction() const;
+	D_NEWTON_API ndFloat32 GetAngle() const;
+	D_NEWTON_API ndFloat32 GetOmega() const;
+	D_NEWTON_API ndFloat32 GetOffsetAngle() const;
+	D_NEWTON_API void SetOffsetAngle(ndFloat32 angle);
+	D_NEWTON_API bool GetLimitState() const;
+	D_NEWTON_API void SetLimitState(bool state);
+	D_NEWTON_API void SetLimits(ndFloat32 minLimit, ndFloat32 maxLimit);
+	D_NEWTON_API void GetLimits(ndFloat32& minLimit, ndFloat32& maxLimit);
+	D_NEWTON_API void SetAsSpringDamper(ndFloat32 regularizer, ndFloat32 spring, ndFloat32 damper);
+	D_NEWTON_API void GetSpringDamper(ndFloat32& regularizer, ndFloat32& spring, ndFloat32& damper) const;
 
-	D_NEWTON_API void SetFriction(dFloat32 frictionTorque);
-	D_NEWTON_API void EnableLimits(bool state, dFloat32 minLimit, dFloat32 maxLimit);
-	D_NEWTON_API void SetAsSpringDamper(bool state, dFloat32 regularizer, dFloat32 spring, dFloat32 damper);
-
-	private:
-	void SubmitConstraintLimits(ndConstraintDescritor& desc, const dMatrix& matrix0, const dMatrix& matrix1);
-	void SubmitConstraintLimitSpringDamper(ndConstraintDescritor& desc, const dMatrix& matrix0, const dMatrix& matrix1);
-	
 	protected:
+	D_NEWTON_API ndFloat32 PenetrationOmega(ndFloat32 penetartion) const;
+	D_NEWTON_API ndInt8 SubmitLimits(ndConstraintDescritor& desc, const ndMatrix& matrix0, const ndMatrix& matrix1);
+	D_NEWTON_API void SubmitSpringDamper(ndConstraintDescritor& desc, const ndMatrix& matrix0, const ndMatrix& matrix1);
+
 	D_NEWTON_API void JacobianDerivative(ndConstraintDescritor& desc);
-	D_NEWTON_API void Save(const dLoadSaveBase::dSaveDescriptor& desc) const;
+	D_NEWTON_API void Save(const ndLoadSaveBase::ndSaveDescriptor& desc) const;
+	D_NEWTON_API void DebugJoint(ndConstraintDebugCallback& debugCallback) const;
+	D_NEWTON_API void ApplyBaseRows(ndConstraintDescritor& desc, const ndMatrix& matrix0, const ndMatrix& matrix1);
 
-	dFloat32 m_angle;
-	dFloat32 m_omega;
-	dFloat32 m_springK;
-	dFloat32 m_damperC;
-	dFloat32 m_minLimit;
-	dFloat32 m_maxLimit;
-	dFloat32 m_friction;
-	dFloat32 m_springDamperRegularizer;
-
-	bool m_hasLimits;
-	bool m_isSpringDamper;
+	ndFloat32 m_angle;
+	ndFloat32 m_omega;
+	ndFloat32 m_springK;
+	ndFloat32 m_damperC;
+	ndFloat32 m_minLimit;
+	ndFloat32 m_maxLimit;
+	ndFloat32 m_offsetAngle;
+	ndFloat32 m_springDamperRegularizer;
+	ndInt8 m_limitState;
 };
 
 #endif 

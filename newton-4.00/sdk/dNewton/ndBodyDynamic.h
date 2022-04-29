@@ -19,15 +19,15 @@
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
-#ifndef __D_BODY_DYNAMIC_BODY_H__
-#define __D_BODY_DYNAMIC_BODY_H__
+#ifndef __ND_BODY_DYNAMIC_BODY_H__
+#define __ND_BODY_DYNAMIC_BODY_H__
 
 #include "ndNewtonStdafx.h"
 
-#define D_MAX_SPEED_ATT	dFloat32(0.02f)
-//#define D_FREEZE_ACCEL	dFloat32(0.1f)
-#define D_FREEZE_ACCEL		dFloat32(1.0f)
-#define D_FREEZE_SPEED		dFloat32(0.032f)
+#define D_MAX_SPEED_ATT		ndFloat32(0.02f)
+#define D_FREEZE_ACCEL		ndFloat32(1.0f)
+//#define D_FREEZE_ACCEL	ndFloat32(0.5f)
+#define D_FREEZE_SPEED		ndFloat32(0.032f)
 
 #define D_FREEZE_ACCEL2		(D_FREEZE_ACCEL * D_FREEZE_ACCEL)
 #define D_FREEZE_SPEED2		(D_FREEZE_SPEED * D_FREEZE_SPEED)
@@ -35,7 +35,7 @@
 #define D_FREEZE_MAG		D_FREEZE_ACCEL
 #define D_FREEZE_MAG2		(D_FREEZE_MAG * D_FREEZE_MAG)
 
-#define D_ERR_TOLERANCE		dFloat32(1.0e-2f)
+#define D_ERR_TOLERANCE		ndFloat32(1.0e-2f)
 #define D_ERR_TOLERANCE2	(D_ERR_TOLERANCE * D_ERR_TOLERANCE)
 
 D_MSV_NEWTON_ALIGN_32
@@ -44,97 +44,75 @@ class ndBodyDynamic: public ndBodyKinematic
 	public:
 	D_CLASS_REFLECTION(ndBodyDynamic);
 	D_NEWTON_API ndBodyDynamic();
-	D_NEWTON_API ndBodyDynamic(const dLoadSaveBase::dLoadDescriptor& desc);
+	D_NEWTON_API ndBodyDynamic(const ndLoadSaveBase::ndLoadDescriptor& desc);
 	D_NEWTON_API virtual ~ndBodyDynamic ();
 
 	D_NEWTON_API virtual ndBodyDynamic* GetAsBodyDynamic() { return this; }
-	D_NEWTON_API virtual void ApplyExternalForces(dInt32 threadIndex, dFloat32 timestep);
-	D_NEWTON_API virtual void AddDampingAcceleration(dFloat32 timestep);
-	D_NEWTON_API virtual void IntegrateVelocity(dFloat32 timestep);
+	D_NEWTON_API virtual void ApplyExternalForces(ndInt32 threadIndex, ndFloat32 timestep);
+	D_NEWTON_API virtual void AddDampingAcceleration(ndFloat32 timestep);
+	D_NEWTON_API virtual void IntegrateVelocity(ndFloat32 timestep);
 
-	D_NEWTON_API virtual void Save(const dLoadSaveBase::dSaveDescriptor& desc) const;
+	D_NEWTON_API virtual void Save(const ndLoadSaveBase::ndSaveDescriptor& desc) const;
 
-	D_NEWTON_API void SetForce(const dVector& force);
-	D_NEWTON_API void SetTorque(const dVector& torque);
+	D_NEWTON_API void SetForce(const ndVector& force);
+	D_NEWTON_API void SetTorque(const ndVector& torque);
 
-	D_NEWTON_API dFloat32 GetLinearDamping() const;
-	D_NEWTON_API void SetLinearDamping(dFloat32 linearDamp);
+	D_NEWTON_API void AddImpulse(const ndVector& pointVeloc, const ndVector& pointPosit, ndFloat32 timestep);
+	D_NEWTON_API void ApplyImpulsePair(const ndVector& linearImpulse, const ndVector& angularImpulse, ndFloat32 timestep);
+	D_NEWTON_API void ApplyImpulsesAtPoint(ndInt32 count, const ndVector* const impulseArray, const ndVector* const pointArray, ndFloat32 timestep);
 
-	D_NEWTON_API dVector GetAngularDamping() const;
-	D_NEWTON_API void SetAngularDamping(const dVector& angularDamp);
+	D_NEWTON_API ndFloat32 GetLinearDamping() const;
+	D_NEWTON_API void SetLinearDamping(ndFloat32 linearDamp);
 
-	virtual dVector GetForce() const;
-	virtual dVector GetTorque() const;
+	D_NEWTON_API ndVector GetCachedDamping() const;
+	D_NEWTON_API ndVector GetAngularDamping() const;
+	D_NEWTON_API void SetAngularDamping(const ndVector& angularDamp);
 
-	dVector GetAccel() const;
-	virtual void SetAccel(const dVector& accel);
+	virtual ndVector GetForce() const;
+	virtual ndVector GetTorque() const;
+	
+	private:
+	void SaveExternalForces();
+	D_NEWTON_API virtual void IntegrateGyroSubstep(const ndVector& timestep);
+	D_NEWTON_API virtual ndJacobian IntegrateForceAndToque(const ndVector& force, const ndVector& torque, const ndVector& timestep) const;
+	D_NEWTON_API virtual void EvaluateSleepState(ndFloat32 freezeSpeed2, ndFloat32 freezeAccel2);
 
-	dVector GetAlpha() const;
-	virtual void SetAlpha(const dVector& alpha);
-
-	void IntegrateGyroSubstep(const dVector& timestep);
-	ndJacobian IntegrateForceAndToque(const dVector& force, const dVector& torque, const dVector& timestep) const;
-
-	void SetExternalForces();
-
-	protected:
-	dVector m_accel;
-	dVector m_alpha;
-	dVector m_externalForce;
-	dVector m_externalTorque;
-	dVector m_impulseForce;
-	dVector m_impulseTorque;
-	dVector m_savedExternalForce;
-	dVector m_savedExternalTorque;
-	dVector m_dampCoef;
-	dVector m_cachedDampCoef;
-	dFloat32 m_cachedTimeStep;
+	ndVector m_externalForce;
+	ndVector m_externalTorque;
+	ndVector m_impulseForce;
+	ndVector m_impulseTorque;
+	ndVector m_savedExternalForce;
+	ndVector m_savedExternalTorque;
+	ndVector m_dampCoef;
+	ndVector m_cachedDampCoef;
+	ndFloat32 m_cachedTimeStep;
 
 	friend class ndDynamicsUpdate;
 	friend class ndDynamicsUpdateSoa;
 	friend class ndDynamicsUpdateAvx2;
+	friend class ndDynamicsUpdateCuda;
 	friend class ndDynamicsUpdateOpencl;
 } D_GCC_NEWTON_ALIGN_32 ;
 
-class ndBodySentinel : public ndBodyDynamic
-{
-	ndBodySentinel* GetAsBodySentinel() { return this; }
-};
-
-inline dVector ndBodyDynamic::GetForce() const
+inline ndVector ndBodyDynamic::GetForce() const
 {
 	return m_externalForce;
 }
 
-inline dVector ndBodyDynamic::GetTorque() const
+inline ndVector ndBodyDynamic::GetTorque() const
 {
 	return m_externalTorque;
 }
 
-inline dVector ndBodyDynamic::GetAccel() const
-{
-	return m_accel;
-}
-
-inline void ndBodyDynamic::SetAccel(const dVector& accel)
-{
-	m_accel = accel;
-}
-
-inline dVector ndBodyDynamic::GetAlpha() const
-{
-	return m_alpha;
-}
-
-inline void ndBodyDynamic::SetAlpha(const dVector& alpha)
-{
-	m_alpha = alpha;
-}
-
-inline void ndBodyDynamic::SetExternalForces()
+inline void ndBodyDynamic::SaveExternalForces()
 {
 	m_savedExternalForce = m_externalForce;
 	m_savedExternalTorque = m_externalTorque;
+}
+
+inline ndVector ndBodyDynamic::GetCachedDamping() const
+{
+	return m_cachedDampCoef;
 }
 
 #endif 

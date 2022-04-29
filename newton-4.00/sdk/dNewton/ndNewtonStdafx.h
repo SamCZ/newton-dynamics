@@ -24,10 +24,10 @@
 //      are changed infrequently
 //
 
-#ifndef _D_NEWTON_STDAFX_H__
-#define _D_NEWTON_STDAFX_H__
+#ifndef __ND_NEWTON_STDAFX_H__
+#define __ND_NEWTON_STDAFX_H__
 
-#include <dCore.h>
+#include <ndCore.h>
 #include <ndCollision.h>
 
 #ifdef _D_NEWTON_DLL

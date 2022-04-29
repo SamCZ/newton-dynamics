@@ -21,7 +21,7 @@ ndDemoCamera::ndDemoCamera()
 	:ndDemoEntity (dGetIdentityMatrix(), nullptr) 
 	,m_viewMatrix(dGetIdentityMatrix())
 	,m_projectionMatrix(dGetIdentityMatrix())
-	,m_fov(D_CAMERA_ANGLE * dDegreeToRad)
+	,m_fov(D_CAMERA_ANGLE * ndDegreeToRad)
 	,m_backPlane(2000.0f)
 	,m_frontPlane (0.01f)
 	,m_cameraYaw(0.0f)
@@ -33,33 +33,33 @@ ndDemoCamera::~ndDemoCamera()
 {
 }
 
-void ndDemoCamera::Render(dFloat32, ndDemoEntityManager* const, const dMatrix&) const
+void ndDemoCamera::Render(ndFloat32, ndDemoEntityManager* const, const ndMatrix&) const
 {
 }
 
-dFloat32 ndDemoCamera::GetYawAngle() const
+ndFloat32 ndDemoCamera::GetYawAngle() const
 {
 	return m_cameraYaw;
 }
 
-dFloat32 ndDemoCamera::GetPichAngle() const
+ndFloat32 ndDemoCamera::GetPichAngle() const
 {
 	return m_cameraPitch;
 }
 
-const dMatrix& ndDemoCamera::GetProjectionMatrix() const
+const ndMatrix& ndDemoCamera::GetProjectionMatrix() const
 {
 	return m_projectionMatrix;
 }
 
-const dMatrix& ndDemoCamera::GetViewMatrix() const
+const ndMatrix& ndDemoCamera::GetViewMatrix() const
 {
 	return m_viewMatrix;
 }
 
-dMatrix ndDemoCamera::CreateMatrixFromFrustum(dFloat32 Left, dFloat32 Right, dFloat32 Bottom, dFloat32 Top, dFloat32 ZNear, dFloat32 ZFar)
+ndMatrix ndDemoCamera::CreateMatrixFromFrustum(ndFloat32 Left, ndFloat32 Right, ndFloat32 Bottom, ndFloat32 Top, ndFloat32 ZNear, ndFloat32 ZFar)
 {
-	dMatrix Result(dGetIdentityMatrix());
+	ndMatrix Result(dGetIdentityMatrix());
 
 	Result[0][0] = 2 * ZNear / (Right - Left);
 	Result[0][1] = 0;
@@ -84,18 +84,18 @@ dMatrix ndDemoCamera::CreateMatrixFromFrustum(dFloat32 Left, dFloat32 Right, dFl
 	return Result;
 }
 
-dMatrix ndDemoCamera::CreateLookAtMatrix(const dVector& eye, const dVector& center, const dVector& normUp)
+ndMatrix ndDemoCamera::CreateLookAtMatrix(const ndVector& eye, const ndVector& center, const ndVector& normUp)
 {
-	dMatrix Result(dGetIdentityMatrix());
+	ndMatrix Result(dGetIdentityMatrix());
 	
-	dVector ZAxis (center - eye);
-	ZAxis = ZAxis & dVector::m_triplexMask;
+	ndVector ZAxis (center - eye);
+	ZAxis = ZAxis & ndVector::m_triplexMask;
 
 	ZAxis = ZAxis.Normalize();
-	dVector XAxis (ZAxis.CrossProduct(normUp));
+	ndVector XAxis (ZAxis.CrossProduct(normUp));
 
 	XAxis = XAxis.Normalize();
-	dVector YAxis (XAxis.CrossProduct(ZAxis));
+	ndVector YAxis (XAxis.CrossProduct(ZAxis));
 
 	Result[0] = XAxis;
 	Result[1] = YAxis;
@@ -103,11 +103,11 @@ dMatrix ndDemoCamera::CreateLookAtMatrix(const dVector& eye, const dVector& cent
 
 	Result[2] = Result[2].Scale(-1.0f);
 
-	Result[3] = dVector::m_wOne;
+	Result[3] = ndVector::m_wOne;
 
 	Result = Result.Transpose();
 
-	dVector negEye (eye);
+	ndVector negEye (eye);
 	negEye = negEye.Scale(-1.0f);
 	negEye[3] = 1.0f;
 
@@ -118,17 +118,17 @@ dMatrix ndDemoCamera::CreateLookAtMatrix(const dVector& eye, const dVector& cent
 	return Result;
 }
 
-dMatrix ndDemoCamera::CreatePerspectiveMatrix(dFloat32 fov, dFloat32 Aspect, dFloat32 ZNear, dFloat32 ZFar)
+ndMatrix ndDemoCamera::CreatePerspectiveMatrix(ndFloat32 fov, ndFloat32 Aspect, ndFloat32 ZNear, ndFloat32 ZFar)
 {
-	fov = dClamp (fov, dFloat32 (0.0f), dPi);
-	//y = ZNear * (dFloat32)dTan((fov * cPIdiv180) * 0.5f);
-	dFloat32 y = ZNear * dTan(fov * 0.5f);
-	dFloat32 x = y * Aspect;
-	dMatrix Result (CreateMatrixFromFrustum(-x, x, -y, y, ZNear, ZFar));
+	fov = dClamp (fov, ndFloat32 (0.0f), ndPi);
+	//y = ZNear * (ndFloat32)ndTan((fov * cPIdiv180) * 0.5f);
+	ndFloat32 y = ZNear * ndTan(fov * 0.5f);
+	ndFloat32 x = y * Aspect;
+	ndMatrix Result (CreateMatrixFromFrustum(-x, x, -y, y, ZNear, ZFar));
 	return Result;
 }
 
-void ndDemoCamera::SetViewMatrix(dInt32 width, dInt32 height)
+void ndDemoCamera::SetViewMatrix(ndInt32 width, ndInt32 height)
 {
 	// set the view port for this render section
 	glViewport(0, 0, (GLint)width, (GLint)height);
@@ -138,14 +138,14 @@ void ndDemoCamera::SetViewMatrix(dInt32 width, dInt32 height)
 	m_projectionMatrix = CreatePerspectiveMatrix(m_fov, GLfloat(width) / GLfloat(height), m_frontPlane, m_backPlane);
 
 	// set the model view matrix 
-	dVector pointOfInterest(m_matrix.m_posit + m_matrix.m_front);
+	ndVector pointOfInterest(m_matrix.m_posit + m_matrix.m_front);
 	m_viewMatrix = CreateLookAtMatrix(
-		dVector(m_matrix.m_posit.m_x, m_matrix.m_posit.m_y, m_matrix.m_posit.m_z, 1.0f),
-		dVector(pointOfInterest.m_x, pointOfInterest.m_y, pointOfInterest.m_z, 1.0f),
-		dVector(m_matrix.m_up.m_x, m_matrix.m_up.m_y, m_matrix.m_up.m_z, 0.0f));
+		ndVector(m_matrix.m_posit.m_x, m_matrix.m_posit.m_y, m_matrix.m_posit.m_z, 1.0f),
+		ndVector(pointOfInterest.m_x, pointOfInterest.m_y, pointOfInterest.m_z, 1.0f),
+		ndVector(m_matrix.m_up.m_x, m_matrix.m_up.m_y, m_matrix.m_up.m_z, 0.0f));
 }
 
-dVector ndDemoCamera::ScreenToWorld (const dVector& screenPoint) const
+ndVector ndDemoCamera::ScreenToWorld (const ndVector& screenPoint) const
 {
 	GLdouble winX = screenPoint.m_x; //Store the x cord;
 	GLdouble winY = screenPoint.m_y; //Store the y cord
@@ -154,16 +154,16 @@ dVector ndDemoCamera::ScreenToWorld (const dVector& screenPoint) const
 	//Now windows coordinates start with (0,0) being at the top left 
 	//whereas OpenGL cords start lower left so we have to do this to convert it: 
 	//Remember we got viewport value before 
-	winY = (dFloat32)m_viewport[3] - winY; 
+	winY = (ndFloat32)m_viewport[3] - winY; 
 
 	GLdouble objx;
 	GLdouble objy;
 	GLdouble objz;
 	GLdouble modelViewMatrix[16];
 	GLdouble projectionViewMatrix[16];
-	for (dInt32 i = 0; i < 4; i++) 
+	for (ndInt32 i = 0; i < 4; i++) 
 	{
-		for (dInt32 j = 0; j < 4; j++)
+		for (ndInt32 j = 0; j < 4; j++)
 		{
 			modelViewMatrix[i * 4 + j] = m_viewMatrix[i][j];
 			projectionViewMatrix[i * 4 + j] = m_projectionMatrix[i][j];
@@ -171,16 +171,16 @@ dVector ndDemoCamera::ScreenToWorld (const dVector& screenPoint) const
 	}
 
 	gluUnProject (winX, winY, winZ, modelViewMatrix, projectionViewMatrix, (GLint*)&m_viewport, &objx, &objy, &objz);
-	return dVector (dFloat32(objx), dFloat32(objy), dFloat32(objz), dFloat32 (1.0f));
+	return ndVector (ndFloat32(objx), ndFloat32(objy), ndFloat32(objz), ndFloat32 (1.0f));
 }
 
-//dVector ndDemoCamera::WorldToScreen (const dVector& worldPoint) const
-dVector ndDemoCamera::WorldToScreen(const dVector&) const
+//ndVector ndDemoCamera::WorldToScreen (const ndVector& worldPoint) const
+ndVector ndDemoCamera::WorldToScreen(const ndVector&) const
 {
 dAssert (0);
 
 /*
-	dInt32 win[4]; 
+	ndInt32 win[4]; 
 	GLint viewport[4]; 
 
 	//Retrieves the viewport and stores it in the variable
@@ -216,20 +216,18 @@ dAssert (0);
 	glGetIntegerv(GL_VIEWPORT, viewport); 
 	gluProject (objx, objy, objz, modelview, projection, viewport, &winX, &winY, &winZ);
 
-	winY = (dFloat32)viewport[3] - winY; 
+	winY = (ndFloat32)viewport[3] - winY; 
 
-	return dVector (dFloat32(winX), dFloat32 (winY), dFloat32(winZ), 0.0f);
+	return ndVector (ndFloat32(winX), ndFloat32 (winY), ndFloat32(winZ), 0.0f);
 */
-	return dVector::m_zero;
+	return ndVector::m_zero;
 }
 
-
-
-void ndDemoCamera::SetMatrix (const dQuaternion& rotation, const dVector& position)
+void ndDemoCamera::SetMatrix (const ndQuaternion& rotation, const ndVector& position)
 {
-	dMatrix matrix (rotation, position);
-	m_cameraPitch = dAsin (matrix.m_front.m_y);
-	m_cameraYaw = dAtan2 (-matrix.m_front.m_z, matrix.m_front.m_x);
+	ndMatrix matrix (rotation, position);
+	m_cameraPitch = ndAsin (matrix.m_front.m_y);
+	m_cameraYaw = ndAtan2 (-matrix.m_front.m_z, matrix.m_front.m_x);
 
 	ndDemoEntity::SetMatrix (rotation, position);
 }

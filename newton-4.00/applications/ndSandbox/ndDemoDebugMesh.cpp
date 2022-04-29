@@ -12,6 +12,7 @@
 #include "ndSandboxStdafx.h"
 #include "ndDemoCamera.h"
 #include "ndDemoEntity.h"
+#include "ndDebugDisplay.h"
 #include "ndDemoDebugMesh.h"
 #include "ndTargaToOpenGl.h"
 #include "ndDemoEntityManager.h"
@@ -28,24 +29,24 @@ ndFlatShadedDebugMesh::ndFlatShadedDebugMesh(const ndShaderPrograms& shaderCache
 	,m_vertextArrayBuffer(0)
 	,m_triangleIndexBuffer(0)
 {
-	class ndDrawShape : public ndShapeDebugCallback
+	class ndDrawShape : public ndDebugNotify
 	{
 		public:
 		ndDrawShape()
-			:ndShapeDebugCallback()
+			:ndDebugNotify()
 			,m_triangles(1024)
 		{
 		}
 
-		virtual void DrawPolygon(dInt32 vertexCount, const dVector* const faceVertex, const ndEdgeType* const)
+		virtual void DrawPolygon(ndInt32 vertexCount, const ndVector* const faceVertex, const ndEdgeType* const)
 		{
-			dVector p0(faceVertex[0]);
-			dVector p1(faceVertex[1]);
-			dVector p2(faceVertex[2]);
+			ndVector p0(faceVertex[0]);
+			ndVector p1(faceVertex[1]);
+			ndVector p2(faceVertex[2]);
 			
-			dVector normal((p1 - p0).CrossProduct(p2 - p0));
+			ndVector normal((p1 - p0).CrossProduct(p2 - p0));
 			normal = normal.Normalize();
-			for (dInt32 i = 2; i < vertexCount; i++)
+			for (ndInt32 i = 2; i < vertexCount; i++)
 			{
 				glPositionNormal point;
 				point.m_posit.m_x = GLfloat(faceVertex[0].m_x);
@@ -74,16 +75,16 @@ ndFlatShadedDebugMesh::ndFlatShadedDebugMesh(const ndShaderPrograms& shaderCache
 			}
 		}
 				
-		dArray<glPositionNormal> m_triangles;
+		ndArray<glPositionNormal> m_triangles;
 	};
 
 	ndDrawShape drawShapes;
 	collision->DebugShape(dGetIdentityMatrix(), drawShapes);
 	if (drawShapes.m_triangles.GetCount())
 	{
-		dArray<dInt32> m_triangles(drawShapes.m_triangles.GetCount());
+		ndArray<ndInt32> m_triangles(drawShapes.m_triangles.GetCount());
 		m_triangles.SetCount(drawShapes.m_triangles.GetCount());
-		dInt32 vertexCount = dVertexListToIndexList(&drawShapes.m_triangles[0].m_posit.m_x, sizeof(glPositionNormal), 6, drawShapes.m_triangles.GetCount(), &m_triangles[0], GLfloat(1.0e-6f));
+		ndInt32 vertexCount = dVertexListToIndexList(&drawShapes.m_triangles[0].m_posit.m_x, sizeof(glPositionNormal), 6, drawShapes.m_triangles.GetCount(), &m_triangles[0], GLfloat(1.0e-6f));
 
 		m_shader = shaderCache.m_flatShaded;
 		m_indexCount = m_triangles.GetCount();
@@ -138,7 +139,7 @@ ndFlatShadedDebugMesh::~ndFlatShadedDebugMesh()
 	}
 }
 
-void ndFlatShadedDebugMesh::Render(ndDemoEntityManager* const scene, const dMatrix& modelMatrix)
+void ndFlatShadedDebugMesh::Render(ndDemoEntityManager* const scene, const ndMatrix& modelMatrix)
 {
 	if (m_shader)
 	{
@@ -146,8 +147,8 @@ void ndFlatShadedDebugMesh::Render(ndDemoEntityManager* const scene, const dMatr
 
 		ndDemoCamera* const camera = scene->GetCamera();
 
-		const dMatrix& viewMatrix = camera->GetViewMatrix();
-		const dMatrix& projectionMatrix = camera->GetProjectionMatrix();
+		const ndMatrix& viewMatrix = camera->GetViewMatrix();
+		const ndMatrix& projectionMatrix = camera->GetProjectionMatrix();
 		const glMatrix viewModelMatrix(modelMatrix * viewMatrix);
 
 		const glMatrix projMatrix(projectionMatrix);
@@ -169,7 +170,7 @@ void ndFlatShadedDebugMesh::Render(ndDemoEntityManager* const scene, const dMatr
 	}
 }
 
-ndWireFrameDebugMesh::ndWireFrameDebugMesh(const ndShaderPrograms& shaderCache, const ndShapeInstance* const collision, ndShapeDebugCallback::ndEdgeType edgeTypefilter)
+ndWireFrameDebugMesh::ndWireFrameDebugMesh(const ndShaderPrograms& shaderCache, const ndShapeInstance* const collision, ndShapeDebugNotify::ndEdgeType edgeTypefilter)
 	:ndDemoMeshInterface()
 	,m_indexCount(0)
 	,m_shadeColorLocation(0)
@@ -179,20 +180,20 @@ ndWireFrameDebugMesh::ndWireFrameDebugMesh(const ndShaderPrograms& shaderCache, 
 	,m_vertextArrayBuffer(0)
 	,m_lineIndexBuffer(0)
 {
-	class ndDrawShape : public ndShapeDebugCallback
+	class ndDrawShape : public ndDebugNotify
 	{
 		public:
 		ndDrawShape(ndEdgeType edgeTypefilter)
-			:ndShapeDebugCallback()
+			:ndDebugNotify()
 			,m_lines(1024)
 			,m_edgeType(edgeTypefilter)
 		{
 		}
 
-		virtual void DrawPolygon(dInt32 vertexCount, const dVector* const faceVertex, const ndEdgeType* const edgeType)
+		virtual void DrawPolygon(ndInt32 vertexCount, const ndVector* const faceVertex, const ndEdgeType* const edgeType)
 		{
-			dInt32 i0 = vertexCount - 1;
-			for (dInt32 i = 0; i < vertexCount; i++)
+			ndInt32 i0 = vertexCount - 1;
+			for (ndInt32 i = 0; i < vertexCount; i++)
 			{
 				if (edgeType[i0] == m_edgeType)
 				{
@@ -212,35 +213,35 @@ ndWireFrameDebugMesh::ndWireFrameDebugMesh(const ndShaderPrograms& shaderCache, 
 			}
 		}
 
-		dArray<glVector3> m_lines;
+		ndArray<glVector3> m_lines;
 		ndEdgeType m_edgeType;
 	};
 
-	SetColor(dVector::m_zero);
+	SetColor(ndVector::m_zero);
 	ndDrawShape drawShapes(edgeTypefilter);
 	collision->DebugShape(dGetIdentityMatrix(), drawShapes);
 	
 	if (drawShapes.m_lines.GetCount())
 	{
-		dArray<dInt32> m_lines(drawShapes.m_lines.GetCount());
+		ndArray<ndInt32> m_lines(drawShapes.m_lines.GetCount());
 		m_lines.SetCount(drawShapes.m_lines.GetCount());
-		dInt32 vertexCount = dVertexListToIndexList(&drawShapes.m_lines[0].m_x, sizeof(glVector3), 3, drawShapes.m_lines.GetCount(), &m_lines[0], GLfloat(1.0e-6f));
+		ndInt32 vertexCount = dVertexListToIndexList(&drawShapes.m_lines[0].m_x, sizeof(glVector3), 3, drawShapes.m_lines.GetCount(), &m_lines[0], GLfloat(1.0e-6f));
 
 		m_indexCount = m_lines.GetCount();
-		dTree<dUnsigned64, dUnsigned64> filter;
-		for (dInt32 i = m_lines.GetCount() - 1; i >= 0; i -= 2)
+		ndTree<ndUnsigned64, ndUnsigned64> filter;
+		for (ndInt32 i = m_lines.GetCount() - 1; i >= 0; i -= 2)
 		{
 			union
 			{
-				dUnsigned64 m_key;
+				ndUnsigned64 m_key;
 				struct
 				{
-					dUnsigned32 m_low;
-					dUnsigned32 m_high;
+					ndUnsigned32 m_low;
+					ndUnsigned32 m_high;
 				};
 			} key;
-			dInt32 i0 = m_lines[i - 1];
-			dInt32 i1 = m_lines[i - 0];
+			ndInt32 i0 = m_lines[i - 1];
+			ndInt32 i1 = m_lines[i - 0];
 			key.m_low = dMin(i0, i1);
 			key.m_high = dMax(i0, i1);
 			if (filter.Find(key.m_key))
@@ -300,7 +301,7 @@ ndWireFrameDebugMesh::~ndWireFrameDebugMesh()
 	}
 }
 
-void ndWireFrameDebugMesh::Render(ndDemoEntityManager* const scene, const dMatrix& modelMatrix)
+void ndWireFrameDebugMesh::Render(ndDemoEntityManager* const scene, const ndMatrix& modelMatrix)
 {
 	if (m_shader)
 	{

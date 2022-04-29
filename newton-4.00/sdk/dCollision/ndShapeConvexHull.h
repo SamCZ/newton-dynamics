@@ -19,8 +19,8 @@
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
-#ifndef __D_SHAPE_CONVEXHULL_H__
-#define __D_SHAPE_CONVEXHULL_H__
+#ifndef __ND_SHAPE_CONVEXHULL_H__
+#define __ND_SHAPE_CONVEXHULL_H__
 
 #include "ndShapeConvex.h"
 
@@ -31,38 +31,38 @@ class ndShapeConvexHull : public ndShapeConvex
 
 	public:
 	D_CLASS_REFLECTION(ndShapeConvexHull);
-	D_COLLISION_API ndShapeConvexHull(const dLoadSaveBase::dLoadDescriptor& desc);
-	D_COLLISION_API ndShapeConvexHull(dInt32 count, dInt32 strideInBytes, dFloat32 tolerance, const dFloat32* const vertexArray);
+	D_COLLISION_API ndShapeConvexHull(const ndLoadSaveBase::ndLoadDescriptor& desc);
+	D_COLLISION_API ndShapeConvexHull(ndInt32 count, ndInt32 strideInBytes, ndFloat32 tolerance, const ndFloat32* const vertexArray);
 	D_COLLISION_API virtual ~ndShapeConvexHull();
 
 	protected:
 	ndShapeInfo GetShapeInfo() const;
-	dBigVector FaceNormal(const dEdge *face, const dBigVector* const pool) const;
-	bool RemoveCoplanarEdge(dPolyhedra& convex, const dBigVector* const hullVertexArray) const;
-	bool Create(dInt32 count, dInt32 strideInBytes, const dFloat32* const vertexArray, dFloat32 tolerance);
-	virtual dVector SupportVertex(const dVector& dir, dInt32* const vertexIndex) const;
-	D_COLLISION_API virtual void Save(const dLoadSaveBase::dSaveDescriptor& desc) const;
+	ndBigVector FaceNormal(const ndEdge *face, const ndBigVector* const pool) const;
+	bool RemoveCoplanarEdge(ndPolyhedra& convex, const ndBigVector* const hullVertexArray) const;
+	bool Create(ndInt32 count, ndInt32 strideInBytes, const ndFloat32* const vertexArray, ndFloat32 tolerance);
+	virtual ndVector SupportVertex(const ndVector& dir, ndInt32* const vertexIndex) const;
+	D_COLLISION_API virtual void Save(const ndLoadSaveBase::ndSaveDescriptor& desc) const;
 
 	private:
-	dVector SupportVertexBruteForce(const dVector& dir, dInt32* const vertexIndex) const;
-	dVector SupportVertexhierarchical(const dVector& dir, dInt32* const vertexIndex) const;
+	ndVector SupportVertexBruteForce(const ndVector& dir, ndInt32* const vertexIndex) const;
+	ndVector SupportVertexhierarchical(const ndVector& dir, ndInt32* const vertexIndex) const;
 	
-	void DebugShape(const dMatrix& matrix, ndShapeDebugCallback& debugCallback) const;
+	void DebugShape(const ndMatrix& matrix, ndShapeDebugNotify& debugCallback) const;
 
 	//protected:
-	//dInt32 GetFaceIndices (dInt32 index, dInt32* const indices) const;
+	//ndInt32 GetFaceIndices (ndInt32 index, ndInt32* const indices) const;
 	//virtual const ndConvexSimplexEdge** GetVertexToEdgeMapping() const {return m_vertexToEdgeMapping;}
 	ndConvexBox* m_supportTree;
 	ndConvexSimplexEdge** m_faceArray;
-	dVector* m_soa_x;
-	dVector* m_soa_y;
-	dVector* m_soa_z;
-	dVector* m_soa_index;
+	ndVector* m_soa_x;
+	ndVector* m_soa_y;
+	ndVector* m_soa_z;
+	ndVector* m_soa_index;
 
 	const ndConvexSimplexEdge** m_vertexToEdgeMapping;
-	dInt32 m_faceCount;
-	dInt32 m_soaVertexCount;
-	dInt32 m_supportTreeCount;
+	ndInt32 m_faceCount;
+	ndInt32 m_soaVertexCount;
+	ndInt32 m_supportTreeCount;
 } D_GCC_NEWTON_ALIGN_32;
 
 #endif 

@@ -8,7 +8,7 @@
 # including commercial applications, and to alter it and redistribute it
 # freely.
 
-cmake_minimum_required(VERSION 3.4.0)
+cmake_minimum_required(VERSION 3.9.0 FATAL_ERROR)
 
 if (NEWTON_USE_DEFAULT_NEW_AND_DELETE)
 	add_definitions(-DD_USE_DEFAULT_NEW_AND_DELETE)
@@ -29,12 +29,14 @@ else()
 	set (projectName "ndNewton")
 	message (${projectName})
 
-	include_directories(dCore/)
-	include_directories(dNewton/)
-	include_directories(dTinyxml/)
-	include_directories(dCollision/)
-	include_directories(dNewton/dJoints/)
-	include_directories(dNewton/dModels/)
+	include_directories(dCore)
+	include_directories(dNewton)
+	include_directories(dTinyxml)
+	include_directories(dCollision)
+	include_directories(dNewton/dJoints)
+	include_directories(dNewton/dModels)
+	include_directories(dNewton/dIkSolver)
+	include_directories(dNewton/dParticles)
 	include_directories(dNewton/dModels/dVehicle)
 	include_directories(dNewton/dModels/dCharacter)
 
@@ -42,6 +44,23 @@ else()
 		add_definitions(-D_D_USE_AVX2_SOLVER)
 		include_directories(dExtensions/dAvx2)
 	endif()
+
+	if (NEWTON_ENABLE_CUDA_SOLVER)
+		add_definitions(-D_D_NEWTON_CUDA)
+
+		#CMAKE_POLICY(SET CMP0104 NEW)
+		#SET(CMAKE_CUDA_COMPILER $ENV{CUDA_PATH_V11_6}/bin/nvcc.exe.exe)
+		#set_target_properties(${projectName} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+		include_directories(dExtensions/dCuda)
+
+		if(NEWTON_BUILD_SHARED_LIBS)
+			if (PTR_SIZE EQUAL 8)
+				link_libraries ("$ENV{CUDA_PATH_V11_6}/lib/x64/cudart_static.lib")
+			else()
+				link_libraries ("$ENV{CUDA_PATH_V11_6}/lib/Win32/cudart_static.lib")
+			endif()
+		endif()
+	endif(NEWTON_ENABLE_CUDA_SOLVER)
 
 	if (NEWTON_ENABLE_OPENCL_SOLVER)
 		add_definitions(-D_D_NEWTON_OPENCL)
@@ -54,7 +73,6 @@ else()
 				link_libraries ("${CMAKE_CURRENT_SOURCE_DIR}/dExtensions/dOpencl/CL/lib/x86/OpenCL.lib")
 			endif()
 		endif()
-
 	endif(NEWTON_ENABLE_OPENCL_SOLVER)
 
 	# source and header files
@@ -65,6 +83,8 @@ else()
 		dCollision/*.h 
 		dNewton/dJoints/*.h 
 		dNewton/dModels/*.h 
+		dNewton/dIkSolver/*.h
+		dNewton/dParticles/*.h
 		dNewton/dModels/dVehicle/*.h
 		dNewton/dModels/dCharacter/*.h)
 
@@ -81,7 +101,11 @@ else()
 		dNewton/dModels/*.cpp
 		dNewton/dJoints/*.h 
 		dNewton/dJoints/*.cpp
-		dNewton/dModels/dVehicle/*.h 
+		dNewton/dIkSolver/*.h
+		dNewton/dIkSolver/*.cpp
+		dNewton/dParticles/*.h
+		dNewton/dParticles/*.cpp
+		dNewton/dModels/dVehicle/*.h
 		dNewton/dModels/dVehicle/*.cpp
 		dNewton/dModels/dCharacter/*.h
 		dNewton/dModels/dCharacter/*.cpp)
@@ -99,6 +123,10 @@ else()
 
 		if(NEWTON_ENABLE_AVX2_SOLVER)
 			target_link_libraries (${projectName} ndSolverAvx2)
+		endif()
+
+		if (NEWTON_ENABLE_CUDA_SOLVER)
+			target_link_libraries (${projectName} ndSolverCuda)
 		endif()
 
 		if (NEWTON_ENABLE_OPENCL_SOLVER)
@@ -125,11 +153,12 @@ else()
 	target_include_directories(${projectName} PUBLIC dNewton/dModels/)
 	target_include_directories(${projectName} PUBLIC dNewton/dModels/dVehicle)
 	target_include_directories(${projectName} PUBLIC dNewton/dModels/dCharacter)
-    
+
 	if (MSVC)
-		if(NOT $ENV{CLION_IDE})
-			set_target_properties(${projectName} PROPERTIES COMPILE_FLAGS "/YudCoreStdAfx.h")
-			set_source_files_properties(dCore/dCoreStdAfx.cpp PROPERTIES COMPILE_FLAGS "/YcdCoreStdAfx.h")
+		if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+		#if(CMAKE_VS_MSBUILD_COMMAND OR CMAKE_VS_DEVENV_COMMAND)
+			set_target_properties(${projectName} PROPERTIES COMPILE_FLAGS "/YundCoreStdafx.h")
+			set_source_files_properties(dCore/ndCoreStdAfx.cpp PROPERTIES COMPILE_FLAGS "/YcndCoreStdafx.h")
 		endif()
 		if (NEWTON_BUILD_TEST AND NEWTON_BUILD_SHARED_LIBS)
 			add_custom_command(
@@ -144,6 +173,10 @@ else()
 				COMMAND ${CMAKE_COMMAND}
 				ARGS -E copy $<TARGET_FILE:${projectName}> ${PROJECT_BINARY_DIR}/applications/ndSandbox/${CMAKE_CFG_INTDIR}/$<TARGET_FILE_NAME:${projectName}>)
 		endif ()
+
+		if(NEWTON_BUILD_SHARED_LIBS)
+			install(FILES $<TARGET_PDB_FILE:${projectName}> DESTINATION bin OPTIONAL)
+		endif(NEWTON_BUILD_SHARED_LIBS)
 
 	endif(MSVC)
 

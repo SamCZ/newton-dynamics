@@ -19,17 +19,17 @@
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
-#ifndef __D_MODEL_LIST_H__
-#define __D_MODEL_LIST_H__
+#ifndef __ND_MODEL_LIST_H__
+#define __ND_MODEL_LIST_H__
 
 #include "ndNewtonStdafx.h"
 
 class ndModel;
-class ndModelList : public dList<ndModel*, dContainersFreeListAlloc<ndModel*>>
+class ndModelList : public ndList<ndModel*, ndContainersFreeListAlloc<ndModel*>>
 {
 	public:
 	ndModelList()
-		:dList<ndModel*, dContainersFreeListAlloc<ndModel*>>()
+		:ndList<ndModel*, ndContainersFreeListAlloc<ndModel*>>()
 	{
 	}
 };

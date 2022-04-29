@@ -16,7 +16,7 @@
 #include "ndDemoSplinePathMesh.h"
 #include "ndDemoEntityManager.h"
 
-ndDemoSplinePathMesh::ndDemoSplinePathMesh(const dBezierSpline& curve, const ndShaderPrograms& shaderCache, dInt32 resolution)
+ndDemoSplinePathMesh::ndDemoSplinePathMesh(const ndBezierSpline& curve, const ndShaderPrograms& shaderCache, ndInt32 resolution)
 	:ndDemoMeshInterface()
 	,m_curve(curve)
 	,m_color(1.0f)
@@ -40,17 +40,17 @@ ndDemoSplinePathMesh::~ndDemoSplinePathMesh()
 	}
 }
 
-dInt32 ndDemoSplinePathMesh::GetRenderResolution() const
+ndInt32 ndDemoSplinePathMesh::GetRenderResolution() const
 {
 	return m_renderResolution;
 }
 
-void ndDemoSplinePathMesh::SetColor(const dVector& color)
+void ndDemoSplinePathMesh::SetColor(const ndVector& color)
 {
 	m_color = color;
 }
 
-void ndDemoSplinePathMesh::SetRenderResolution(dInt32 breaks)
+void ndDemoSplinePathMesh::SetRenderResolution(ndInt32 breaks)
 {
 	if (breaks != m_renderResolution)
 	{
@@ -61,11 +61,11 @@ void ndDemoSplinePathMesh::SetRenderResolution(dInt32 breaks)
 			glDeleteVertexArrays(1, &m_vertextArrayBuffer);
 		}
 
-		dFloat64 scale = 1.0f / m_renderResolution;
-		dArray<glVector3> points(m_renderResolution + 1);
-		for (dInt32 i = 0; i < m_renderResolution; i++)
+		ndFloat64 scale = 1.0f / m_renderResolution;
+		ndArray<glVector3> points(m_renderResolution + 1);
+		for (ndInt32 i = 0; i < m_renderResolution; i++)
 		{
-			dBigVector p(m_curve.CurvePoint(i * scale));
+			ndBigVector p(m_curve.CurvePoint(i * scale));
 			points.PushBack(glVector3(GLfloat(p.m_x), GLfloat(p.m_y), GLfloat(p.m_z)));
 		}
 		points.PushBack(points[0]);
@@ -92,7 +92,7 @@ void ndDemoSplinePathMesh::SetRenderResolution(dInt32 breaks)
 	}
 }
 
-void ndDemoSplinePathMesh::Render(ndDemoEntityManager* const scene, const dMatrix& modelMatrix)
+void ndDemoSplinePathMesh::Render(ndDemoEntityManager* const scene, const ndMatrix& modelMatrix)
 {
 	if (m_isVisible)
 	{
@@ -108,11 +108,11 @@ void ndDemoSplinePathMesh::Render(ndDemoEntityManager* const scene, const dMatri
 		//ndMeshVector m_line[2];
 		//glEnableClientState(GL_VERTEX_ARRAY);
 		//glVertexPointer(3, GL_FLOAT, sizeof(ndMeshVector), m_line);
-		//dFloat64 scale = 1.0f / m_renderResolution;
-		//dBigVector p0(m_curve.CurvePoint(0.0f));
-		//for (dInt32 i = 1; i <= m_renderResolution; i++)
+		//ndFloat64 scale = 1.0f / m_renderResolution;
+		//ndBigVector p0(m_curve.CurvePoint(0.0f));
+		//for (ndInt32 i = 1; i <= m_renderResolution; i++)
 		//{
-		//	dBigVector p1(m_curve.CurvePoint(i * scale));
+		//	ndBigVector p1(m_curve.CurvePoint(i * scale));
 		//	m_line[0].m_x = GLfloat(p0.m_x);
 		//	m_line[0].m_y = GLfloat(p0.m_y);
 		//	m_line[0].m_z = GLfloat(p0.m_z);

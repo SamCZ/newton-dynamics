@@ -19,7 +19,7 @@
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
-#include "dCoreStdafx.h"
+#include "ndCoreStdafx.h"
 #include "ndCollisionStdafx.h"
 #include "ndScene.h"
 #include "ndContact.h"
@@ -29,16 +29,16 @@
 #include "ndContactSolver.h"
 #include "ndBodyKinematic.h"
 
-#define D_MAX_MIN_VOLUME				dFloat32 (1.0e-6f)
+#define D_MAX_MIN_VOLUME				ndFloat32 (1.0e-6f)
 #define D_MAX_VERTEX_CLIP_FACE			16
 
 ndShapeConvex::ndShapeConvex(ndShapeID id)
 	:ndShape(id)
 	,m_vertex(nullptr)
 	,m_simplex(nullptr)
-	,m_boxMinRadius(dFloat32(0.0f))
-	,m_boxMaxRadius(dFloat32(0.0f))
-	,m_simplexVolume(dFloat32(0.0f))
+	,m_boxMinRadius(ndFloat32(0.0f))
+	,m_boxMaxRadius(ndFloat32(0.0f))
+	,m_simplexVolume(ndFloat32(0.0f))
 	,m_edgeCount(0)
 	,m_vertexCount(0)
 {
@@ -48,40 +48,50 @@ ndShapeConvex::~ndShapeConvex()
 {
 	if (m_vertex) 
 	{
-		dMemory::Free(m_vertex);
+		ndMemory::Free(m_vertex);
 	}
 	
 	if (m_simplex) 
 	{
-		dMemory::Free(m_simplex);
+		ndMemory::Free(m_simplex);
 	}
 }
 
-void ndShapeConvex::DebugShape(const dMatrix& matrix, ndShapeDebugCallback& debugCallback) const
+void ndShapeConvex::Save(const ndLoadSaveBase::ndSaveDescriptor& desc) const
 {
-	dVector tmp[D_MAX_EDGE_COUNT];
-	dVector vertex[D_MAX_EDGE_COUNT];
-	dInt8 mark[D_MAX_EDGE_COUNT];
-	ndShapeDebugCallback::ndEdgeType edgeType[D_MAX_EDGE_COUNT];
+	nd::TiXmlElement* const childNode = new nd::TiXmlElement(ClassName());
+	desc.m_rootNode->LinkEndChild(childNode);
+	childNode->SetAttribute("hashId", desc.m_nodeNodeHash);
+	ndShape::Save(ndLoadSaveBase::ndSaveDescriptor(desc, childNode));
+
+	// maybe save some stuff here
+}
+
+void ndShapeConvex::DebugShape(const ndMatrix& matrix, ndShapeDebugNotify& debugCallback) const
+{
+	ndVector tmp[D_MAX_EDGE_COUNT];
+	ndVector vertex[D_MAX_EDGE_COUNT];
+	ndInt8 mark[D_MAX_EDGE_COUNT];
+	ndShapeDebugNotify::ndEdgeType edgeType[D_MAX_EDGE_COUNT];
 
 	dAssert(m_edgeCount < D_MAX_EDGE_COUNT);
 	dAssert(m_vertexCount < D_MAX_EDGE_COUNT);
 
 	memset(mark, 0, sizeof(mark));
-	memset(edgeType, ndShapeDebugCallback::m_shared, sizeof(edgeType));
-	matrix.TransformTriplex(&tmp[0].m_x, sizeof(dVector), &m_vertex[0].m_x, sizeof(dVector), m_vertexCount);
-	for (dInt32 i = 0; i < m_edgeCount; i++) 
+	memset(edgeType, ndShapeDebugNotify::m_shared, sizeof(edgeType));
+	matrix.TransformTriplex(&tmp[0].m_x, sizeof(ndVector), &m_vertex[0].m_x, sizeof(ndVector), m_vertexCount);
+	for (ndInt32 i = 0; i < m_edgeCount; i++) 
 	{
 		if (!mark[i]) 
 		{
 			ndConvexSimplexEdge* const face = &m_simplex[i];
 			ndConvexSimplexEdge* edge = face;
-			dInt32 count = 0;
+			ndInt32 count = 0;
 			do 
 			{
 				mark[edge - m_simplex] = '1';
-				dInt32 index = edge->m_vertex;
-				vertex[count] = tmp[index] & dVector::m_triplexMask;
+				ndInt32 index = edge->m_vertex;
+				vertex[count] = tmp[index] & ndVector::m_triplexMask;
 				count++;
 				edge = edge->m_next;
 			} while (edge != face);
@@ -92,24 +102,24 @@ void ndShapeConvex::DebugShape(const dMatrix& matrix, ndShapeDebugCallback& debu
 
 void ndShapeConvex::SetVolumeAndCG()
 {
-	dVector faceVertex[D_MAX_EDGE_COUNT];
-	dInt8* const edgeMarks = dAlloca(dInt8, m_edgeCount + 32);
-	memset(&edgeMarks[0], 0, sizeof(dInt8) * m_edgeCount);
+	ndVector faceVertex[D_MAX_EDGE_COUNT];
+	ndInt8* const edgeMarks = dAlloca(ndInt8, m_edgeCount + 32);
+	memset(&edgeMarks[0], 0, sizeof(ndInt8) * m_edgeCount);
 
-	dPolyhedraMassProperties localData;
-	for (dInt32 i = 0; i < m_edgeCount; i++) 
+	ndPolyhedraMassProperties localData;
+	for (ndInt32 i = 0; i < m_edgeCount; i++) 
 	{
 		ndConvexSimplexEdge* const face = &m_simplex[i];
 		if (!edgeMarks[i]) {
 			ndConvexSimplexEdge* edge = face;
-			dInt32 count = 0;
+			ndInt32 count = 0;
 			do 
 			{
 				dAssert((edge - m_simplex) >= 0);
-				edgeMarks[dInt32(edge - m_simplex)] = '1';
+				edgeMarks[ndInt32(edge - m_simplex)] = '1';
 				faceVertex[count] = m_vertex[edge->m_vertex];
 				count++;
-				dAssert(count < dInt32(sizeof(faceVertex) / sizeof(faceVertex[0])));
+				dAssert(count < ndInt32(sizeof(faceVertex) / sizeof(faceVertex[0])));
 				edge = edge->m_next;
 			} while (edge != face);
 
@@ -117,44 +127,44 @@ void ndShapeConvex::SetVolumeAndCG()
 		}
 	}
 
-	dVector origin;
-	dVector inertia;
-	dVector crossInertia;
-	dFloat32 volume = localData.MassProperties(origin, inertia, crossInertia);
+	ndVector origin;
+	ndVector inertia;
+	ndVector crossInertia;
+	ndFloat32 volume = localData.MassProperties(origin, inertia, crossInertia);
 	m_simplexVolume = volume;
 
 	// calculate the origin of the bound box of this primitive
-	dVector p0(dVector::m_zero);
-	dVector p1(dVector::m_zero);
+	ndVector p0(ndVector::m_zero);
+	ndVector p1(ndVector::m_zero);
 
-	for (dInt32 i = 0; i < 3; i++) 
+	for (ndInt32 i = 0; i < 3; i++) 
 	{
-		dVector dir(dFloat32(0.0f));
-		dir[i] = dFloat32(-1.0f);
+		ndVector dir(ndFloat32(0.0f));
+		dir[i] = ndFloat32(-1.0f);
 		p0[i] = SupportVertex(dir, nullptr)[i];
 
-		dir[i] = dFloat32(1.0f);
+		dir[i] = ndFloat32(1.0f);
 		p1[i] = SupportVertex(dir, nullptr)[i];
 	}
 
-	dAssert(p0.m_w == dFloat32(0.0f));
-	dAssert(p1.m_w == dFloat32(0.0f));
-	m_boxSize = (p1 - p0) * dVector::m_half;
-	m_boxOrigin = (p1 + p0) * dVector::m_half;
+	dAssert(p0.m_w == ndFloat32(0.0f));
+	dAssert(p1.m_w == ndFloat32(0.0f));
+	m_boxSize = (p1 - p0) * ndVector::m_half;
+	m_boxOrigin = (p1 + p0) * ndVector::m_half;
 	m_boxMinRadius = dMin(dMin(m_boxSize.m_x, m_boxSize.m_y), m_boxSize.m_z);
-	m_boxMaxRadius = dSqrt((m_boxSize.DotProduct(m_boxSize)).GetScalar());
+	m_boxMaxRadius = ndSqrt((m_boxSize.DotProduct(m_boxSize)).GetScalar());
 
 	MassProperties();
 }
 
 void ndShapeConvex::MassProperties()
 {
-	dFloat32 volume = CalculateMassProperties(dGetIdentityMatrix(), m_inertia, m_crossInertia, m_centerOfMass);
+	ndFloat32 volume = CalculateMassProperties(dGetIdentityMatrix(), m_inertia, m_crossInertia, m_centerOfMass);
 	if (volume < D_MAX_MIN_VOLUME) 
 	{
 		volume = D_MAX_MIN_VOLUME;
 	}
-	dFloat32 invVolume = dFloat32(1.0f) / volume;
+	ndFloat32 invVolume = ndFloat32(1.0f) / volume;
 	m_inertia = m_inertia.Scale(invVolume);
 	m_crossInertia = m_crossInertia.Scale(invVolume);
 	m_centerOfMass = m_centerOfMass.Scale(invVolume);
@@ -164,9 +174,9 @@ void ndShapeConvex::MassProperties()
 	ndShape::MassProperties();
 }
 
-dFloat32 ndShapeConvex::CalculateMassProperties(const dMatrix& offset, dVector& inertia, dVector& crossInertia, dVector& centerOfMass) const
+ndFloat32 ndShapeConvex::CalculateMassProperties(const ndMatrix& offset, ndVector& inertia, ndVector& crossInertia, ndVector& centerOfMass) const
 {
-	class dMassPropertiesCalculator : public ndShapeDebugCallback
+	class dMassPropertiesCalculator : public ndShapeDebugNotify
 	{
 		public:
 		dMassPropertiesCalculator()
@@ -174,12 +184,12 @@ dFloat32 ndShapeConvex::CalculateMassProperties(const dMatrix& offset, dVector& 
 		{
 		}
 
-		virtual void DrawPolygon(dInt32 vertexCount, const dVector* const faceArray, const ndEdgeType* const)
+		virtual void DrawPolygon(ndInt32 vertexCount, const ndVector* const faceArray, const ndEdgeType* const)
 		{
 			m_localData.AddInertiaAndCrossFace(vertexCount, faceArray);
 		}
 
-		dPolyhedraMassProperties m_localData;
+		ndPolyhedraMassProperties m_localData;
 	};
 		
 	dMassPropertiesCalculator massPropretiesCalculator;
@@ -188,18 +198,18 @@ dFloat32 ndShapeConvex::CalculateMassProperties(const dMatrix& offset, dVector& 
 	return massPropretiesCalculator.m_localData.MassProperties(centerOfMass, inertia, crossInertia);
 }
 
-dMatrix ndShapeConvex::CalculateInertiaAndCenterOfMass(const dMatrix& alignMatrix, const dVector& localScale, const dMatrix& matrix) const
+ndMatrix ndShapeConvex::CalculateInertiaAndCenterOfMass(const ndMatrix& alignMatrix, const ndVector& localScale, const ndMatrix& matrix) const
 {
-	if ((dAbs(localScale.m_x - localScale.m_y) < dFloat32(1.0e-5f)) && 
-		(dAbs(localScale.m_x - localScale.m_z) < dFloat32(1.0e-5f)) && 
-		(dAbs(localScale.m_y - localScale.m_z) < dFloat32(1.0e-5f)))
+	if ((dAbs(localScale.m_x - localScale.m_y) < ndFloat32(1.0e-5f)) && 
+		(dAbs(localScale.m_x - localScale.m_z) < ndFloat32(1.0e-5f)) && 
+		(dAbs(localScale.m_y - localScale.m_z) < ndFloat32(1.0e-5f)))
 	{
 		dAssert(alignMatrix.TestIdentity());
 	
 		// using general central theorem, is much faster and more accurate;
 		//IImatrix = IIorigin + mass * [(displacemnet % displacemnet) * identityMatrix - transpose(displacement) * displacement)];
-		dFloat32 mag2 = localScale.m_x * localScale.m_x;
-		dMatrix inertia(dGetIdentityMatrix());
+		ndFloat32 mag2 = localScale.m_x * localScale.m_x;
+		ndMatrix inertia(dGetIdentityMatrix());
 		inertia[0][0] = m_inertia[0] * mag2;
 		inertia[1][1] = m_inertia[1] * mag2;
 		inertia[2][2] = m_inertia[2] * mag2;
@@ -211,46 +221,46 @@ dMatrix ndShapeConvex::CalculateInertiaAndCenterOfMass(const dMatrix& alignMatri
 		inertia[2][1] = m_crossInertia[0] * mag2;
 		inertia = matrix.Inverse() * inertia * matrix;
 	
-		dAssert(localScale.m_w == dFloat32(0.0f));
-		dVector origin(matrix.TransformVector(m_centerOfMass * localScale));
+		dAssert(localScale.m_w == ndFloat32(0.0f));
+		ndVector origin(matrix.TransformVector(m_centerOfMass * localScale));
 	
-		origin.m_w = dFloat32(0.0f);
-		dFloat32 originMag2 = origin.DotProduct(origin).GetScalar();
-		dMatrix Covariance(origin, origin);
-		dMatrix parallel(dGetIdentityMatrix());
-		for (dInt32 i = 0; i < 3; i++) 
+		origin.m_w = ndFloat32(0.0f);
+		ndFloat32 originMag2 = origin.DotProduct(origin).GetScalar();
+		ndMatrix Covariance(origin, origin);
+		ndMatrix parallel(dGetIdentityMatrix());
+		for (ndInt32 i = 0; i < 3; i++) 
 		{
 			parallel[i][i] = originMag2;
 			inertia[i] += (parallel[i] - Covariance[i]);
-			dAssert(inertia[i][i] > dFloat32(0.0f));
+			dAssert(inertia[i][i] > ndFloat32(0.0f));
 		}
 	
 		inertia.m_posit = origin;
-		inertia.m_posit.m_w = dFloat32 (1.0f);
+		inertia.m_posit.m_w = ndFloat32 (1.0f);
 		return inertia;
 	}
 	else 
 	{
 		// for non uniform scale we need to the general divergence theorem
-		dVector inertiaII;
-		dVector crossInertia;
-		dVector centerOfMass;
-		dMatrix scaledMatrix(matrix);
+		ndVector inertiaII;
+		ndVector crossInertia;
+		ndVector centerOfMass;
+		ndMatrix scaledMatrix(matrix);
 		scaledMatrix[0] = scaledMatrix[0].Scale(localScale.m_x);
 		scaledMatrix[1] = scaledMatrix[1].Scale(localScale.m_y);
 		scaledMatrix[2] = scaledMatrix[2].Scale(localScale.m_z);
 		scaledMatrix = alignMatrix * scaledMatrix;
 	
-		dFloat32 volume = CalculateMassProperties(scaledMatrix, inertiaII, crossInertia, centerOfMass);
+		ndFloat32 volume = CalculateMassProperties(scaledMatrix, inertiaII, crossInertia, centerOfMass);
 		if (volume < D_MAX_MIN_VOLUME) {
 			volume = D_MAX_MIN_VOLUME;
 		}
 	
-		dFloat32 invVolume = dFloat32(1.0f) / volume;
+		ndFloat32 invVolume = ndFloat32(1.0f) / volume;
 		centerOfMass = centerOfMass.Scale(invVolume);
 		inertiaII = inertiaII.Scale(invVolume);
 		crossInertia = crossInertia.Scale(invVolume);
-		dMatrix inertia(dGetIdentityMatrix());
+		ndMatrix inertia(dGetIdentityMatrix());
 		inertia[0][0] = inertiaII[0];
 		inertia[1][1] = inertiaII[1];
 		inertia[2][2] = inertiaII[2];
@@ -265,46 +275,46 @@ dMatrix ndShapeConvex::CalculateInertiaAndCenterOfMass(const dMatrix& alignMatri
 	}
 }
 
-void ndShapeConvex::CalculateAabb(const dMatrix& matrix, dVector& p0, dVector& p1) const
+void ndShapeConvex::CalculateAabb(const ndMatrix& matrix, ndVector& p0, ndVector& p1) const
 {
-	dVector origin(matrix.TransformVector(m_boxOrigin));
-	dVector size(matrix.m_front.Abs().Scale(m_boxSize.m_x) + matrix.m_up.Abs().Scale(m_boxSize.m_y) + matrix.m_right.Abs().Scale(m_boxSize.m_z));
+	ndVector origin(matrix.TransformVector(m_boxOrigin));
+	ndVector size(matrix.m_front.Abs().Scale(m_boxSize.m_x) + matrix.m_up.Abs().Scale(m_boxSize.m_y) + matrix.m_right.Abs().Scale(m_boxSize.m_z));
 
-	p0 = (origin - size) & dVector::m_triplexMask;
-	p1 = (origin + size) & dVector::m_triplexMask;
+	p0 = (origin - size) & ndVector::m_triplexMask;
+	p1 = (origin + size) & ndVector::m_triplexMask;
 }
 
-dFloat32 ndShapeConvex::RayCast(ndRayCastNotify&, const dVector& localP0, const dVector& localP1, dFloat32, const ndBody* const body, ndContactPoint& contactOut) const
+ndFloat32 ndShapeConvex::RayCast(ndRayCastNotify&, const ndVector& localP0, const ndVector& localP1, ndFloat32, const ndBody* const body, ndContactPoint& contactOut) const
 {
 	ndBodyKinematic* const kinBody = ((ndBodyKinematic*)body)->GetAsBodyKinematic();
 	ndShapeInstance tempInstance (kinBody->GetCollisionShape(), (ndShape*)this);
 	ndContactNotify* const notify = kinBody->GetScene() ? kinBody->GetScene()->GetContactNotify() : nullptr;
-	ndContactSolver rayCaster(&tempInstance, notify, dFloat32 (1.0f));
+	ndContactSolver rayCaster(&tempInstance, notify, ndFloat32 (1.0f), 0);
 	return rayCaster.RayCast(localP0, localP1, contactOut);
 }
 
-dVector ndShapeConvex::SupportVertex(const dVector& dir, dInt32* const) const
+ndVector ndShapeConvex::SupportVertex(const ndVector& dir, ndInt32* const) const
 {
-	dAssert(dir.m_w == dFloat32(0.0f));
-	dAssert(dAbs(dir.DotProduct(dir).GetScalar() - dFloat32(1.0f)) < dFloat32(1.0e-3f));
+	dAssert(dir.m_w == ndFloat32(0.0f));
+	dAssert(dAbs(dir.DotProduct(dir).GetScalar() - ndFloat32(1.0f)) < ndFloat32(1.0e-3f));
 
-	dInt16 cache[16];
+	ndInt16 cache[16];
 	memset(cache, -1, sizeof(cache));
 	ndConvexSimplexEdge* edge = &m_simplex[0];
 
-	dInt32 index = edge->m_vertex;
-	dFloat32 side0 = m_vertex[index].DotProduct(dir).GetScalar();
+	ndInt32 index = edge->m_vertex;
+	ndFloat32 side0 = m_vertex[index].DotProduct(dir).GetScalar();
 
-	cache[index & (sizeof(cache) / sizeof(cache[0]) - 1)] = dInt16(index);
+	cache[index & (sizeof(cache) / sizeof(cache[0]) - 1)] = ndInt16(index);
 	ndConvexSimplexEdge* ptr = edge;
-	dInt32 maxCount = 128;
+	ndInt32 maxCount = 128;
 	do 
 	{
-		dInt32 index1 = ptr->m_twin->m_vertex;
+		ndInt32 index1 = ptr->m_twin->m_vertex;
 		if (cache[index1 & (sizeof(cache) / sizeof(cache[0]) - 1)] != index1) 
 		{
-			cache[index1 & (sizeof(cache) / sizeof(cache[0]) - 1)] = dInt16(index1);
-			dFloat32 side1 = m_vertex[index1].DotProduct(dir).GetScalar();
+			cache[index1 & (sizeof(cache) / sizeof(cache[0]) - 1)] = ndInt16(index1);
+			ndFloat32 side1 = m_vertex[index1].DotProduct(dir).GetScalar();
 			if (side1 > side0) 
 			{
 				index = index1;
@@ -322,16 +332,16 @@ dVector ndShapeConvex::SupportVertex(const dVector& dir, dInt32* const) const
 	return m_vertex[index];
 }
 
-bool ndShapeConvex::SanityCheck(dInt32 count, const dVector& normal, dVector* const contactsOut) const
+bool ndShapeConvex::SanityCheck(ndInt32 count, const ndVector& normal, ndVector* const contactsOut) const
 {
 	if (count > 1) 
 	{
-		dInt32 j = count - 1;
-		for (dInt32 i = 0; i < count; i++) 
+		ndInt32 j = count - 1;
+		for (ndInt32 i = 0; i < count; i++) 
 		{
-			dVector error(contactsOut[i] - contactsOut[j]);
-			dAssert(error.m_w == dFloat32(0.0f));
-			if (error.DotProduct(error).GetScalar() <= dFloat32(1.0e-20f)) 
+			ndVector error(contactsOut[i] - contactsOut[j]);
+			dAssert(error.m_w == ndFloat32(0.0f));
+			if (error.DotProduct(error).GetScalar() <= ndFloat32(1.0e-20f)) 
 			{
 				return false;
 			}
@@ -340,35 +350,35 @@ bool ndShapeConvex::SanityCheck(dInt32 count, const dVector& normal, dVector* co
 
 		if (count >= 3) 
 		{
-			dVector n(dFloat32(0.0f));
-			dVector e0(contactsOut[1] - contactsOut[0]);
-			for (dInt32 i = 2; i < count; i++) 
+			ndVector n(ndFloat32(0.0f));
+			ndVector e0(contactsOut[1] - contactsOut[0]);
+			for (ndInt32 i = 2; i < count; i++) 
 			{
-				dVector e1(contactsOut[i] - contactsOut[0]);
+				ndVector e1(contactsOut[i] - contactsOut[0]);
 				n += e0.CrossProduct(e1);
 				e0 = e1;
 			}
-			dAssert(n.m_w == dFloat32(0.0f));
-			dAssert(n.DotProduct(n).GetScalar() > dFloat32(0.0f));
-			n = n.Scale(dRsqrt(n.DotProduct(n).GetScalar()));
-			dFloat32 projection;
+			dAssert(n.m_w == ndFloat32(0.0f));
+			dAssert(n.DotProduct(n).GetScalar() > ndFloat32(0.0f));
+			n = n.Scale(ndRsqrt(n.DotProduct(n).GetScalar()));
+			ndFloat32 projection;
 			projection = n.DotProduct(normal).GetScalar();
-			dAssert(projection > dFloat32(0.9f));
-			if (projection < dFloat32(0.9f)) 
+			dAssert(projection > ndFloat32(0.9f));
+			if (projection < ndFloat32(0.9f)) 
 			{
 				return false;
 			}
 
 			e0 = contactsOut[count - 1] - contactsOut[count - 2];
 			j = count - 1;
-			for (dInt32 i = 0; i < count; i++) 
+			for (ndInt32 i = 0; i < count; i++) 
 			{
-				dVector e1(contactsOut[i] - contactsOut[j]);
-				dVector n1(e0.CrossProduct(e1));
-				dAssert(n1.m_w == dFloat32(0.0f));
-				dFloat32 error = n1.DotProduct(normal).GetScalar();
-				dAssert(error >= dFloat32(-1.0e-4f));
-				if (error < dFloat32(-1.0e-4f)) 
+				ndVector e1(contactsOut[i] - contactsOut[j]);
+				ndVector n1(e0.CrossProduct(e1));
+				dAssert(n1.m_w == ndFloat32(0.0f));
+				ndFloat32 error = n1.DotProduct(normal).GetScalar();
+				dAssert(error >= ndFloat32(-1.0e-4f));
+				if (error < ndFloat32(-1.0e-4f)) 
 				{
 					return false;
 				}
@@ -380,23 +390,23 @@ bool ndShapeConvex::SanityCheck(dInt32 count, const dVector& normal, dVector* co
 	return true;
 }
 
-dInt32 ndShapeConvex::RectifyConvexSlice(dInt32 count, const dVector& normal, dVector* const contactsOut) const
+ndInt32 ndShapeConvex::RectifyConvexSlice(ndInt32 count, const ndVector& normal, ndVector* const contactsOut) const
 {
 	class ndConvexFaceNode
 	{
 		public:
-		dInt32 m_vertexIndex;
+		ndInt32 m_vertexIndex;
 		ndConvexFaceNode* m_next;
 		ndConvexFaceNode* m_prev;
-		dInt32 m_mask;
+		ndInt32 m_mask;
 	};
 
 	ndConvexFaceNode convexHull[D_MAX_CONTATCS + 1];
-	char buffer[D_MAX_CONTATCS * (sizeof(void*) + sizeof(dFloat32))];
+	char buffer[D_MAX_CONTATCS * (sizeof(void*) + sizeof(ndFloat32))];
 
-	dInt32 start = count;
-	dInt32 i0 = count - 1;
-	for (dInt32 i = 0; i < count; i++) 
+	ndInt32 start = count;
+	ndInt32 i0 = count - 1;
+	for (ndInt32 i = 0; i < count; i++) 
 	{
 		convexHull[i].m_vertexIndex = i;
 		convexHull[i].m_next = &convexHull[i + 1];
@@ -405,41 +415,41 @@ dInt32 ndShapeConvex::RectifyConvexSlice(dInt32 count, const dVector& normal, dV
 	}
 	convexHull[count - 1].m_next = &convexHull[0];
 
-	dVector hullArea(dVector::m_zero);
-	dVector edge0(contactsOut[1] - contactsOut[0]);
-	for (dInt32 i = 2; i < count; i++) 
+	ndVector hullArea(ndVector::m_zero);
+	ndVector edge0(contactsOut[1] - contactsOut[0]);
+	for (ndInt32 i = 2; i < count; i++) 
 	{
-		dVector edge1(contactsOut[i] - contactsOut[0]);
+		ndVector edge1(contactsOut[i] - contactsOut[0]);
 		hullArea += edge1.CrossProduct(edge0);
 		edge0 = edge1;
 	}
 
-	dFloat32 totalArea = dAbs(hullArea.DotProduct(normal).GetScalar());
-	if (totalArea < dFloat32(1.0e-5f)) 
+	ndFloat32 totalArea = dAbs(hullArea.DotProduct(normal).GetScalar());
+	if (totalArea < ndFloat32(1.0e-5f)) 
 	{
 		return 1;
 	}
 	ndConvexFaceNode* hullPoint = &convexHull[0];
 
 	bool hasLinearCombination = true;
-	dUpHeap<ndConvexFaceNode*, dFloat32> sortHeap(buffer, sizeof(buffer));
+	ndUpHeap<ndConvexFaceNode*, ndFloat32> sortHeap(buffer, sizeof(buffer));
 	while (hasLinearCombination) 
 	{
 		hasLinearCombination = false;
 		sortHeap.Flush();
 		ndConvexFaceNode* ptr = hullPoint;
-		dVector e0(contactsOut[ptr->m_next->m_vertexIndex] - contactsOut[ptr->m_vertexIndex]);
+		ndVector e0(contactsOut[ptr->m_next->m_vertexIndex] - contactsOut[ptr->m_vertexIndex]);
 		do 
 		{
-			dVector e1(contactsOut[ptr->m_next->m_next->m_vertexIndex] - contactsOut[ptr->m_next->m_vertexIndex]);
-			dFloat32 area = dAbs(e0.CrossProduct(e1).DotProduct(normal).GetScalar());
+			ndVector e1(contactsOut[ptr->m_next->m_next->m_vertexIndex] - contactsOut[ptr->m_next->m_vertexIndex]);
+			ndFloat32 area = dAbs(e0.CrossProduct(e1).DotProduct(normal).GetScalar());
 			sortHeap.Push(ptr->m_next, area);
 			e0 = e1;
 			ptr->m_mask = 1;
 			ptr = ptr->m_next;
 		} while (ptr != hullPoint);
 
-		while (sortHeap.GetCount() && (sortHeap.Value() * dFloat32(32.0f) < totalArea)) 
+		while (sortHeap.GetCount() && (sortHeap.Value() * ndFloat32(32.0f) < totalArea)) 
 		{
 			ndConvexFaceNode* const corner = sortHeap[0];
 			if (corner->m_mask && corner->m_prev->m_mask) 
@@ -458,16 +468,16 @@ dInt32 ndShapeConvex::RectifyConvexSlice(dInt32 count, const dVector& normal, dV
 		}
 	}
 
-	const dInt32 maxVertexCount = D_MAX_VERTEX_CLIP_FACE;
+	const ndInt32 maxVertexCount = D_MAX_VERTEX_CLIP_FACE;
 	while (count > maxVertexCount) 
 	{
 		sortHeap.Flush();
 		ndConvexFaceNode* ptr = hullPoint;
-		dVector e0(contactsOut[ptr->m_next->m_vertexIndex] - contactsOut[ptr->m_vertexIndex]);
+		ndVector e0(contactsOut[ptr->m_next->m_vertexIndex] - contactsOut[ptr->m_vertexIndex]);
 		do 
 		{
-			dVector e1(contactsOut[ptr->m_next->m_next->m_vertexIndex] - contactsOut[ptr->m_next->m_vertexIndex]);
-			dFloat32 area = dAbs(e0.CrossProduct(e1).DotProduct(normal).GetScalar());
+			ndVector e1(contactsOut[ptr->m_next->m_next->m_vertexIndex] - contactsOut[ptr->m_next->m_vertexIndex]);
+			ndFloat32 area = dAbs(e0.CrossProduct(e1).DotProduct(normal).GetScalar());
 			sortHeap.Push(ptr->m_next, area);
 			e0 = e1;
 			ptr->m_mask = 1;
@@ -492,7 +502,7 @@ dInt32 ndShapeConvex::RectifyConvexSlice(dInt32 count, const dVector& normal, dV
 		}
 	}
 
-	dInt32 index = start;
+	ndInt32 index = start;
 	ndConvexFaceNode* ptr = hullPoint;
 	do 
 	{
@@ -500,38 +510,38 @@ dInt32 ndShapeConvex::RectifyConvexSlice(dInt32 count, const dVector& normal, dV
 		index++;
 		ptr = ptr->m_next;
 	} while (ptr != hullPoint);
-	memcpy(contactsOut, &contactsOut[start], count * sizeof(dVector));
+	memcpy(contactsOut, &contactsOut[start], count * sizeof(ndVector));
 
 	dAssert(SanityCheck(count, normal, contactsOut));
 	return count;
 }
 
-dInt32 ndShapeConvex::CalculatePlaneIntersection(const dVector& normal, const dVector& origin, dVector* const contactsOut) const
+ndInt32 ndShapeConvex::CalculatePlaneIntersection(const ndVector& normal, const ndVector& origin, ndVector* const contactsOut) const
 {
-	dVector support[4];
-	dInt32 featureCount = 3;
+	ndVector support[4];
+	ndInt32 featureCount = 3;
 	const ndConvexSimplexEdge* edge = &m_simplex[0];
 	const ndConvexSimplexEdge** const vertToEdgeMapping = GetVertexToEdgeMapping();
-	dAssert(normal.m_w == dFloat32(0.0f));
+	dAssert(normal.m_w == ndFloat32(0.0f));
 	if (vertToEdgeMapping) 
 	{
-		dInt32 edgeIndex;
+		ndInt32 edgeIndex;
 		featureCount = 1;
 		support[0] = SupportVertex(normal, &edgeIndex);
 		edge = vertToEdgeMapping[edgeIndex];
 
 		// 5 degrees
-		const dFloat32 tiltAngle = dFloat32(0.087f);
-		const dFloat32 tiltAngle2 = tiltAngle * tiltAngle;
-		dPlane testPlane(normal, -(normal.DotProduct(support[0]).GetScalar()));
+		const ndFloat32 tiltAngle = ndFloat32(0.087f);
+		const ndFloat32 tiltAngle2 = tiltAngle * tiltAngle;
+		ndPlane testPlane(normal, -(normal.DotProduct(support[0]).GetScalar()));
 		const ndConvexSimplexEdge* ptr = edge;
 		do 
 		{
-			const dVector& p = m_vertex[ptr->m_twin->m_vertex];
-			dFloat32 test = testPlane.Evalue(p);
-			dVector dist(p - support[0]);
-			dAssert(dist.m_w == dFloat32(0.0f));
-			dFloat32 angle2 = test * test / (dist.DotProduct(dist).GetScalar());
+			const ndVector& p = m_vertex[ptr->m_twin->m_vertex];
+			ndFloat32 test = testPlane.Evalue(p);
+			ndVector dist(p - support[0]);
+			dAssert(dist.m_w == ndFloat32(0.0f));
+			ndFloat32 angle2 = test * test / (dist.DotProduct(dist).GetScalar());
 
 			if (angle2 < tiltAngle2) 
 			{
@@ -542,8 +552,8 @@ dInt32 ndShapeConvex::CalculatePlaneIntersection(const dVector& normal, const dV
 		} while ((ptr != edge) && (featureCount < 3));
 	}
 
-	dInt32 count = 0;
-	dPlane plane(normal, -normal.DotProduct(origin).GetScalar());
+	ndInt32 count = 0;
+	ndPlane plane(normal, -normal.DotProduct(origin).GetScalar());
 	switch (featureCount)
 	{
 		case 1:
@@ -559,19 +569,19 @@ dInt32 ndShapeConvex::CalculatePlaneIntersection(const dVector& normal, const dV
 
 		default:
 		{
-			dFloat32 side0 = plane.Evalue(m_vertex[edge->m_vertex]);
-			dFloat32 side1 = side0;
+			ndFloat32 side0 = plane.Evalue(m_vertex[edge->m_vertex]);
+			ndFloat32 side1 = side0;
 			const ndConvexSimplexEdge* firstEdge = nullptr;
-			if (side0 > dFloat32(0.0f)) 
+			if (side0 > ndFloat32(0.0f)) 
 			{
 				const ndConvexSimplexEdge* ptr = edge;
 				do 
 				{
-					dAssert(m_vertex[ptr->m_twin->m_vertex].m_w == dFloat32(0.0f));
+					dAssert(m_vertex[ptr->m_twin->m_vertex].m_w == ndFloat32(0.0f));
 					side1 = plane.Evalue(m_vertex[ptr->m_twin->m_vertex]);
 					if (side1 < side0) 
 					{
-						if (side1 < dFloat32(0.0f)) 
+						if (side1 < ndFloat32(0.0f)) 
 						{
 							firstEdge = ptr;
 							break;
@@ -588,12 +598,12 @@ dInt32 ndShapeConvex::CalculatePlaneIntersection(const dVector& normal, const dV
 				if (!firstEdge) 
 				{
 					// we may have a local minimal in the convex hull do to a big flat face
-					for (dInt32 i = 0; i < m_edgeCount; i++) 
+					for (ndInt32 i = 0; i < m_edgeCount; i++) 
 					{
 						ptr = &m_simplex[i];
 						side0 = plane.Evalue(m_vertex[ptr->m_vertex]);
 						side1 = plane.Evalue(m_vertex[ptr->m_twin->m_vertex]);
-						if ((side1 < dFloat32(0.0f)) && (side0 > dFloat32(0.0f))) 
+						if ((side1 < ndFloat32(0.0f)) && (side0 > ndFloat32(0.0f))) 
 						{
 							firstEdge = ptr;
 							break;
@@ -602,16 +612,16 @@ dInt32 ndShapeConvex::CalculatePlaneIntersection(const dVector& normal, const dV
 				}
 
 			}
-			else if (side0 < dFloat32(0.0f)) 
+			else if (side0 < ndFloat32(0.0f)) 
 			{
 				const ndConvexSimplexEdge* ptr = edge;
 				do 
 				{
-					dAssert(m_vertex[ptr->m_twin->m_vertex].m_w == dFloat32(0.0f));
+					dAssert(m_vertex[ptr->m_twin->m_vertex].m_w == ndFloat32(0.0f));
 					side1 = plane.Evalue(m_vertex[ptr->m_twin->m_vertex]);
 					if (side1 > side0) 
 					{
-						if (side1 >= dFloat32(0.0f)) 
+						if (side1 >= ndFloat32(0.0f)) 
 						{
 							side0 = side1;
 							firstEdge = ptr->m_twin;
@@ -628,13 +638,13 @@ dInt32 ndShapeConvex::CalculatePlaneIntersection(const dVector& normal, const dV
 				if (!firstEdge) 
 				{
 					// we may have a local minimal in the convex hull due to a big flat face
-					for (dInt32 i = 0; i < m_edgeCount; i++) 
+					for (ndInt32 i = 0; i < m_edgeCount; i++) 
 					{
 						ptr = &m_simplex[i];
 						side0 = plane.Evalue(m_vertex[ptr->m_vertex]);
-						//dFloat32 side1 = plane.Evalue (m_vertex[ptr->m_twin->m_vertex]);
+						//ndFloat32 side1 = plane.Evalue (m_vertex[ptr->m_twin->m_vertex]);
 						side1 = plane.Evalue(m_vertex[ptr->m_twin->m_vertex]);
-						if ((side1 < dFloat32(0.0f)) && (side0 > dFloat32(0.0f))) 
+						if ((side1 < ndFloat32(0.0f)) && (side0 > ndFloat32(0.0f))) 
 						{
 							firstEdge = ptr;
 							break;
@@ -645,50 +655,50 @@ dInt32 ndShapeConvex::CalculatePlaneIntersection(const dVector& normal, const dV
 
 			if (firstEdge) 
 			{
-				dAssert(side0 >= dFloat32(0.0f));
-				dAssert((side1 = plane.Evalue(m_vertex[firstEdge->m_vertex])) >= dFloat32(0.0f));
-				dAssert((side1 = plane.Evalue(m_vertex[firstEdge->m_twin->m_vertex])) < dFloat32(0.0f));
-				dAssert(dAbs(side0 - plane.Evalue(m_vertex[firstEdge->m_vertex])) < dFloat32(1.0e-5f));
+				dAssert(side0 >= ndFloat32(0.0f));
+				dAssert((side1 = plane.Evalue(m_vertex[firstEdge->m_vertex])) >= ndFloat32(0.0f));
+				dAssert((side1 = plane.Evalue(m_vertex[firstEdge->m_twin->m_vertex])) < ndFloat32(0.0f));
+				dAssert(dAbs(side0 - plane.Evalue(m_vertex[firstEdge->m_vertex])) < ndFloat32(1.0e-5f));
 
-				dInt32 maxCount = 0;
+				ndInt32 maxCount = 0;
 				const ndConvexSimplexEdge* ptr = firstEdge;
 				do 
 				{
-					if (side0 > dFloat32(0.0f)) 
+					if (side0 > ndFloat32(0.0f)) 
 					{
-						dAssert(plane.Evalue(m_vertex[ptr->m_vertex]) > dFloat32(0.0f));
-						dAssert(plane.Evalue(m_vertex[ptr->m_twin->m_vertex]) < dFloat32(0.0f));
+						dAssert(plane.Evalue(m_vertex[ptr->m_vertex]) > ndFloat32(0.0f));
+						dAssert(plane.Evalue(m_vertex[ptr->m_twin->m_vertex]) < ndFloat32(0.0f));
 
-						dVector dp(m_vertex[ptr->m_twin->m_vertex] - m_vertex[ptr->m_vertex]);
-						dAssert(dp.m_w == dFloat32(0.0f));
-						dFloat32 t = plane.DotProduct(dp).GetScalar();
-						if (t >= dFloat32(-1.e-24f)) 
+						ndVector dp(m_vertex[ptr->m_twin->m_vertex] - m_vertex[ptr->m_vertex]);
+						dAssert(dp.m_w == ndFloat32(0.0f));
+						ndFloat32 t = plane.DotProduct(dp).GetScalar();
+						if (t >= ndFloat32(-1.e-24f)) 
 						{
-							t = dFloat32(0.0f);
+							t = ndFloat32(0.0f);
 						}
 						else 
 						{
 							t = side0 / t;
-							if (t > dFloat32(0.0f)) 
+							if (t > ndFloat32(0.0f)) 
 							{
-								t = dFloat32(0.0f);
+								t = ndFloat32(0.0f);
 							}
-							if (t < dFloat32(-1.0f)) 
+							if (t < ndFloat32(-1.0f)) 
 							{
-								t = dFloat32(-1.0f);
+								t = ndFloat32(-1.0f);
 							}
 						}
 
-						dAssert(t <= dFloat32(0.01f));
-						dAssert(t >= dFloat32(-1.05f));
+						dAssert(t <= ndFloat32(0.01f));
+						dAssert(t >= ndFloat32(-1.05f));
 						contactsOut[count] = m_vertex[ptr->m_vertex] - dp.Scale(t);
 
 						ndConvexSimplexEdge* ptr1 = ptr->m_next;
 						for (; ptr1 != ptr; ptr1 = ptr1->m_next) 
 						{
-							dAssert(m_vertex[ptr->m_twin->m_vertex].m_w == dFloat32(0.0f));
+							dAssert(m_vertex[ptr->m_twin->m_vertex].m_w == ndFloat32(0.0f));
 							side0 = plane.Evalue(m_vertex[ptr1->m_twin->m_vertex]);
-							if (side0 >= dFloat32(0.0f)) 
+							if (side0 >= ndFloat32(0.0f)) 
 							{
 								break;
 							}
@@ -702,9 +712,9 @@ dInt32 ndShapeConvex::CalculatePlaneIntersection(const dVector& normal, const dV
 						ndConvexSimplexEdge* ptr1 = ptr->m_next;
 						for (; ptr1 != ptr; ptr1 = ptr1->m_next) 
 						{
-							dAssert(m_vertex[ptr1->m_twin->m_vertex].m_w == dFloat32(0.0f));
+							dAssert(m_vertex[ptr1->m_twin->m_vertex].m_w == ndFloat32(0.0f));
 							side0 = plane.Evalue(m_vertex[ptr1->m_twin->m_vertex]);
-							if (side0 >= dFloat32(0.0f)) 
+							if (side0 >= ndFloat32(0.0f)) 
 							{
 								break;
 							}
@@ -749,56 +759,56 @@ ndShapeInfo ndShapeConvex::GetShapeInfo() const
 	return info;
 }
 
-dFloat32 ndShapeConvex::GetVolume() const
+ndFloat32 ndShapeConvex::GetVolume() const
 {
 	return m_centerOfMass.m_w;
 }
 
-dFloat32 ndShapeConvex::GetBoxMinRadius() const
+ndFloat32 ndShapeConvex::GetBoxMinRadius() const
 {
 	return m_boxMinRadius;
 }
 
-dFloat32 ndShapeConvex::GetBoxMaxRadius() const
+ndFloat32 ndShapeConvex::GetBoxMaxRadius() const
 {
 	return m_boxMaxRadius;
 }
 
-bool ndShapeConvex::SanityCheck(dPolyhedra& hull) const
+bool ndShapeConvex::SanityCheck(ndPolyhedra& hull) const
 {
-	dPolyhedra::Iterator iter(hull);
+	ndPolyhedra::Iterator iter(hull);
 	for (iter.Begin(); iter; iter++) 
 	{
-		dEdge* const edge = &(*iter);
+		ndEdge* const edge = &(*iter);
 		if (edge->m_incidentFace < 0) 
 		{
 			return false;
 		}
-		dEdge* ptr = edge;
-		dVector p0(m_vertex[edge->m_incidentVertex]);
+		ndEdge* ptr = edge;
+		ndVector p0(m_vertex[edge->m_incidentVertex]);
 		ptr = ptr->m_next;
-		dVector p1(m_vertex[ptr->m_incidentVertex]);
-		dVector e1(p1 - p0);
-		dVector n0(dFloat32(0.0f));
+		ndVector p1(m_vertex[ptr->m_incidentVertex]);
+		ndVector e1(p1 - p0);
+		ndVector n0(ndFloat32(0.0f));
 		for (ptr = ptr->m_next; ptr != edge; ptr = ptr->m_next) 
 		{
-			dVector p2(m_vertex[ptr->m_incidentVertex]);
-			dVector e2(p2 - p0);
+			ndVector p2(m_vertex[ptr->m_incidentVertex]);
+			ndVector e2(p2 - p0);
 			n0 += e1.CrossProduct(e2);
 			e1 = e2;
 		}
 
-		dAssert(n0.m_w == dFloat32(0.0f));
+		dAssert(n0.m_w == ndFloat32(0.0f));
 		ptr = edge;
 		do 
 		{
-			dVector q0(m_vertex[ptr->m_twin->m_incidentVertex]);
-			for (dEdge* neiborg = ptr->m_twin->m_next->m_next; neiborg != ptr->m_twin; neiborg = neiborg->m_next) 
+			ndVector q0(m_vertex[ptr->m_twin->m_incidentVertex]);
+			for (ndEdge* neiborg = ptr->m_twin->m_next->m_next; neiborg != ptr->m_twin; neiborg = neiborg->m_next) 
 			{
-				dVector q1(m_vertex[neiborg->m_incidentVertex]);
-				dVector q1q0(q1 - q0);
-				dFloat32 project = q1q0.DotProduct(n0).GetScalar();
-				if (project > dFloat32(1.0e-5f)) 
+				ndVector q1(m_vertex[neiborg->m_incidentVertex]);
+				ndVector q1q0(q1 - q0);
+				ndFloat32 project = q1q0.DotProduct(n0).GetScalar();
+				if (project > ndFloat32(1.0e-5f)) 
 				{
 					return false;
 				}
@@ -811,34 +821,34 @@ bool ndShapeConvex::SanityCheck(dPolyhedra& hull) const
 	return true;
 }
 
-dVector ndShapeConvex::CalculateVolumeIntegral(const dPlane& plane) const
+ndVector ndShapeConvex::CalculateVolumeIntegral(const ndPlane& plane) const
 {
-	dInt8* const mark = dAlloca(dInt8, m_edgeCount + 256);
-	dFloat32* test = dAlloca(dFloat32, m_edgeCount + 256);
-	dVector* faceVertex = dAlloca(dVector, m_edgeCount + 256);
+	ndInt8* const mark = dAlloca(ndInt8, m_edgeCount + 256);
+	ndFloat32* test = dAlloca(ndFloat32, m_edgeCount + 256);
+	ndVector* faceVertex = dAlloca(ndVector, m_edgeCount + 256);
 
-	dInt32 positive = 0;
-	dInt32 negative = 0;
-	for (dInt32 i = 0; i < m_vertexCount; i++) 
+	ndInt32 positive = 0;
+	ndInt32 negative = 0;
+	for (ndInt32 i = 0; i < m_vertexCount; i++) 
 	{
 		test[i] = plane.Evalue(m_vertex[i]);
-		if (test[i] > dFloat32(1.0e-5f)) 
+		if (test[i] > ndFloat32(1.0e-5f)) 
 		{
 			positive++;
 		}
-		else if (test[i] < -dFloat32(1.0e-5f)) 
+		else if (test[i] < -ndFloat32(1.0e-5f)) 
 		{
 			negative++;
 		}
 		else 
 		{
-			test[i] = dFloat32(0.0f);
+			test[i] = ndFloat32(0.0f);
 		}
 	}
 
 	if (positive == m_vertexCount) 
 	{
-		return dVector::m_zero;
+		return ndVector::m_zero;
 	}
 
 	if (negative == m_vertexCount) 
@@ -846,39 +856,39 @@ dVector ndShapeConvex::CalculateVolumeIntegral(const dPlane& plane) const
 		return m_centerOfMass;
 	}
 
-	dPolyhedraMassProperties localData;
+	ndPolyhedraMassProperties localData;
 	ndConvexSimplexEdge* capEdge = nullptr;
 
-	dVector cg(dVector::m_zero);
+	ndVector cg(ndVector::m_zero);
 	memset(mark, 0, m_edgeCount);
-	for (dInt32 i = 0; i < m_edgeCount; i++) 
+	for (ndInt32 i = 0; i < m_edgeCount; i++) 
 	{
 		if (!mark[i]) 
 		{
 			ndConvexSimplexEdge* const face = &m_simplex[i];
 			ndConvexSimplexEdge* edge = face;
-			dInt32 count = 0;
-			dFloat32 size0 = test[edge->m_prev->m_vertex];
+			ndInt32 count = 0;
+			ndFloat32 size0 = test[edge->m_prev->m_vertex];
 			do 
 			{
 				mark[edge - m_simplex] = '1';
-				dFloat32 size1 = test[edge->m_vertex];
-				if (size0 <= dFloat32(0.0f)) 
+				ndFloat32 size1 = test[edge->m_vertex];
+				if (size0 <= ndFloat32(0.0f)) 
 				{
 					faceVertex[count] = m_vertex[edge->m_prev->m_vertex];
 					count++;
-					if (size1 > dFloat32(0.0f)) 
+					if (size1 > ndFloat32(0.0f)) 
 					{
-						dVector dp(m_vertex[edge->m_vertex] - m_vertex[edge->m_prev->m_vertex]);
-						dAssert(dp.m_w == dFloat32(0.0f));
+						ndVector dp(m_vertex[edge->m_vertex] - m_vertex[edge->m_prev->m_vertex]);
+						dAssert(dp.m_w == ndFloat32(0.0f));
 						faceVertex[count] = m_vertex[edge->m_prev->m_vertex] - dp.Scale(size0 / dp.DotProduct(plane).GetScalar());
 						count++;
 					}
 				}
-				else if (size1 < dFloat32(0.0f)) 
+				else if (size1 < ndFloat32(0.0f)) 
 				{
-					dVector dp(m_vertex[edge->m_vertex] - m_vertex[edge->m_prev->m_vertex]);
-					dAssert(dp.m_w == dFloat32(0.0f));
+					ndVector dp(m_vertex[edge->m_vertex] - m_vertex[edge->m_prev->m_vertex]);
+					dAssert(dp.m_w == ndFloat32(0.0f));
 					faceVertex[count] = m_vertex[edge->m_prev->m_vertex] - dp.Scale(size0 / dp.DotProduct(plane).GetScalar());
 					count++;
 					dAssert(count <= m_vertexCount);
@@ -886,7 +896,7 @@ dVector ndShapeConvex::CalculateVolumeIntegral(const dPlane& plane) const
 
 				if (!capEdge) 
 				{
-					if ((size1 > dFloat32(0.0f)) && (size0 < dFloat32(0.0f))) 
+					if ((size1 > ndFloat32(0.0f)) && (size0 < ndFloat32(0.0f))) 
 					{
 						capEdge = edge->m_prev->m_twin;
 					}
@@ -905,28 +915,28 @@ dVector ndShapeConvex::CalculateVolumeIntegral(const dPlane& plane) const
 
 	if (capEdge) 
 	{
-		dInt32 count = 0;
+		ndInt32 count = 0;
 		ndConvexSimplexEdge* edge = capEdge;
 		ndConvexSimplexEdge* ptr = nullptr;
 		do 
 		{
-			dVector dp(m_vertex[edge->m_twin->m_vertex] - m_vertex[edge->m_vertex]);
-			dAssert(dp.m_w == dFloat32(0.0f));
+			ndVector dp(m_vertex[edge->m_twin->m_vertex] - m_vertex[edge->m_vertex]);
+			dAssert(dp.m_w == ndFloat32(0.0f));
 			faceVertex[count] = m_vertex[edge->m_vertex] - dp.Scale(test[edge->m_vertex] / dp.DotProduct(plane).GetScalar());
 			count++;
 			if (count >= m_edgeCount)
 			{
 				dTrace(("%s something is wrong return zero\n", __FUNCTION__));
-				return dVector::m_zero;
+				return ndVector::m_zero;
 			}
 
 			for (ptr = edge->m_next; ptr != edge; ptr = ptr->m_next) 
 			{
-				dInt32 index0 = ptr->m_twin->m_vertex;
-				if (test[index0] > dFloat32(0.0f)) 
+				ndInt32 index0 = ptr->m_twin->m_vertex;
+				if (test[index0] > ndFloat32(0.0f)) 
 				{
 					index0 = ptr->m_vertex;
-					if (test[index0] < dFloat32(0.0f)) 
+					if (test[index0] < ndFloat32(0.0f)) 
 					{
 						break;
 					}
@@ -937,19 +947,19 @@ dVector ndShapeConvex::CalculateVolumeIntegral(const dPlane& plane) const
 		localData.AddCGFace(count, faceVertex);
 	}
 
-	dVector inertia;
-	dVector crossInertia;
-	dFloat32 volume = localData.MassProperties(cg, inertia, crossInertia);
-	cg = cg.Scale(dFloat32(1.0f) / dMax(volume, dFloat32(1.0e-6f)));
+	ndVector inertia;
+	ndVector crossInertia;
+	ndFloat32 volume = localData.MassProperties(cg, inertia, crossInertia);
+	cg = cg.Scale(ndFloat32(1.0f) / dMax(volume, ndFloat32(1.0e-6f)));
 	cg.m_w = volume;
 	return cg;
 }
 
-dVector ndShapeConvex::CalculateVolumeIntegral(const dMatrix& globalMatrix, const dVector& globalPlane, const ndShapeInstance& parentScale) const
+ndVector ndShapeConvex::CalculateVolumeIntegral(const ndMatrix& globalMatrix, const ndVector& globalPlane, const ndShapeInstance& parentScale) const
 {
-	dPlane localPlane(globalMatrix.UntransformPlane(globalPlane));
+	ndPlane localPlane(globalMatrix.UntransformPlane(globalPlane));
 
-	const dVector& scale = parentScale.m_scale;
+	const ndVector& scale = parentScale.m_scale;
 	switch (parentScale.m_scaleType)
 	{
 		case ndShapeInstance::m_unit:
@@ -965,59 +975,59 @@ dVector ndShapeConvex::CalculateVolumeIntegral(const dMatrix& globalMatrix, cons
 
 		case ndShapeInstance::m_nonUniform:
 		{
-			localPlane = localPlane * (scale | dVector::m_wOne);
-			dFloat32 mag2 = localPlane.DotProduct(localPlane & dVector::m_triplexMask).GetScalar();
-			localPlane = localPlane.Scale(dRsqrt(mag2));
+			localPlane = localPlane * (scale | ndVector::m_wOne);
+			ndFloat32 mag2 = localPlane.DotProduct(localPlane & ndVector::m_triplexMask).GetScalar();
+			localPlane = localPlane.Scale(ndRsqrt(mag2));
 			break;
 		}
 
 		default:
 		{
-			localPlane = localPlane * (scale | dVector::m_wOne);
-			dFloat32 mag2 = localPlane.DotProduct(localPlane & dVector::m_triplexMask).GetScalar();
-			localPlane = localPlane.Scale(dRsqrt(mag2));
-			localPlane = parentScale.m_aligmentMatrix.UntransformPlane(localPlane);
+			localPlane = localPlane * (scale | ndVector::m_wOne);
+			ndFloat32 mag2 = localPlane.DotProduct(localPlane & ndVector::m_triplexMask).GetScalar();
+			localPlane = localPlane.Scale(ndRsqrt(mag2));
+			localPlane = parentScale.GetAlignmentMatrix().UntransformPlane(localPlane);
 		}
 	}
 
-	dVector cg(CalculateVolumeIntegral(localPlane));
+	ndVector cg(CalculateVolumeIntegral(localPlane));
 
-	dFloat32 volume = cg.m_w * scale.m_x * scale.m_y * scale.m_z;
-	cg = parentScale.m_aligmentMatrix.RotateVector(cg);
+	ndFloat32 volume = cg.m_w * scale.m_x * scale.m_y * scale.m_z;
+	cg = parentScale.GetAlignmentMatrix().RotateVector(cg);
 	cg = cg * scale;
 	cg = globalMatrix.TransformVector(cg);
 	cg.m_w = volume;
 	return cg;
 }
 
-//dInt32 dgCollisionConvex::BuildCylinderCapPoly(dFloat32 radius, const dMatrix& transform, dVector* const vertexOut) const
-dInt32 ndShapeConvex::BuildCylinderCapPoly(dFloat32 radius, const dMatrix& transform, dVector* const vertexOut) const
+//ndInt32 dgCollisionConvex::BuildCylinderCapPoly(ndFloat32 radius, const dMatrix& transform, ndVector* const vertexOut) const
+ndInt32 ndShapeConvex::BuildCylinderCapPoly(ndFloat32 radius, const ndMatrix& transform, ndVector* const vertexOut) const
 {
 	/*
-	dFloat32 h = 2.0;
-	dInt32 n = 8;
-	dFloat32 a0 = h * h * (dgPi / n);
+	ndFloat32 h = 2.0;
+	ndInt32 n = 8;
+	ndFloat32 a0 = h * h * (dgPi / n);
 
-	dFloat32 h0 = h * dgSin (0.5 * dgPI2 / n);
-	dFloat32 h1 = h * dgCos (0.5 * dgPI2 / n);
-	dFloat32 a1 = h * h * (dgSin (0.5 * dgPI2 / n) * dgCos (0.5 * dgPI2 / n));
+	ndFloat32 h0 = h * dgSin (0.5 * dgPI2 / n);
+	ndFloat32 h1 = h * dgCos (0.5 * dgPI2 / n);
+	ndFloat32 a1 = h * h * (dgSin (0.5 * dgPI2 / n) * dgCos (0.5 * dgPI2 / n));
 
-	dFloat32 a = h * h * (dgPi / n - 0.5f * dgSin (dgPI2 / n));
+	ndFloat32 a = h * h * (dgPi / n - 0.5f * dgSin (dgPI2 / n));
 
-	for (dInt32 i = 8; i < 16; i ++) {
-	dFloat32 den = dgPi / i - 0.5f * dgSin (dgPI2 / i);
-	dFloat32 h1 = dgSqrt (a / den);
-	dFloat32 h2 = dgSqrt (a / den);
+	for (ndInt32 i = 8; i < 16; i ++) {
+	ndFloat32 den = dgPi / i - 0.5f * dgSin (dgPI2 / i);
+	ndFloat32 h1 = dgSqrt (a / den);
+	ndFloat32 h2 = dgSqrt (a / den);
 	}
 	*/
 
-	dInt32 count = (radius < dFloat32(1.0f)) ? 8 : ((radius < dFloat32(2.0f)) ? 12 : 16);
+	ndInt32 count = (radius < ndFloat32(1.0f)) ? 8 : ((radius < ndFloat32(2.0f)) ? 12 : 16);
 
-	dFloat32 angle = dFloat32 (2.0f) * dPi / count;
-	dVector r(dFloat32(0.0f), dFloat32(0.0f), radius, dFloat32(0.0f));
-	dMatrix rotation(dPitchMatrix(angle));
+	ndFloat32 angle = ndFloat32 (2.0f) * ndPi / count;
+	ndVector r(ndFloat32(0.0f), ndFloat32(0.0f), radius, ndFloat32(0.0f));
+	ndMatrix rotation(dPitchMatrix(angle));
 
-	for (dInt32 i = 0; i < count; i++) 
+	for (ndInt32 i = 0; i < count; i++) 
 	{
 		vertexOut[i] = transform.TransformVector(r);
 		r = rotation.RotateVector(r);
@@ -1026,12 +1036,3 @@ dInt32 ndShapeConvex::BuildCylinderCapPoly(dFloat32 radius, const dMatrix& trans
 	return count;
 }
 
-void ndShapeConvex::Save(const dLoadSaveBase::dSaveDescriptor& desc) const
-{
-	nd::TiXmlElement* const childNode = new nd::TiXmlElement(ClassName());
-	desc.m_rootNode->LinkEndChild(childNode);
-	childNode->SetAttribute("hashId", desc.m_nodeNodeHash);
-	ndShape::Save(dLoadSaveBase::dSaveDescriptor(desc, childNode));
-
-	// maybe save some stuff here
-}

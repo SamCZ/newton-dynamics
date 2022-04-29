@@ -19,37 +19,45 @@
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
-#include "dCoreStdafx.h"
+#include "ndCoreStdafx.h"
 #include "ndNewtonStdafx.h"
 #include "ndMultiBodyVehicleDifferentialAxle.h"
 
 D_CLASS_REFLECTION_IMPLEMENT_LOADER(ndMultiBodyVehicleDifferentialAxle)
 
 ndMultiBodyVehicleDifferentialAxle::ndMultiBodyVehicleDifferentialAxle(
-	const dVector& pin0, const dVector& upPin, ndBodyKinematic* const differentialBody0,
-	const dVector& pin1, ndBodyKinematic* const body1)
+	const ndVector& pin0, const ndVector& upPin, ndBodyKinematic* const differentialBody0,
+	const ndVector& pin1, ndBodyKinematic* const body1)
 	:ndJointBilateralConstraint(1, differentialBody0, body1, dGetIdentityMatrix())
 {
-	dMatrix temp;
-	dMatrix matrix0(pin0, upPin, pin0.CrossProduct(upPin), dVector::m_wOne);
-	dMatrix matrix1(pin1);
+	ndMatrix temp;
+	ndMatrix matrix0(pin0, upPin, pin0.CrossProduct(upPin), ndVector::m_wOne);
+	ndMatrix matrix1(pin1);
 	CalculateLocalMatrix(matrix0, m_localMatrix0, temp);
 	CalculateLocalMatrix(matrix1, temp, m_localMatrix1);
 	SetSolverModel(m_jointkinematicCloseLoop);
 }
 
-ndMultiBodyVehicleDifferentialAxle::ndMultiBodyVehicleDifferentialAxle(const dLoadSaveBase::dLoadDescriptor& desc)
-	:ndJointBilateralConstraint(dLoadSaveBase::dLoadDescriptor(desc))
+ndMultiBodyVehicleDifferentialAxle::ndMultiBodyVehicleDifferentialAxle(const ndLoadSaveBase::ndLoadDescriptor& desc)
+	:ndJointBilateralConstraint(ndLoadSaveBase::ndLoadDescriptor(desc))
 {
+}
+
+void ndMultiBodyVehicleDifferentialAxle::Save(const ndLoadSaveBase::ndSaveDescriptor& desc) const
+{
+	nd::TiXmlElement* const childNode = new nd::TiXmlElement(ClassName());
+	desc.m_rootNode->LinkEndChild(childNode);
+	childNode->SetAttribute("hashId", desc.m_nodeNodeHash);
+	ndJointBilateralConstraint::Save(ndLoadSaveBase::ndSaveDescriptor(desc, childNode));
 }
 
 void ndMultiBodyVehicleDifferentialAxle::JacobianDerivative(ndConstraintDescritor& desc)
 {
-	dMatrix matrix0;
-	dMatrix matrix1;
+	ndMatrix matrix0;
+	ndMatrix matrix1;
 	CalculateGlobalMatrix(matrix0, matrix1);
 
-	AddAngularRowJacobian(desc, matrix1.m_right, dFloat32(0.0f));
+	AddAngularRowJacobian(desc, matrix1.m_right, ndFloat32(0.0f));
 
 	ndJacobian& jacobian0 = desc.m_jacobian[desc.m_rowsCount - 1].m_jacobianM0;
 	ndJacobian& jacobian1 = desc.m_jacobian[desc.m_rowsCount - 1].m_jacobianM1;
@@ -57,18 +65,11 @@ void ndMultiBodyVehicleDifferentialAxle::JacobianDerivative(ndConstraintDescrito
 	jacobian0.m_angular = matrix0.m_front + matrix0.m_up;
 	jacobian1.m_angular = matrix1.m_front;
 
-	const dVector& omega0 = m_body0->GetOmega();
-	const dVector& omega1 = m_body1->GetOmega();
+	const ndVector& omega0 = m_body0->GetOmega();
+	const ndVector& omega1 = m_body1->GetOmega();
 
-	const dVector relOmega(omega0 * jacobian0.m_angular + omega1 * jacobian1.m_angular);
-	dFloat32 w = (relOmega.m_x + relOmega.m_y + relOmega.m_z) * dFloat32(0.5f);
+	const ndVector relOmega(omega0 * jacobian0.m_angular + omega1 * jacobian1.m_angular);
+	ndFloat32 w = (relOmega.m_x + relOmega.m_y + relOmega.m_z) * ndFloat32(0.5f);
 	SetMotorAcceleration(desc, -w * desc.m_invTimestep);
 }
 
-void ndMultiBodyVehicleDifferentialAxle::Save(const dLoadSaveBase::dSaveDescriptor& desc) const
-{
-	nd::TiXmlElement* const childNode = new nd::TiXmlElement(ClassName());
-	desc.m_rootNode->LinkEndChild(childNode);
-	childNode->SetAttribute("hashId", desc.m_nodeNodeHash);
-	ndJointBilateralConstraint::Save(dLoadSaveBase::dSaveDescriptor(desc, childNode));
-}

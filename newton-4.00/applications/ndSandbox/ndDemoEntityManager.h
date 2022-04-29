@@ -27,12 +27,12 @@ class ndDemoCameraManager;
 class ndWireFrameDebugMesh;
 class ndFlatShadedDebugMesh;
 
-class ndDemoEntityManager: public dList <ndDemoEntity*>
+class ndDemoEntityManager: public ndList <ndDemoEntity*>
 {
 	public:
 	typedef void (*LaunchSDKDemoCallback) (ndDemoEntityManager* const scene);
 	typedef void (*RenderGuiHelpCallback) (ndDemoEntityManager* const manager, void* const context);
-	typedef void(*UpdateCameraCallback) (ndDemoEntityManager* const manager, void* const context, dFloat32 timestep);
+	typedef void(*UpdateCameraCallback) (ndDemoEntityManager* const manager, void* const context, ndFloat32 timestep);
 
 	enum ndMenuSelection
 	{
@@ -64,11 +64,11 @@ class ndDemoEntityManager: public dList <ndDemoEntity*>
 	class ndLightSource
 	{
 		public:
-		dVector m_position;
-		dVector m_ambient;
-		dVector m_diffuse;
-		dVector m_specular;
-		dFloat32 m_shininess;
+		ndVector m_position;
+		ndVector m_ambient;
+		ndVector m_diffuse;
+		ndVector m_specular;
+		ndFloat32 m_shininess;
 	};
 
 
@@ -81,21 +81,21 @@ class ndDemoEntityManager: public dList <ndDemoEntity*>
 		{
 		}
 
-		TransparentMesh(const dMatrix& matrix, ndDemoMesh* const mesh)
+		TransparentMesh(const ndMatrix& matrix, ndDemoMesh* const mesh)
 			:m_matrix(matrix)
 			,m_mesh(mesh)
 		{
 		}
 
-		dMatrix m_matrix;
+		ndMatrix m_matrix;
 		ndDemoMesh* m_mesh;
 	};
 
-	class TransparentHeap: public dUpHeap <TransparentMesh, dFloat32>
+	class TransparentHeap: public ndUpHeap <TransparentMesh, ndFloat32>
 	{
 		public:
 		TransparentHeap()
-			:dUpHeap <TransparentMesh, dFloat32>(2048)
+			:ndUpHeap <TransparentMesh, ndFloat32>(2048)
 		{
 		}
 	};
@@ -111,9 +111,9 @@ class ndDemoEntityManager: public dList <ndDemoEntity*>
 	{
 		public:
 		ButtonKey (bool initialState);
-		dInt32 UpdateTrigger (bool triggerValue);
-		dInt32 UpdatePushButton (bool triggerValue);
-		dInt32 GetPushButtonState() const { return m_state ? 1 : 0;}
+		ndInt32 UpdateTrigger (bool triggerValue);
+		ndInt32 UpdatePushButton (bool triggerValue);
+		ndInt32 GetPushButtonState() const { return m_state ? 1 : 0;}
 
 		private:
 		bool m_state;
@@ -136,7 +136,7 @@ class ndDemoEntityManager: public dList <ndDemoEntity*>
 		ndWireFrameDebugMesh* m_wireFrameShareEdge;
 	};
 
-	class ndDebugMeshCache: public dTree<ndDebuMesh, const ndShape*>
+	class ndDebugMeshCache: public ndTree<ndDebuMesh, const ndShape*>
 	{
 	};
 
@@ -148,8 +148,8 @@ class ndDemoEntityManager: public dList <ndDemoEntity*>
 	void AddEntity(ndDemoEntity* const ent);
 	void RemoveEntity(ndDemoEntity* const ent);
 
-	dInt32 GetWidth() const;
-	dInt32 GetHeight() const;
+	ndInt32 GetWidth() const;
+	ndInt32 GetHeight() const;
 
 	ndPhysicsWorld* GetWorld() const;
 	
@@ -159,26 +159,26 @@ class ndDemoEntityManager: public dList <ndDemoEntity*>
 
 	ndDemoCamera* GetCamera() const;
 	ndDemoCameraManager* GetCameraManager() const;
-	bool GetMouseSpeed(dFloat32& posX, dFloat32& posY) const;
-	bool GetMousePosition (dFloat32& posX, dFloat32& posY) const;
-	void SetCameraMatrix (const dQuaternion& rotation, const dVector& position);
+	bool GetMouseSpeed(ndFloat32& posX, ndFloat32& posY) const;
+	bool GetMousePosition (ndFloat32& posX, ndFloat32& posY) const;
+	void SetCameraMatrix (const ndQuaternion& rotation, const ndVector& position);
 	
 	void SetSelectedModel(ndModel* const model);
 	void SetUpdateCameraFunction(UpdateCameraCallback callback, void* const context);
-	void PushTransparentMesh(const ndDemoMeshInterface* const mesh, const dMatrix& modelMatrix);
+	void PushTransparentMesh(const ndDemoMeshInterface* const mesh, const ndMatrix& modelMatrix);
 	void Set2DDisplayRenderFunction (RenderGuiHelpCallback helpCallback, RenderGuiHelpCallback UIcallback, void* const context);
 
 	bool IsShiftKeyDown () const;
 	bool IsControlKeyDown () const;
-	bool GetKeyState(dInt32 key) const;
-	dInt32 GetJoystickAxis (dFixSizeArray<dFloat32, 8>& axisValues);
-	dInt32 GetJoystickButtons (dFixSizeArray<char, 32>& axisbuttons);
+	bool GetKeyState(ndInt32 key) const;
+	ndInt32 GetJoystickAxis (ndFixSizeArray<ndFloat32, 8>& axisValues);
+	ndInt32 GetJoystickButtons (ndFixSizeArray<char, 32>& axisbuttons);
 
 	bool GetCaptured () const;
-	bool GetMouseKeyState (dInt32 button ) const;
-	dInt32 Print (const dVector& color, const char *fmt, ... ) const;
-	dInt32 GetDebugDisplay() const;
-	void SetDebugDisplay(dInt32 mode) const;
+	bool GetMouseKeyState (ndInt32 button ) const;
+	ndInt32 Print (const ndVector& color, const char *fmt, ... ) const;
+	ndInt32 GetDebugDisplay() const;
+	void SetDebugDisplay(ndInt32 mode) const;
 
 	const ndShaderPrograms& GetShaderCache() const;  
 	fbxDemoEntity* LoadFbxMesh(const char* const meshName);
@@ -192,35 +192,38 @@ class ndDemoEntityManager: public dList <ndDemoEntity*>
 
 	//void RenderUI();
 	void RenderScene();
+	ndInt32 ParticleCount() const;
+	void SetParticleUpdateMode() const;
 	
-	void UpdatePhysics(dFloat32 timestep);
-	dFloat32 CalculateInteplationParam () const;
+	void UpdatePhysics(ndFloat32 timestep);
+	ndFloat32 CalculateInteplationParam () const;
 
-	void CalculateFPS(dFloat32 timestep);
+	void CalculateFPS(ndFloat32 timestep);
 	
 	void ShowMainMenuBar();
 	void ToggleProfiler();
+	void RenderScene(ImDrawData* const draw_data);
 
-	static void RenderDrawListsCallback(ImDrawData* const draw_data);
-
-	static void CharCallback(GLFWwindow* window, dUnsigned32 ch);
-	static void KeyCallback(GLFWwindow* const window, dInt32 key, dInt32, dInt32 action, dInt32 mods);
+	static void CharCallback(GLFWwindow* window, ndUnsigned32 ch);
+	static void KeyCallback(GLFWwindow* const window, ndInt32 key, ndInt32, ndInt32 action, ndInt32 mods);
 	static void CursorposCallback  (GLFWwindow* const window, double x, double y);
 	static void MouseScrollCallback (GLFWwindow* const window, double x, double y);
-	static void MouseButtonCallback(GLFWwindow* const window, dInt32 button, dInt32 action, dInt32 mods);
-	static void ErrorCallback(dInt32 error, const char* const description);
+	static void MouseButtonCallback(GLFWwindow* const window, ndInt32 button, ndInt32 action, ndInt32 mods);
+	static void ErrorCallback(ndInt32 error, const char* const description);
 	static void OpenMessageCallback(
 		GLenum source, GLenum type, GLuint id, GLenum severity,
 		GLsizei length, const GLchar* message, const void* userParam);
 	
 
 	void ApplyMenuOptions();
-	void LoadDemo(dInt32 menu);
+	void LoadDemo(ndInt32 menu);
 
 	void DrawDebugShapes();
+
+	void TestImGui();
 	
 	GLFWwindow* m_mainFrame;
-	dInt32	m_defaultFont;
+	ndInt32	m_defaultFont;
 	bool m_mousePressed[3];
 
 	ndDemoEntity* m_sky;
@@ -233,26 +236,26 @@ class ndDemoEntityManager: public dList <ndDemoEntity*>
 	RenderGuiHelpCallback m_renderHelpMenus;
 	UpdateCameraCallback m_updateCamera;
 
-	dUnsigned64 m_microsecunds;
+	ndUnsigned64 m_microsecunds;
 	TransparentHeap m_tranparentHeap;
-	dTree<ndAnimationSequence*, dString> m_animationCache;
+	ndTree<ndAnimationSequence*, ndString> m_animationCache;
 
-	dInt32 m_currentScene;
-	dInt32 m_lastCurrentScene;
-	dInt32 m_framesCount;
-	dInt32 m_physicsFramesCount;
-	dInt32 m_currentPlugin;
-	dInt32 m_solverPasses;
-	dInt32 m_solverSubSteps;
-	dInt32 m_workerThreads;
-	dInt32 m_debugDisplayMode;
-	dInt32 m_collisionDisplayMode;
+	ndInt32 m_currentScene;
+	ndInt32 m_lastCurrentScene;
+	ndInt32 m_framesCount;
+	ndInt32 m_physicsFramesCount;
+	ndInt32 m_currentPlugin;
+	ndInt32 m_solverPasses;
+	ndInt32 m_solverSubSteps;
+	ndInt32 m_workerThreads;
+	ndInt32 m_debugDisplayMode;
+	ndInt32 m_collisionDisplayMode;
 	ndModel* m_selectedModel;
 
-	dFloat32 m_fps;
-	dFloat32 m_timestepAcc;
-	dFloat32 m_currentListenerTimestep;
-	dSpinLock m_addDeleteLock;
+	ndFloat32 m_fps;
+	ndFloat32 m_timestepAcc;
+	ndFloat32 m_currentListenerTimestep;
+	ndSpinLock m_addDeleteLock;
 	
 	bool m_showUI;
 	bool m_showAABB;
@@ -272,6 +275,7 @@ class ndDemoEntityManager: public dList <ndDemoEntity*>
 	bool m_showCollidingFaces;
 	bool m_suspendPhysicsUpdate;
 	bool m_synchronousPhysicsUpdate;
+	bool m_synchronousParticlesUpdate;
 	bool m_showRaycastHit;
 	bool m_profilerMode;
 
@@ -290,25 +294,25 @@ inline ndPhysicsWorld* ndDemoEntityManager::GetWorld() const
 	return m_world;
 }
 
-inline dInt32 ndDemoEntityManager::GetWidth() const 
+inline ndInt32 ndDemoEntityManager::GetWidth() const 
 { 
 	ImGuiIO& io = ImGui::GetIO();
-	return (dInt32)(io.DisplaySize.x * io.DisplayFramebufferScale.x);
+	return (ndInt32)(io.DisplaySize.x * io.DisplayFramebufferScale.x);
 }
 
-inline dInt32 ndDemoEntityManager::GetHeight() const 
+inline ndInt32 ndDemoEntityManager::GetHeight() const 
 { 
 	ImGuiIO& io = ImGui::GetIO();
-	return (dInt32)(io.DisplaySize.y * io.DisplayFramebufferScale.y);
+	return (ndInt32)(io.DisplaySize.y * io.DisplayFramebufferScale.y);
 }
 
-inline dInt32 ndDemoEntityManager::GetDebugDisplay() const
+inline ndInt32 ndDemoEntityManager::GetDebugDisplay() const
 {
 	dAssert (0);
 	return 0;
 }
 
-inline void ndDemoEntityManager::SetDebugDisplay(dInt32) const
+inline void ndDemoEntityManager::SetDebugDisplay(ndInt32) const
 {
 	dAssert (0);
 }

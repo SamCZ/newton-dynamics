@@ -17,51 +17,24 @@
 
 class ndAnimationPose;
 
-class ndAnimationSequence: public dClassAlloc
+class ndAnimationSequence: public ndClassAlloc
 {
 	public:
 	ndAnimationSequence();
 	~ndAnimationSequence();
-
 	ndAnimationKeyFramesTrack* AddTrack();
 
-	dFloat32 GetPeriod() const;
-	void SetPeriod(dFloat32 period);
-	dList<ndAnimationKeyFramesTrack>& GetTracks();
+	ndFloat32 GetParam() const;
+	void SetParam(ndFloat32 param);
+
+	ndList<ndAnimationKeyFramesTrack>& GetTracks();
 	
-	const dString& GetName() const;
+	const ndString& GetName() const;
 	void SetName(const char* const name);
-	void CalculatePose(ndAnimationPose& output, dFloat32 t) const;
+	void CalculatePose(ndAnimationPose& output, ndFloat32 param) const;
 	
-	dString m_name;
-	dList<ndAnimationKeyFramesTrack> m_tracks;
-	dFloat32 m_period;
+	ndString m_name;
+	ndList<ndAnimationKeyFramesTrack> m_tracks;
 };
-
-inline const dString& ndAnimationSequence::GetName() const
-{
-	return m_name;
-}
-
-inline void ndAnimationSequence::SetName(const char* const name)
-{
-	m_name = name;
-}
-
-
-inline dFloat32 ndAnimationSequence::GetPeriod() const
-{ 
-	return m_period; 
-}
-
-inline void ndAnimationSequence::SetPeriod(dFloat32 period) 
-{ 
-	m_period = period; 
-}
-
-inline dList<ndAnimationKeyFramesTrack>& ndAnimationSequence::GetTracks() 
-{ 
-	return m_tracks; 
-}
 
 #endif

@@ -8,7 +8,7 @@
 # including commercial applications, and to alter it and redistribute it
 # freely.
 
-cmake_minimum_required(VERSION 3.4.0)
+cmake_minimum_required(VERSION 3.9.0 FATAL_ERROR)
 
 set (projectName "ndTest")
 message (${projectName})
@@ -18,12 +18,14 @@ file(GLOB CPP_SOURCE *.h *.cpp)
 
 source_group(TREE "${CMAKE_CURRENT_SOURCE_DIR}/" FILES ${CPP_SOURCE})
 
-include_directories(../../sdk/dCore/)
-include_directories(../../sdk/dNewton/)
-include_directories(../../sdk/dTinyxml/)
-include_directories(../../sdk/dCollision/)
+include_directories(../../sdk/dCore)
+include_directories(../../sdk/dNewton)
+include_directories(../../sdk/dTinyxml)
+include_directories(../../sdk/dCollision)
 include_directories(../../sdk/dNewton/dJoints)
 include_directories(../../sdk/dNewton/dModels)
+include_directories(../../sdk/dNewton/dIkSolver)
+include_directories(../../sdk/dNewton/dParticles)
 include_directories(../../sdk/dNewton/dModels/dVehicle)
 include_directories(../../sdk/dNewton/dModels/dCharacter)
 
@@ -44,28 +46,12 @@ else()
 	target_link_libraries (${projectName} ndNewton)
 endif()
 
+if(NEWTON_ENABLE_AVX2_SOLVER)
+	if (NOT NEWTON_BUILD_SHARED_LIBS)
+		target_link_libraries (${projectName} ndSolverAvx2)
+	endif()
+endif(NEWTON_ENABLE_AVX2_SOLVER)
+
 if (NEWTON_BUILD_PROFILER)
     target_link_libraries (${projectName} dProfiler)
 endif ()
-
-if(MSVC OR MINGW)
-#   target_link_libraries (${projectName} glu32 opengl32)
-#
-#   if(CMAKE_VS_MSBUILD_COMMAND OR CMAKE_VS_DEVENV_COMMAND)
-#		set_target_properties(${projectName} PROPERTIES COMPILE_FLAGS "/Yutoolbox_stdafx.h")
-#		set_source_files_properties(sdkDemos/toolBox/toolbox_stdafx.cpp PROPERTIES COMPILE_FLAGS "/Yctoolbox_stdafx.h")
-#		set_source_files_properties(sdkDemos/toolBox/FileBrowser.cpp PROPERTIES COMPILE_FLAGS "/Y-")
-#   endif()
-endif()
-
-#if(UNIX)
-#    target_link_libraries (${projectName} GL GLU dl X11 pthread)
-#    set (source "${CMAKE_SOURCE_DIR}/applications/media")
-#    set (destination "${PROJECT_BINARY_DIR}/applications/media")
-#    add_custom_command(
-#        TARGET ${projectName} POST_BUILD
-#        COMMAND ${CMAKE_COMMAND} -E create_symlink ${source} ${destination}
-#        DEPENDS ${destination}
-#        COMMENT "symbolic link resources folder from ${source} => ${destination}")
-#endif()
-

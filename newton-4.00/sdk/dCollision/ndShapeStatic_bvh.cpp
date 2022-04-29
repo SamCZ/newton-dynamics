@@ -19,7 +19,7 @@
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
-#include "dCoreStdafx.h"
+#include "ndCoreStdafx.h"
 #include "ndCollisionStdafx.h"
 #include "ndContact.h"
 #include "ndBodyKinematic.h"
@@ -31,57 +31,57 @@ D_CLASS_REFLECTION_IMPLEMENT_LOADER(ndShapeStatic_bvh)
 class ndCollisionBvhShowPolyContext
 {
 	public:
-	dMatrix m_matrix;
+	ndMatrix m_matrix;
 	void* m_userData;
-	ndShapeDebugCallback* m_callback;
+	ndShapeDebugNotify* m_callback;
 };
 
 D_MSV_NEWTON_ALIGN_32 
-class ndBvhRay: public dFastRay 
+class ndBvhRay: public ndFastRay 
 {
 	public:
-	ndBvhRay(const dVector& l0, const dVector& l1)
-		:dFastRay (l0, l1)
+	ndBvhRay(const ndVector& l0, const ndVector& l1)
+		:ndFastRay (l0, l1)
 	{
 	}
 
-	dMatrix m_matrix;
-	dVector m_normal;
-	dUnsigned32 m_id;
-	dFloat32 m_t;
+	ndMatrix m_matrix;
+	ndVector m_normal;
+	ndUnsigned32 m_id;
+	ndFloat32 m_t;
 	ndRayCastNotify* m_callback;
 	const ndBodyKinematic* m_myBody;
 	const ndShapeStatic_bvh* m_me;
 } D_GCC_NEWTON_ALIGN_32;
 
-ndShapeStatic_bvh::ndShapeStatic_bvh(const dPolygonSoupBuilder& builder)
+ndShapeStatic_bvh::ndShapeStatic_bvh(const ndPolygonSoupBuilder& builder)
 	:ndShapeStaticMesh(m_boundingBoxHierachy)
-	,dAabbPolygonSoup()
+	,ndAabbPolygonSoup()
 	,m_trianglesCount(0)
 {
 	Create(builder);
 	CalculateAdjacendy();
 
-	dVector p0;
-	dVector p1;
+	ndVector p0;
+	ndVector p1;
 	GetAABB(p0, p1);
-	m_boxSize = (p1 - p0) * dVector::m_half;
-	m_boxOrigin = (p1 + p0) * dVector::m_half;
+	m_boxSize = (p1 - p0) * ndVector::m_half;
+	m_boxOrigin = (p1 + p0) * ndVector::m_half;
 
 	ndMeshVertexListIndexList data;
 	data.m_indexList = nullptr;
 	data.m_userDataList = nullptr;
 	data.m_maxIndexCount = 1000000000;
 	data.m_triangleCount = 0;
-	dVector zero(dVector::m_zero);
-	dFastAabb box(dGetIdentityMatrix(), dVector(dFloat32(1.0e15f)));
-	ForAllSectors(box, zero, dFloat32(1.0f), GetTriangleCount, &data);
+	ndVector zero(ndVector::m_zero);
+	ndFastAabb box(dGetIdentityMatrix(), ndVector(ndFloat32(1.0e15f)));
+	ForAllSectors(box, zero, ndFloat32(1.0f), GetTriangleCount, &data);
 	m_trianglesCount = data.m_triangleCount;
 }
 
-ndShapeStatic_bvh::ndShapeStatic_bvh(const dLoadSaveBase::dLoadDescriptor& desc)
+ndShapeStatic_bvh::ndShapeStatic_bvh(const ndLoadSaveBase::ndLoadDescriptor& desc)
 	:ndShapeStaticMesh(m_boundingBoxHierachy)
-	,dAabbPolygonSoup()
+	,ndAabbPolygonSoup()
 	,m_trianglesCount(0)
 {
 	const nd::TiXmlNode* const xmlNode = desc.m_rootNode;
@@ -90,20 +90,20 @@ ndShapeStatic_bvh::ndShapeStatic_bvh(const dLoadSaveBase::dLoadDescriptor& desc)
 	sprintf(pathCopy, "%s/%s", desc.m_assetPath, assetName);
 	Deserialize(pathCopy);
 
-	dVector p0;
-	dVector p1;
+	ndVector p0;
+	ndVector p1;
 	GetAABB(p0, p1);
-	m_boxSize = (p1 - p0) * dVector::m_half;
-	m_boxOrigin = (p1 + p0) * dVector::m_half;
+	m_boxSize = (p1 - p0) * ndVector::m_half;
+	m_boxOrigin = (p1 + p0) * ndVector::m_half;
 
 	ndMeshVertexListIndexList data;
 	data.m_indexList = nullptr;
 	data.m_userDataList = nullptr;
 	data.m_maxIndexCount = 1000000000;
 	data.m_triangleCount = 0;
-	dVector zero(dVector::m_zero);
-	dFastAabb box(dGetIdentityMatrix(), dVector(dFloat32(1.0e15f)));
-	ForAllSectors(box, zero, dFloat32(1.0f), GetTriangleCount, &data);
+	ndVector zero(ndVector::m_zero);
+	ndFastAabb box(dGetIdentityMatrix(), ndVector(ndFloat32(1.0e15f)));
+	ForAllSectors(box, zero, ndFloat32(1.0f), GetTriangleCount, &data);
 	m_trianglesCount = data.m_triangleCount;
 }
 
@@ -111,7 +111,24 @@ ndShapeStatic_bvh::~ndShapeStatic_bvh(void)
 {
 }
 
-dIntersectStatus ndShapeStatic_bvh::GetTriangleCount(void* const context, const dFloat32* const, dInt32, const dInt32* const, dInt32 indexCount, dFloat32)
+void ndShapeStatic_bvh::Save(const ndLoadSaveBase::ndSaveDescriptor& desc) const
+{
+	nd::TiXmlElement* const childNode = new nd::TiXmlElement(ClassName());
+	desc.m_rootNode->LinkEndChild(childNode);
+	childNode->SetAttribute("hashId", desc.m_nodeNodeHash);
+	ndShapeStaticMesh::Save(ndLoadSaveBase::ndSaveDescriptor(desc, childNode));
+
+	char fileName[1024];
+	sprintf(fileName, "%s_%d.bin", desc.m_assetName, desc.m_assetIndex);
+	xmlSaveParam(childNode, "assetName", "string", fileName);
+
+	char filePathName[2 * 1024];
+	sprintf(filePathName, "%s/%s", desc.m_assetPath, fileName);
+	desc.m_assetIndex++;
+	Serialize(filePathName);
+}
+
+dIntersectStatus ndShapeStatic_bvh::GetTriangleCount(void* const context, const ndFloat32* const, ndInt32, const ndInt32* const, ndInt32 indexCount, ndFloat32)
 {
 	ndMeshVertexListIndexList& data = (*(ndMeshVertexListIndexList*)context);
 
@@ -134,27 +151,27 @@ ndShapeInfo ndShapeStatic_bvh::GetShapeInfo() const
 	return info;
 }
 
-dIntersectStatus ndShapeStatic_bvh::ShowDebugPolygon(void* const context, const dFloat32* const polygon, dInt32 strideInBytes, const dInt32* const indexArray, dInt32 indexCount, dFloat32)
+dIntersectStatus ndShapeStatic_bvh::ShowDebugPolygon(void* const context, const ndFloat32* const polygon, ndInt32 strideInBytes, const ndInt32* const indexArray, ndInt32 indexCount, ndFloat32)
 {
-	dVector poly[128];
-	ndShapeDebugCallback::ndEdgeType edgeType[128];
+	ndVector poly[128];
+	ndShapeDebugNotify::ndEdgeType edgeType[128];
 
-	dInt32 stride = dInt32(strideInBytes / sizeof(dFloat32));
+	ndInt32 stride = ndInt32(strideInBytes / sizeof(ndFloat32));
 
 	ndCollisionBvhShowPolyContext& data = *(ndCollisionBvhShowPolyContext*)context;
-	for (dInt32 i = 0; i < indexCount; i++) 
+	for (ndInt32 i = 0; i < indexCount; i++) 
 	{
-		dVector p(&polygon[indexArray[i] * stride]);
-		poly[i] = data.m_matrix.TransformVector(p & dVector::m_triplexMask);
-		dInt32 edgeIndexType = (indexArray[i + indexCount + 2]) & D_CONCAVE_EDGE_MASK;
-		edgeType[i] = edgeIndexType ? ndShapeDebugCallback::m_open : ndShapeDebugCallback::m_shared;
+		ndVector p(&polygon[indexArray[i] * stride]);
+		poly[i] = data.m_matrix.TransformVector(p & ndVector::m_triplexMask);
+		ndInt32 edgeIndexType = (indexArray[i + indexCount + 2]) & D_CONCAVE_EDGE_MASK;
+		edgeType[i] = edgeIndexType ? ndShapeDebugNotify::m_open : ndShapeDebugNotify::m_shared;
 	}
 	//dAssert(0);
 	data.m_callback->DrawPolygon(indexCount, poly, edgeType);
 	return t_ContinueSearh;
 }
 
-void ndShapeStatic_bvh::DebugShape(const dMatrix& matrix, ndShapeDebugCallback& debugCallback) const
+void ndShapeStatic_bvh::DebugShape(const ndMatrix& matrix, ndShapeDebugNotify& debugCallback) const
 {
 	ndCollisionBvhShowPolyContext context;
 
@@ -162,17 +179,17 @@ void ndShapeStatic_bvh::DebugShape(const dMatrix& matrix, ndShapeDebugCallback& 
 	context.m_userData = (void*)this;
 	context.m_callback = &debugCallback;
 
-	dFastAabb box(dGetIdentityMatrix(), dVector(1.0e15f));
-	ForAllSectors(box, dVector::m_zero, dFloat32(1.0f), ShowDebugPolygon, &context);
+	ndFastAabb box(dGetIdentityMatrix(), ndVector(1.0e15f));
+	ForAllSectors(box, ndVector::m_zero, ndFloat32(1.0f), ShowDebugPolygon, &context);
 }
 
-dFloat32 ndShapeStatic_bvh::RayHit(void* const context, const dFloat32* const polygon, dInt32 strideInBytes, const dInt32* const indexArray, dInt32 indexCount)
+ndFloat32 ndShapeStatic_bvh::RayHit(void* const context, const ndFloat32* const polygon, ndInt32 strideInBytes, const ndInt32* const indexArray, ndInt32 indexCount)
 {
 	ndBvhRay& me = *((ndBvhRay*)context);
-	dVector normal(&polygon[indexArray[indexCount + 1] * (strideInBytes / sizeof(dFloat32))]);
-	normal = normal & dVector::m_triplexMask;
-	dFloat32 t = me.PolygonIntersect(normal, me.m_t, polygon, strideInBytes, indexArray, indexCount);
-	if (t <= (me.m_t * dFloat32(1.0001f))) 
+	ndVector normal(&polygon[indexArray[indexCount + 1] * (strideInBytes / sizeof(ndFloat32))]);
+	normal = normal & ndVector::m_triplexMask;
+	ndFloat32 t = me.PolygonIntersect(normal, me.m_t, polygon, strideInBytes, indexArray, indexCount);
+	if (t <= (me.m_t * ndFloat32(1.0001f))) 
 	{
 		me.m_t = t;
 		me.m_normal = normal;
@@ -181,20 +198,20 @@ dFloat32 ndShapeStatic_bvh::RayHit(void* const context, const dFloat32* const po
 	return t;
 }
 
-dFloat32 ndShapeStatic_bvh::RayCast(ndRayCastNotify& callback, const dVector& localP0, const dVector& localP1, dFloat32 maxT, const ndBody* const body, ndContactPoint& contactOut) const
+ndFloat32 ndShapeStatic_bvh::RayCast(ndRayCastNotify& callback, const ndVector& localP0, const ndVector& localP1, ndFloat32 maxT, const ndBody* const body, ndContactPoint& contactOut) const
 {
 	ndBvhRay ray(localP0, localP1);
-	ray.m_t = dFloat32(1.0f);
+	ray.m_t = ndFloat32(1.0f);
 	ray.m_me = this;
 	ray.m_myBody = ((ndBody*)body)->GetAsBodyKinematic();
 	ray.m_callback = &callback;
-	dFloat32 t = dFloat32 (1.2f);
+	ndFloat32 t = ndFloat32 (1.2f);
 	ForAllSectorsRayHit(ray, maxT, RayHit, &ray);
 	if (ray.m_t < maxT)
 	{
 		t = ray.m_t;
-		dAssert(ray.m_normal.m_w == dFloat32(0.0f));
-		dAssert(ray.m_normal.DotProduct(ray.m_normal).GetScalar() > dFloat32(0.0f));
+		dAssert(ray.m_normal.m_w == ndFloat32(0.0f));
+		dAssert(ray.m_normal.DotProduct(ray.m_normal).GetScalar() > ndFloat32(0.0f));
 		contactOut.m_normal = ray.m_normal.Normalize();
 		contactOut.m_shapeId0 = ray.m_id;
 		contactOut.m_shapeId1 = ray.m_id;
@@ -202,7 +219,7 @@ dFloat32 ndShapeStatic_bvh::RayCast(ndRayCastNotify& callback, const dVector& lo
 	return t;
 }
 
-dIntersectStatus ndShapeStatic_bvh::GetPolygon(void* const context, const dFloat32* const, dInt32, const dInt32* const indexArray, dInt32 indexCount, dFloat32 hitDistance)
+dIntersectStatus ndShapeStatic_bvh::GetPolygon(void* const context, const ndFloat32* const, ndInt32, const ndInt32* const indexArray, ndInt32 indexCount, ndFloat32 hitDistance)
 {
 	ndPolygonMeshDesc& data = (*(ndPolygonMeshDesc*)context);
 	if (data.m_faceCount >= D_MAX_COLLIDING_FACES) 
@@ -216,16 +233,16 @@ dIntersectStatus ndShapeStatic_bvh::GetPolygon(void* const context, const dFloat
 		return t_StopSearh;
 	}
 
-	dInt32 count = indexCount * 2 + 3;
+	ndInt32 count = indexCount * 2 + 3;
 
 	data.m_faceIndexCount[data.m_faceCount] = indexCount;
 	data.m_faceIndexStart[data.m_faceCount] = data.m_globalIndexCount;
 	data.m_hitDistance[data.m_faceCount] = hitDistance;
 	data.m_faceCount++;
-	dInt32* const dst = &data.m_faceVertexIndex[data.m_globalIndexCount];
+	ndInt32* const dst = &data.m_faceVertexIndex[data.m_globalIndexCount];
 
 	//the docks say memcpy is an intrinsic function but as usual this is another Microsoft lied
-	for (dInt32 i = 0; i < count; i++) 
+	for (ndInt32 i = 0; i < count; i++) 
 	{
 		dst[i] = indexArray[i];
 	}
@@ -250,19 +267,3 @@ void ndShapeStatic_bvh::GetCollidingFaces(ndPolygonMeshDesc* const data) const
 	ForAllSectors(*data, data->m_boxDistanceTravelInMeshSpace, data->m_maxT, GetPolygon, data);
 }
 
-void ndShapeStatic_bvh::Save(const dLoadSaveBase::dSaveDescriptor& desc) const
-{
-	nd::TiXmlElement* const childNode = new nd::TiXmlElement(ClassName());
-	desc.m_rootNode->LinkEndChild(childNode);
-	childNode->SetAttribute("hashId", desc.m_nodeNodeHash);
-	ndShapeStaticMesh::Save(dLoadSaveBase::dSaveDescriptor(desc, childNode));
-
-	char fileName[1024];
-	sprintf(fileName, "%s_%d.bin", desc.m_assetName, desc.m_assetIndex);
-	xmlSaveParam(childNode, "assetName", "string", fileName);
-
-	char filePathName[2 * 1024];
-	sprintf(filePathName, "%s/%s", desc.m_assetPath, fileName);
-	desc.m_assetIndex++;
-	Serialize(filePathName);
-}

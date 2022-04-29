@@ -19,7 +19,7 @@
 * 3. This notice may not be removed or altered from any source distribution.
 */
 
-#include "dCoreStdafx.h"
+#include "ndCoreStdafx.h"
 #include "ndCollisionStdafx.h"
 #include "ndContact.h"
 #include "ndShapeCylinder.h"
@@ -27,22 +27,22 @@
 
 D_CLASS_REFLECTION_IMPLEMENT_LOADER(ndShapeCylinder)
 
-dInt32 ndShapeCylinder::m_shapeRefCount = 0;
+ndInt32 ndShapeCylinder::m_shapeRefCount = 0;
 ndShapeConvex::ndConvexSimplexEdge ndShapeCylinder::m_edgeArray[D_TAPED_CYLINDER_SEGMENTS * 2 * 3];
 
-ndShapeCylinder::ndShapeCylinder(dFloat32 radius0, dFloat32 radius1, dFloat32 height)
+ndShapeCylinder::ndShapeCylinder(ndFloat32 radius0, ndFloat32 radius1, ndFloat32 height)
 	:ndShapeConvex(m_cylinder)
 {
 	Init(radius0, radius1, height);
 }
 
-ndShapeCylinder::ndShapeCylinder(const dLoadSaveBase::dLoadDescriptor& desc)
-	: ndShapeConvex(m_cylinder)
+ndShapeCylinder::ndShapeCylinder(const ndLoadSaveBase::ndLoadDescriptor& desc)
+	:ndShapeConvex(m_cylinder)
 {
 	const nd::TiXmlNode* const xmlNode = desc.m_rootNode;
-	dFloat32 radius0 = xmlGetFloat(xmlNode, "radius0");
-	dFloat32 radius1 = xmlGetFloat(xmlNode, "radius1");
-	dFloat32 height = xmlGetFloat(xmlNode, "height");
+	ndFloat32 radius0 = xmlGetFloat(xmlNode, "radius0");
+	ndFloat32 radius1 = xmlGetFloat(xmlNode, "radius1");
+	ndFloat32 height = xmlGetFloat(xmlNode, "height");
 	Init(radius0, radius1, height);
 }
 
@@ -54,22 +54,34 @@ ndShapeCylinder::~ndShapeCylinder()
 	ndShapeConvex::m_simplex = nullptr;
 }
 
-void ndShapeCylinder::Init(dFloat32 radio0, dFloat32 radio1, dFloat32 height)
+void ndShapeCylinder::Save(const ndLoadSaveBase::ndSaveDescriptor& desc) const
+{
+	nd::TiXmlElement* const childNode = new nd::TiXmlElement(ClassName());
+	desc.m_rootNode->LinkEndChild(childNode);
+	childNode->SetAttribute("hashId", desc.m_nodeNodeHash);
+	ndShapeConvex::Save(ndLoadSaveBase::ndSaveDescriptor(desc, childNode));
+
+	xmlSaveParam(childNode, "radius0", m_radius0);
+	xmlSaveParam(childNode, "radius1", m_radius1);
+	xmlSaveParam(childNode, "height", m_height * ndFloat32(2.0f));
+}
+
+void ndShapeCylinder::Init(ndFloat32 radio0, ndFloat32 radio1, ndFloat32 height)
 {
 	m_radius0 = dMax(dAbs(radio0), D_MIN_CONVEX_SHAPE_SIZE);
 	m_radius1 = dMax(dAbs(radio1), D_MIN_CONVEX_SHAPE_SIZE);
-	m_height = dMax(dAbs(height) * dFloat32(0.5f), D_MIN_CONVEX_SHAPE_SIZE);
+	m_height = dMax(dAbs(height) * ndFloat32(0.5f), D_MIN_CONVEX_SHAPE_SIZE);
 
-	dFloat32 angle = dFloat32(0.0f);
-	const dInt32 offset0 = 0;
-	const dInt32 offset1 = D_TAPED_CYLINDER_SEGMENTS;
-	for (dInt32 i = 0; i < D_TAPED_CYLINDER_SEGMENTS; i++) 
+	ndFloat32 angle = ndFloat32(0.0f);
+	const ndInt32 offset0 = 0;
+	const ndInt32 offset1 = D_TAPED_CYLINDER_SEGMENTS;
+	for (ndInt32 i = 0; i < D_TAPED_CYLINDER_SEGMENTS; i++) 
 	{
-		dFloat32 sinAngle = dSin(angle);
-		dFloat32 cosAngle = dCos(angle);
-		m_vertex[i + offset0] = dVector(-m_height, m_radius0 * cosAngle, m_radius0 * sinAngle, dFloat32(0.0f));
-		m_vertex[i + offset1] = dVector( m_height, m_radius1 * cosAngle, m_radius1 * sinAngle, dFloat32(0.0f));
-		angle += dFloat32 (2.0f) * dPi / D_TAPED_CYLINDER_SEGMENTS;
+		ndFloat32 sinAngle = ndSin(angle);
+		ndFloat32 cosAngle = ndCos(angle);
+		m_vertex[i + offset0] = ndVector(-m_height, m_radius0 * cosAngle, m_radius0 * sinAngle, ndFloat32(0.0f));
+		m_vertex[i + offset1] = ndVector( m_height, m_radius1 * cosAngle, m_radius1 * sinAngle, ndFloat32(0.0f));
+		angle += ndFloat32 (2.0f) * ndPi / D_TAPED_CYLINDER_SEGMENTS;
 	}
 
 	m_edgeCount = D_TAPED_CYLINDER_SEGMENTS * 6;
@@ -78,12 +90,12 @@ void ndShapeCylinder::Init(dFloat32 radio0, dFloat32 radio1, dFloat32 height)
 
 	if (!m_shapeRefCount) 
 	{
-		dPolyhedra polyhedra;
-		dInt32 wireframe[D_TAPED_CYLINDER_SEGMENTS];
+		ndPolyhedra polyhedra;
+		ndInt32 wireframe[D_TAPED_CYLINDER_SEGMENTS];
 
-		dInt32 j = D_TAPED_CYLINDER_SEGMENTS - 1;
+		ndInt32 j = D_TAPED_CYLINDER_SEGMENTS - 1;
 		polyhedra.BeginFace();
-		for (dInt32 i = 0; i < D_TAPED_CYLINDER_SEGMENTS; i++) 
+		for (ndInt32 i = 0; i < D_TAPED_CYLINDER_SEGMENTS; i++) 
 		{
 			wireframe[0] = j;
 			wireframe[1] = i;
@@ -93,13 +105,13 @@ void ndShapeCylinder::Init(dFloat32 radio0, dFloat32 radio1, dFloat32 height)
 			polyhedra.AddFace(4, wireframe);
 		}
 
-		for (dInt32 i = 0; i < D_TAPED_CYLINDER_SEGMENTS; i++) 
+		for (ndInt32 i = 0; i < D_TAPED_CYLINDER_SEGMENTS; i++) 
 		{
 			wireframe[i] = D_TAPED_CYLINDER_SEGMENTS - 1 - i;
 		}
 		polyhedra.AddFace(D_TAPED_CYLINDER_SEGMENTS, wireframe);
 
-		for (dInt32 i = 0; i < D_TAPED_CYLINDER_SEGMENTS; i++) 
+		for (ndInt32 i = 0; i < D_TAPED_CYLINDER_SEGMENTS; i++) 
 		{
 			wireframe[i] = i + D_TAPED_CYLINDER_SEGMENTS;
 		}
@@ -108,18 +120,18 @@ void ndShapeCylinder::Init(dFloat32 radio0, dFloat32 radio1, dFloat32 height)
 
 		dAssert(SanityCheck(polyhedra));
 
-		dUnsigned64 i = 0;
-		dPolyhedra::Iterator iter(polyhedra);
+		ndUnsigned64 i = 0;
+		ndPolyhedra::Iterator iter(polyhedra);
 		for (iter.Begin(); iter; iter++) 
 		{
-			dEdge* const edge = &(*iter);
+			ndEdge* const edge = &(*iter);
 			edge->m_userData = i;
 			i++;
 		}
 
 		for (iter.Begin(); iter; iter++) 
 		{
-			dEdge* const edge = &(*iter);
+			ndEdge* const edge = &(*iter);
 
 			ndConvexSimplexEdge* const ptr = &m_edgeArray[edge->m_userData];
 			ptr->m_vertex = edge->m_incidentVertex;
@@ -129,10 +141,10 @@ void ndShapeCylinder::Init(dFloat32 radio0, dFloat32 radio1, dFloat32 height)
 		}
 	}
 
-	m_profile[0] = dVector(m_height, m_radius1, dFloat32(0.0f), dFloat32(0.0f));
-	m_profile[1] = dVector(-m_height, m_radius0, dFloat32(0.0f), dFloat32(0.0f));
-	m_profile[2] = dVector(-m_height, -m_radius0, dFloat32(0.0f), dFloat32(0.0f));
-	m_profile[3] = dVector(m_height, -m_radius1, dFloat32(0.0f), dFloat32(0.0f));
+	m_profile[0] = ndVector(m_height, m_radius1, ndFloat32(0.0f), ndFloat32(0.0f));
+	m_profile[1] = ndVector(-m_height, m_radius0, ndFloat32(0.0f), ndFloat32(0.0f));
+	m_profile[2] = ndVector(-m_height, -m_radius0, ndFloat32(0.0f), ndFloat32(0.0f));
+	m_profile[3] = ndVector(m_height, -m_radius1, ndFloat32(0.0f), ndFloat32(0.0f));
 
 	m_shapeRefCount++;
 	ndShapeConvex::m_simplex = m_edgeArray;
@@ -146,38 +158,38 @@ ndShapeInfo ndShapeCylinder::GetShapeInfo() const
 
 	info.m_cylinder.m_radio0 = m_radius0;
 	info.m_cylinder.m_radio1 = m_radius1;
-	info.m_cylinder.m_height = dFloat32(2.0f) * m_height;
+	info.m_cylinder.m_height = ndFloat32(2.0f) * m_height;
 	return info;
 }
 
-void ndShapeCylinder::DebugShape(const dMatrix& matrix, ndShapeDebugCallback& debugCallback) const
+void ndShapeCylinder::DebugShape(const ndMatrix& matrix, ndShapeDebugNotify& debugCallback) const
 {
 	#define NUMBER_OF_DEBUG_SEGMENTS 24
-	dVector face[NUMBER_OF_DEBUG_SEGMENTS];
-	dVector pool[NUMBER_OF_DEBUG_SEGMENTS * 2];
-	ndShapeDebugCallback::ndEdgeType edgeType[NUMBER_OF_DEBUG_SEGMENTS];
-	memset(edgeType, ndShapeDebugCallback::m_shared, sizeof(edgeType));
+	ndVector face[NUMBER_OF_DEBUG_SEGMENTS];
+	ndVector pool[NUMBER_OF_DEBUG_SEGMENTS * 2];
+	ndShapeDebugNotify::ndEdgeType edgeType[NUMBER_OF_DEBUG_SEGMENTS];
+	memset(edgeType, ndShapeDebugNotify::m_shared, sizeof(edgeType));
 
-	dFloat32 angle = dFloat32(0.0f);
-	for (dInt32 i = 0; i < NUMBER_OF_DEBUG_SEGMENTS; i++) 
+	ndFloat32 angle = ndFloat32(0.0f);
+	for (ndInt32 i = 0; i < NUMBER_OF_DEBUG_SEGMENTS; i++) 
 	{
-		dFloat32 z = dSin(angle);
-		dFloat32 y = dCos(angle);
+		ndFloat32 z = ndSin(angle);
+		ndFloat32 y = ndCos(angle);
 		pool[i].m_x = -m_height;
 		pool[i].m_y = y * m_radius0;
 		pool[i].m_z = z * m_radius0;
-		pool[i].m_w = dFloat32 (0.0f);
+		pool[i].m_w = ndFloat32 (0.0f);
 		pool[i + NUMBER_OF_DEBUG_SEGMENTS].m_x = m_height;
 		pool[i + NUMBER_OF_DEBUG_SEGMENTS].m_y = y * m_radius1;
 		pool[i + NUMBER_OF_DEBUG_SEGMENTS].m_z = z * m_radius1;
-		pool[i + NUMBER_OF_DEBUG_SEGMENTS].m_w = dFloat32(0.0f);
-		angle += dFloat32 (2.0) * dPi / dFloat32(NUMBER_OF_DEBUG_SEGMENTS);
+		pool[i + NUMBER_OF_DEBUG_SEGMENTS].m_w = ndFloat32(0.0f);
+		angle += ndFloat32 (2.0) * ndPi / ndFloat32(NUMBER_OF_DEBUG_SEGMENTS);
 	}
 
-	matrix.TransformTriplex(&pool[0].m_x, sizeof(dVector), &pool[0].m_x, sizeof(dVector), NUMBER_OF_DEBUG_SEGMENTS * 2);
+	matrix.TransformTriplex(&pool[0].m_x, sizeof(ndVector), &pool[0].m_x, sizeof(ndVector), NUMBER_OF_DEBUG_SEGMENTS * 2);
 
-	dInt32 j = NUMBER_OF_DEBUG_SEGMENTS - 1;
-	for (dInt32 i = 0; i < NUMBER_OF_DEBUG_SEGMENTS; i++) 
+	ndInt32 j = NUMBER_OF_DEBUG_SEGMENTS - 1;
+	for (ndInt32 i = 0; i < NUMBER_OF_DEBUG_SEGMENTS; i++) 
 	{
 		face[0] = pool[j];
 		face[1] = pool[i];
@@ -187,55 +199,55 @@ void ndShapeCylinder::DebugShape(const dMatrix& matrix, ndShapeDebugCallback& de
 		debugCallback.DrawPolygon(4, face, edgeType);
 	}
 
-	for (dInt32 i = 0; i < NUMBER_OF_DEBUG_SEGMENTS; i++) 
+	for (ndInt32 i = 0; i < NUMBER_OF_DEBUG_SEGMENTS; i++) 
 	{
 		face[i] = pool[NUMBER_OF_DEBUG_SEGMENTS - 1 - i];
 	}
 	debugCallback.DrawPolygon(NUMBER_OF_DEBUG_SEGMENTS, face, edgeType);
 
-	for (dInt32 i = 0; i < NUMBER_OF_DEBUG_SEGMENTS; i++) 
+	for (ndInt32 i = 0; i < NUMBER_OF_DEBUG_SEGMENTS; i++) 
 	{
 		face[i] = pool[i + NUMBER_OF_DEBUG_SEGMENTS];
 	}
 	debugCallback.DrawPolygon(NUMBER_OF_DEBUG_SEGMENTS, face, edgeType);
 }
 
-dVector ndShapeCylinder::SupportVertexSpecialProjectPoint(const dVector& point, const dVector& dir) const
+ndVector ndShapeCylinder::SupportVertexSpecialProjectPoint(const ndVector& point, const ndVector& dir) const
 {
-	dAssert(dir.m_w == dFloat32(0.0f));
-	dAssert(dAbs(dir.DotProduct(dir).GetScalar() - dFloat32(1.0f)) < dFloat32(1.0e-3f));
+	dAssert(dir.m_w == ndFloat32(0.0f));
+	dAssert(dAbs(dir.DotProduct(dir).GetScalar() - ndFloat32(1.0f)) < ndFloat32(1.0e-3f));
 	return point + dir.Scale(D_PENETRATION_TOL);
 }
 
-dVector ndShapeCylinder::SupportVertex(const dVector& dir, dInt32* const) const
+ndVector ndShapeCylinder::SupportVertex(const ndVector& dir, ndInt32* const) const
 {
-	dAssert(dir.m_w == dFloat32(0.0f));
-	dAssert(dAbs(dir.DotProduct(dir).GetScalar() - dFloat32(1.0f)) < dFloat32(1.0e-3f));
+	dAssert(dir.m_w == ndFloat32(0.0f));
+	dAssert(dAbs(dir.DotProduct(dir).GetScalar() - ndFloat32(1.0f)) < ndFloat32(1.0e-3f));
 
-	if (dir.m_x < dFloat32(-0.9999f)) 
+	if (dir.m_x < ndFloat32(-0.9999f)) 
 	{
-		return dVector(-m_height, dFloat32(0.0f), dFloat32(0.0f), dFloat32(0.0f));
+		return ndVector(-m_height, ndFloat32(0.0f), ndFloat32(0.0f), ndFloat32(0.0f));
 	}
-	else if (dir.m_x > dFloat32(0.9999f)) 
+	else if (dir.m_x > ndFloat32(0.9999f)) 
 	{
-		return dVector(m_height, dFloat32(0.0f), dFloat32(0.0f), dFloat32(0.0f));
+		return ndVector(m_height, ndFloat32(0.0f), ndFloat32(0.0f), ndFloat32(0.0f));
 	}
 
-	dVector dir_yz(dir);
-	dir_yz.m_x = dFloat32(0.0f);
-	dAssert(dir_yz.DotProduct(dir_yz).GetScalar() > dFloat32(0.0f));
-	//dFloat32 mag2 = dir_yz.DotProduct(dir_yz).GetScalar();
-	//dAssert(mag2 > dFloat32(0.0f));
-	//dir_yz = dir_yz.Scale(dFloat32(1.0f) / dSqrt(mag2));
+	ndVector dir_yz(dir);
+	dir_yz.m_x = ndFloat32(0.0f);
+	dAssert(dir_yz.DotProduct(dir_yz).GetScalar() > ndFloat32(0.0f));
+	//ndFloat32 mag2 = dir_yz.DotProduct(dir_yz).GetScalar();
+	//dAssert(mag2 > ndFloat32(0.0f));
+	//dir_yz = dir_yz.Scale(ndFloat32(1.0f) / dSqrt(mag2));
 	dir_yz = dir_yz.Normalize();
-	dVector p0(dir_yz.Scale(m_radius0));
-	dVector p1(dir_yz.Scale(m_radius1));
+	ndVector p0(dir_yz.Scale(m_radius0));
+	ndVector p1(dir_yz.Scale(m_radius1));
 
 	p0.m_x = -m_height;
 	p1.m_x = m_height;
 
-	dFloat32 dist0 = dir.DotProduct(p0).GetScalar();
-	dFloat32 dist1 = dir.DotProduct(p1).GetScalar();
+	ndFloat32 dist0 = dir.DotProduct(p0).GetScalar();
+	ndFloat32 dist1 = dir.DotProduct(p1).GetScalar();
 
 	if (dist1 >= dist0) 
 	{
@@ -244,35 +256,35 @@ dVector ndShapeCylinder::SupportVertex(const dVector& dir, dInt32* const) const
 	return p0;
 }
 
-dVector ndShapeCylinder::SupportVertexSpecial(const dVector& dir, dFloat32 skinThickness, dInt32* const) const
+ndVector ndShapeCylinder::SupportVertexSpecial(const ndVector& dir, ndFloat32 skinMargin, ndInt32* const) const
 {
-	dAssert(dir.m_w == dFloat32(0.0f));
-	dAssert(dAbs(dir.DotProduct(dir).GetScalar() - dFloat32(1.0f)) < dFloat32(1.0e-3f));
+	dAssert(dir.m_w == ndFloat32(0.0f));
+	dAssert(dAbs(dir.DotProduct(dir).GetScalar() - ndFloat32(1.0f)) < ndFloat32(1.0e-3f));
 
-	const dFloat32 thickness = D_PENETRATION_TOL + skinThickness;
-	if (dir.m_x < dFloat32(-0.9999f)) 
+	const ndFloat32 thickness = D_PENETRATION_TOL + skinMargin;
+	if (dir.m_x < ndFloat32(-0.9999f)) 
 	{
-		return dVector(-(m_height - thickness), dFloat32(0.0f), dFloat32(0.0f), dFloat32(0.0f));
+		return ndVector(-(m_height - thickness), ndFloat32(0.0f), ndFloat32(0.0f), ndFloat32(0.0f));
 	}
-	else if (dir.m_x > dFloat32(0.9999f)) 
+	else if (dir.m_x > ndFloat32(0.9999f)) 
 	{
-		return dVector(m_height - thickness, dFloat32(0.0f), dFloat32(0.0f), dFloat32(0.0f));
+		return ndVector(m_height - thickness, ndFloat32(0.0f), ndFloat32(0.0f), ndFloat32(0.0f));
 	}
 
-	dVector dir_yz(dir);
-	dir_yz.m_x = dFloat32(0.0f);
-	//dFloat32 mag2 = dir_yz.DotProduct(dir_yz).GetScalar();
-	//dAssert(mag2 > dFloat32(0.0f));
-	//dir_yz = dir_yz.Scale(dFloat32(1.0f) / dgSqrt(mag2));
+	ndVector dir_yz(dir);
+	dir_yz.m_x = ndFloat32(0.0f);
+	//ndFloat32 mag2 = dir_yz.DotProduct(dir_yz).GetScalar();
+	//dAssert(mag2 > ndFloat32(0.0f));
+	//dir_yz = dir_yz.Scale(ndFloat32(1.0f) / dgSqrt(mag2));
 	dir_yz = dir_yz.Normalize();
-	dVector p0(dir_yz.Scale(m_radius0 - thickness));
-	dVector p1(dir_yz.Scale(m_radius1 - thickness));
+	ndVector p0(dir_yz.Scale(m_radius0 - thickness));
+	ndVector p1(dir_yz.Scale(m_radius1 - thickness));
 
 	p0.m_x = -(m_height - thickness);
 	p1.m_x = m_height - thickness;
 
-	dFloat32 dist0 = dir.DotProduct(p0).GetScalar();
-	dFloat32 dist1 = dir.DotProduct(p1).GetScalar();
+	ndFloat32 dist0 = dir.DotProduct(p0).GetScalar();
+	ndFloat32 dist1 = dir.DotProduct(p1).GetScalar();
 
 	if (dist1 >= dist0) 
 	{
@@ -281,42 +293,42 @@ dVector ndShapeCylinder::SupportVertexSpecial(const dVector& dir, dFloat32 skinT
 	return p0;
 }
 
-dFloat32 ndShapeCylinder::RayCast(ndRayCastNotify& callback, const dVector& r0, const dVector& r1, dFloat32 maxT, const ndBody* const body, ndContactPoint& contactOut) const
+ndFloat32 ndShapeCylinder::RayCast(ndRayCastNotify& callback, const ndVector& r0, const ndVector& r1, ndFloat32 maxT, const ndBody* const body, ndContactPoint& contactOut) const
 {
 	return ndShapeConvex::RayCast(callback, r0, r1, maxT, body, contactOut);
 }
 
-dInt32 ndShapeCylinder::CalculatePlaneIntersection(const dVector& normal, const dVector& origin, dVector* const contactsOut) const
+ndInt32 ndShapeCylinder::CalculatePlaneIntersection(const ndVector& normal, const ndVector& origin, ndVector* const contactsOut) const
 {
-	dInt32 count = 0;
-	const dFloat32 inclination = dFloat32(0.9998f);
-	if (normal.m_x < dFloat32(-0.995f)) 
+	ndInt32 count = 0;
+	const ndFloat32 inclination = ndFloat32(0.9998f);
+	if (normal.m_x < ndFloat32(-0.995f)) 
 	{
 		if (normal.m_x < -inclination) 
 		{
-			dMatrix matrix(normal);
+			ndMatrix matrix(normal);
 			matrix.m_posit.m_x = origin.m_x;
 			count = BuildCylinderCapPoly(m_radius0, matrix, contactsOut);
 			//count = RectifyConvexSlice(n, normal, contactsOut);
 		}
 		else 
 		{
-			dFloat32 magInv = dRsqrt(normal.m_y * normal.m_y + normal.m_z * normal.m_z);
-			dFloat32 cosAng = normal.m_y * magInv;
-			dFloat32 sinAng = normal.m_z * magInv;
+			ndFloat32 magInv = ndRsqrt(normal.m_y * normal.m_y + normal.m_z * normal.m_z);
+			ndFloat32 cosAng = normal.m_y * magInv;
+			ndFloat32 sinAng = normal.m_z * magInv;
 
-			dAssert(dAbs(normal.m_z * cosAng - normal.m_y * sinAng) < dFloat32(1.0e-4f));
-			dVector normal1(normal.m_x, normal.m_y * cosAng + normal.m_z * sinAng, dFloat32(0.0f), dFloat32(0.0f));
-			dVector origin1(origin.m_x, origin.m_y * cosAng + origin.m_z * sinAng, origin.m_z * cosAng - origin.m_y * sinAng, dFloat32(0.0f));
+			dAssert(dAbs(normal.m_z * cosAng - normal.m_y * sinAng) < ndFloat32(1.0e-4f));
+			ndVector normal1(normal.m_x, normal.m_y * cosAng + normal.m_z * sinAng, ndFloat32(0.0f), ndFloat32(0.0f));
+			ndVector origin1(origin.m_x, origin.m_y * cosAng + origin.m_z * sinAng, origin.m_z * cosAng - origin.m_y * sinAng, ndFloat32(0.0f));
 
 			count = ndShapeConvex::CalculatePlaneIntersection(normal1, origin1, contactsOut);
 			if (count > 6) 
 			{
-				dInt32 dy = 2 * 6;
-				dInt32 dx = 2 * count;
-				dInt32 acc = dy - count;
-				dInt32 index = 0;
-				for (dInt32 i = 0; i < count; i++) 
+				ndInt32 dy = 2 * 6;
+				ndInt32 dx = 2 * count;
+				ndInt32 acc = dy - count;
+				ndInt32 index = 0;
+				for (ndInt32 i = 0; i < count; i++) 
 				{
 					if (acc > 0) 
 					{
@@ -329,42 +341,42 @@ dInt32 ndShapeCylinder::CalculatePlaneIntersection(const dVector& normal, const 
 				count = index;
 			}
 
-			for (dInt32 i = 0; i < count; i++) 
+			for (ndInt32 i = 0; i < count; i++) 
 			{
-				dFloat32 y = contactsOut[i].m_y;
-				dFloat32 z = contactsOut[i].m_z;
+				ndFloat32 y = contactsOut[i].m_y;
+				ndFloat32 z = contactsOut[i].m_z;
 				contactsOut[i].m_y = y * cosAng - z * sinAng;
 				contactsOut[i].m_z = z * cosAng + y * sinAng;
 			}
 		}
 	}
-	else if (normal.m_x > dFloat32(0.995f)) 
+	else if (normal.m_x > ndFloat32(0.995f)) 
 	{
 		if (normal.m_x > inclination) 
 		{
-			dMatrix matrix(normal);
+			ndMatrix matrix(normal);
 			matrix.m_posit.m_x = origin.m_x;
 			count = BuildCylinderCapPoly(m_radius1, matrix, contactsOut);
 			//count = RectifyConvexSlice(n, normal, contactsOut);
 		}
 		else 
 		{
-			dFloat32 magInv = dRsqrt(normal.m_y * normal.m_y + normal.m_z * normal.m_z);
-			dFloat32 cosAng = normal.m_y * magInv;
-			dFloat32 sinAng = normal.m_z * magInv;
+			ndFloat32 magInv = ndRsqrt(normal.m_y * normal.m_y + normal.m_z * normal.m_z);
+			ndFloat32 cosAng = normal.m_y * magInv;
+			ndFloat32 sinAng = normal.m_z * magInv;
 
-			dAssert(dAbs(normal.m_z * cosAng - normal.m_y * sinAng) < dFloat32(1.0e-4f));
-			dVector normal1(normal.m_x, normal.m_y * cosAng + normal.m_z * sinAng, dFloat32(0.0f), dFloat32(0.0f));
-			dVector origin1(origin.m_x, origin.m_y * cosAng + origin.m_z * sinAng, origin.m_z * cosAng - origin.m_y * sinAng, dFloat32(0.0f));
+			dAssert(dAbs(normal.m_z * cosAng - normal.m_y * sinAng) < ndFloat32(1.0e-4f));
+			ndVector normal1(normal.m_x, normal.m_y * cosAng + normal.m_z * sinAng, ndFloat32(0.0f), ndFloat32(0.0f));
+			ndVector origin1(origin.m_x, origin.m_y * cosAng + origin.m_z * sinAng, origin.m_z * cosAng - origin.m_y * sinAng, ndFloat32(0.0f));
 
 			count = ndShapeConvex::CalculatePlaneIntersection(normal1, origin1, contactsOut);
 			if (count > 6) 
 			{
-				dInt32 dy = 2 * 6;
-				dInt32 dx = 2 * count;
-				dInt32 acc = dy - count;
-				dInt32 index = 0;
-				for (dInt32 i = 0; i < count; i++) 
+				ndInt32 dy = 2 * 6;
+				ndInt32 dx = 2 * count;
+				ndInt32 acc = dy - count;
+				ndInt32 index = 0;
+				for (ndInt32 i = 0; i < count; i++) 
 				{
 					if (acc > 0) 
 					{
@@ -377,10 +389,10 @@ dInt32 ndShapeCylinder::CalculatePlaneIntersection(const dVector& normal, const 
 				count = index;
 			}
 
-			for (dInt32 i = 0; i < count; i++) 
+			for (ndInt32 i = 0; i < count; i++) 
 			{
-				dFloat32 y = contactsOut[i].m_y;
-				dFloat32 z = contactsOut[i].m_z;
+				ndFloat32 y = contactsOut[i].m_y;
+				ndFloat32 z = contactsOut[i].m_z;
 				contactsOut[i].m_y = y * cosAng - z * sinAng;
 				contactsOut[i].m_z = z * cosAng + y * sinAng;
 			}
@@ -388,24 +400,24 @@ dInt32 ndShapeCylinder::CalculatePlaneIntersection(const dVector& normal, const 
 	}
 	else 
 	{
-		dFloat32 magInv = dRsqrt(normal.m_y * normal.m_y + normal.m_z * normal.m_z);
-		dFloat32 cosAng = normal.m_y * magInv;
-		dFloat32 sinAng = normal.m_z * magInv;
+		ndFloat32 magInv = ndRsqrt(normal.m_y * normal.m_y + normal.m_z * normal.m_z);
+		ndFloat32 cosAng = normal.m_y * magInv;
+		ndFloat32 sinAng = normal.m_z * magInv;
 
-		dAssert(dAbs(normal.m_z * cosAng - normal.m_y * sinAng) < dFloat32(1.0e-4f));
-		dVector normal1(normal.m_x, normal.m_y * cosAng + normal.m_z * sinAng, dFloat32(0.0f), dFloat32(0.0f));
-		dVector origin1(origin.m_x, origin.m_y * cosAng + origin.m_z * sinAng, origin.m_z * cosAng - origin.m_y * sinAng, dFloat32(0.0f));
+		dAssert(dAbs(normal.m_z * cosAng - normal.m_y * sinAng) < ndFloat32(1.0e-4f));
+		ndVector normal1(normal.m_x, normal.m_y * cosAng + normal.m_z * sinAng, ndFloat32(0.0f), ndFloat32(0.0f));
+		ndVector origin1(origin.m_x, origin.m_y * cosAng + origin.m_z * sinAng, origin.m_z * cosAng - origin.m_y * sinAng, ndFloat32(0.0f));
 
 		count = 0;
-		dInt32 i0 = 3;
-		dVector test0((m_profile[i0] - origin1).DotProduct(normal1));
-		for (dInt32 i = 0; (i < 4) && (count < 2); i++) 
+		ndInt32 i0 = 3;
+		ndVector test0((m_profile[i0] - origin1).DotProduct(normal1));
+		for (ndInt32 i = 0; (i < 4) && (count < 2); i++) 
 		{
-			dVector test1((m_profile[i] - origin1).DotProduct(normal1));
-			dVector acrossPlane(test0 * test1);
+			ndVector test1((m_profile[i] - origin1).DotProduct(normal1));
+			ndVector acrossPlane(test0 * test1);
 			if (acrossPlane.m_x < 0.0f) 
 			{
-				dVector step(m_profile[i] - m_profile[i0]);
+				ndVector step(m_profile[i] - m_profile[i0]);
 				contactsOut[count] = m_profile[i0] - step.Scale(test0.m_x / (step.DotProduct(normal1).m_x));
 				count++;
 			}
@@ -413,10 +425,10 @@ dInt32 ndShapeCylinder::CalculatePlaneIntersection(const dVector& normal, const 
 			test0 = test1;
 		}
 
-		for (dInt32 i = 0; i < count; i++) 
+		for (ndInt32 i = 0; i < count; i++) 
 		{
-			dFloat32 y = contactsOut[i].m_y;
-			dFloat32 z = contactsOut[i].m_z;
+			ndFloat32 y = contactsOut[i].m_y;
+			ndFloat32 z = contactsOut[i].m_z;
 			contactsOut[i].m_y = y * cosAng - z * sinAng;
 			contactsOut[i].m_z = z * cosAng + y * sinAng;
 		}
@@ -424,19 +436,8 @@ dInt32 ndShapeCylinder::CalculatePlaneIntersection(const dVector& normal, const 
 	return count;
 }
 
-void ndShapeCylinder::CalculateAabb(const dMatrix& matrix, dVector& p0, dVector& p1) const
+void ndShapeCylinder::CalculateAabb(const ndMatrix& matrix, ndVector& p0, ndVector& p1) const
 {
 	ndShapeConvex::CalculateAabb(matrix, p0, p1);
 }
 
-void ndShapeCylinder::Save(const dLoadSaveBase::dSaveDescriptor& desc) const
-{
-	nd::TiXmlElement* const childNode = new nd::TiXmlElement(ClassName());
-	desc.m_rootNode->LinkEndChild(childNode);
-	childNode->SetAttribute("hashId", desc.m_nodeNodeHash);
-	ndShapeConvex::Save(dLoadSaveBase::dSaveDescriptor(desc, childNode));
-
-	xmlSaveParam(childNode, "radius0", m_radius0);
-	xmlSaveParam(childNode, "radius1", m_radius1);
-	xmlSaveParam(childNode, "height", m_height * dFloat32 (2.0f));
-}

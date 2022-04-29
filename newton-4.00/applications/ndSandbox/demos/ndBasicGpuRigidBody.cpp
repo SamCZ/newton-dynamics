@@ -20,140 +20,129 @@
 #include "ndDemoEntityManager.h"
 #include "ndDemoInstanceEntity.h"
 
-//class ndZeroGravityNotify : public ndDemoEntityNotify
-//{
-//	public:
-//	ndZeroGravityNotify(ndDemoEntityManager* const manager, ndDemoEntity* const entity)
-//		:ndDemoEntityNotify(manager, entity)
-//	{
-//	}
-//
-//	//void OnTransform(dInt32 threadIndex, const dMatrix& matrix)
-//	//{
-//	//	dMatrix parentMatrix(m_chassis->GetMatrix());
-//	//	dMatrix localMatrix(matrix * parentMatrix.Inverse());
-//	//
-//	//	dQuaternion rot(localMatrix);
-//	//	dScopeSpinLock lock(m_entity->GetLock());
-//	//	m_entity->SetMatrixUsafe(rot, localMatrix.m_posit);
-//	//}
-//};
 
-//static void AddShape(ndDemoEntityManager* const scene, const dMatrix& location,
-//	ndDemoInstanceEntity* const rootEntity,
-//	const ndShapeInstance& shape, dFloat32 mass, dFloat32 density)
-//{
-//	dMatrix matrix(location);
-//	ndPhysicsWorld* const world = scene->GetWorld();
-//
-//	ndBodyDynamic* const body = new ndBodyDynamic();
-//	ndDemoEntity* const entity = new ndDemoEntity(matrix, rootEntity);
-//
-//	body->SetNotifyCallback(new ndDemoEntityNotify(scene, entity));
-//	body->SetMatrix(matrix);
-//	body->SetCollisionShape(shape);
-//	body->SetMassMatrix(mass, shape);
-//
-//	const dVector omega(dGaussianRandom(2.0f), dGaussianRandom(4.0f), dGaussianRandom(3.0f), 0.0f);
-//	body->SetOmega(omega);
-//
-//	ndBodyNotify* const notification = body->GetNotifyCallback();
-//	notification->SetGravity(dVector::m_zero);
-//
-//	// save the density with the body shape.
-//	ndShapeMaterial material;
-//	material.m_userParam[0].m_floatData = density;
-//	body->GetCollisionShape().SetMaterial(material);
-//
-//	world->AddBody(body);
-//}
+static void AddShape(ndDemoEntityManager* const scene, const ndMatrix& location,
+	ndDemoInstanceEntity* const rootEntity,
+	const ndShapeInstance& shape, ndFloat32 mass, ndFloat32 density)
+{
+	ndMatrix matrix(location);
+	ndPhysicsWorld* const world = scene->GetWorld();
 
-//static void AddSphere(ndDemoEntityManager* const scene, const dVector& origin, dFloat32 density)
+	ndBodyDynamic* const body = new ndBodyDynamic();
+	ndDemoEntity* const entity = new ndDemoEntity(matrix, rootEntity);
+
+	body->SetNotifyCallback(new ndDemoEntityNotify(scene, entity));
+	body->SetMatrix(matrix);
+	body->SetCollisionShape(shape);
+	body->SetMassMatrix(mass, shape);
+
+	const ndVector omega(dGaussianRandom(2.0f), dGaussianRandom(4.0f), dGaussianRandom(3.0f), 0.0f);
+	body->SetOmega(omega);
+
+	ndBodyNotify* const notification = body->GetNotifyCallback();
+	notification->SetGravity(ndVector::m_zero);
+
+	// save the density with the body shape.
+	ndShapeMaterial material;
+	material.m_userParam[0].m_floatData = density;
+	body->GetCollisionShape().SetMaterial(material);
+
+	world->AddBody(body);
+}
+
+//static void AddSphere(ndDemoEntityManager* const scene, const ndVector& origin, ndFloat32 density)
 //{
-//	dFloat32 diameter = 0.5f;
+//	ndFloat32 diameter = 0.5f;
 //	ndShapeInstance shape(new ndShapeSphere(diameter));
 //
-//	dMatrix matrix(dPitchMatrix(15.0f*dDegreeToRad) * dRollMatrix(15.0f*dDegreeToRad));
+//	ndMatrix matrix(dPitchMatrix(15.0f*ndDegreeToRad) * dRollMatrix(15.0f*ndDegreeToRad));
 //	matrix.m_posit = origin;
 //
 //	AddShape(scene, matrix, shape, 10.0f, density);
 //}
 //
-//static void AddCapsule(ndDemoEntityManager* const scene, const dVector& origin, dFloat32 density)
+//static void AddCapsule(ndDemoEntityManager* const scene, const ndVector& origin, ndFloat32 density)
 //{
-//	dFloat32 diameter = 1.0f;
+//	ndFloat32 diameter = 1.0f;
 //	ndShapeInstance shape(new ndShapeCapsule(diameter * 0.5f, diameter * 0.5f, diameter * 1.0f));
 //
-//	//dMatrix matrix(dRollMatrix(90.0f * dDegreeToRad));
-//	dMatrix matrix(dPitchMatrix(35.0f*dDegreeToRad) * dRollMatrix(25.0f*dDegreeToRad));
+//	//ndMatrix matrix(dRollMatrix(90.0f * ndDegreeToRad));
+//	ndMatrix matrix(dPitchMatrix(35.0f*ndDegreeToRad) * dRollMatrix(25.0f*ndDegreeToRad));
 //	matrix.m_posit = origin;
 //
 //	AddShape(scene, matrix, shape, 10.0f, density);
 //}
 
-//static void AddConvexHull(ndDemoEntityManager* const scene, const dVector& origin, const dInt32 segments, dFloat32 density)
+//static void AddConvexHull(ndDemoEntityManager* const scene, const ndVector& origin, const ndInt32 segments, ndFloat32 density)
 //{
-//	dVector points[1024];
-//	dInt32 count = 0;
-//	for (dInt32 i = 0; i < segments; i++)
+//	ndVector points[1024];
+//	ndInt32 count = 0;
+//	for (ndInt32 i = 0; i < segments; i++)
 //	{
-//		dFloat32 y = 0.7f * dCos((dFloat32(2.0f) * dPi) * i / segments);
-//		dFloat32 z = 0.7f * dSin((dFloat32(2.0f) * dPi) * i / segments);
-//		points[count++] = dVector(-0.5f, 0.7f * y, 0.7f* z, 0.0f);
-//		points[count++] = dVector( 0.5f, 0.7f * y, 0.7f* z, 0.0f);
-//		//points[count++] = dVector(0.25f, y, z, 0.0f);
-//		points[count++] = dVector(-0.25f, y, z, 0.0f);
+//		ndFloat32 y = 0.7f * dCos((ndFloat32(2.0f) * dPi) * i / segments);
+//		ndFloat32 z = 0.7f * dSin((ndFloat32(2.0f) * dPi) * i / segments);
+//		points[count++] = ndVector(-0.5f, 0.7f * y, 0.7f* z, 0.0f);
+//		points[count++] = ndVector( 0.5f, 0.7f * y, 0.7f* z, 0.0f);
+//		//points[count++] = ndVector(0.25f, y, z, 0.0f);
+//		points[count++] = ndVector(-0.25f, y, z, 0.0f);
 //	}
 //
 //	//ndShapeInstance shape(new ndShapeBox(1.0f, 2.0f, 0.7f));
-//	ndShapeInstance shape(new ndShapeConvexHull(count, sizeof (dVector), 0.0f, &points[0].m_x));
-//	dMatrix matrix(dPitchMatrix(135.0f*dDegreeToRad) * dRollMatrix(75.0f*dDegreeToRad));
+//	ndShapeInstance shape(new ndShapeConvexHull(count, sizeof (ndVector), 0.0f, &points[0].m_x));
+//	ndMatrix matrix(dPitchMatrix(135.0f*ndDegreeToRad) * dRollMatrix(75.0f*ndDegreeToRad));
 //	matrix.m_posit = origin;
 //
 //	AddShape(scene, matrix, shape, 10.0f, density);
 //}
 
-//static void AddBox(ndDemoEntityManager* const scene, const dVector& origin, dFloat32 density)
-//{
-//	ndShapeInstance shape(new ndShapeBox(1.0f, 2.0f, 0.7f));
-//	dMatrix matrix(dPitchMatrix(10.0f*dDegreeToRad) * dRollMatrix(150.0f*dDegreeToRad));
-//	matrix.m_posit = origin;
-//
-//	ndDemoMeshIntance* const geometry = new ndDemoMeshIntance("shape", scene->GetShaderCache(), &shape, "marble.tga", "marble.tga", "marble.tga");
-//
-//	ndDemoInstanceEntity* const rootEntity = new ndDemoInstanceEntity(geometry);
-//	scene->AddEntity(rootEntity);
-//
-//	dInt32 count = 30;
-//	dFloat32 step = 4.0f;
-//count = 25;
-//
-//	for (dInt32 i = 0; i < count; i ++)
-//	{
-//		for (dInt32 j = 0; j < count; j++)
-//		{
-//			for (dInt32 k = 0; k < count; k++)
-//			{
-//				dVector posit(step * (i - count/2), step * (j - count / 2), step * (k - count / 2), 0.0f);
-//				dQuaternion rotation(dGaussianRandom(1.0f), dGaussianRandom(1.0f), dGaussianRandom(1.0f), dGaussianRandom(1.0f) + 0.1f);
-//				//matrix.m_posit = origin + posit;
-//				dMatrix location(rotation, origin + posit);
-//				AddShape(scene, location, rootEntity, shape, 10.0f, density);
-//			}
-//		}
-//	}
-//
-//	geometry->Release();
-//}
+static void AddBox(ndDemoEntityManager* const scene, const ndVector& origin, ndFloat32 density, int count)
+{
+	ndShapeInstance shape(new ndShapeBox(1.0f, 2.0f, 0.7f));
+	ndMatrix matrix(dPitchMatrix(10.0f*ndDegreeToRad) * dRollMatrix(150.0f*ndDegreeToRad));
+	matrix.m_posit = origin;
+
+	ndDemoMeshIntance* const geometry = new ndDemoMeshIntance("shape", scene->GetShaderCache(), &shape, "marble.tga", "marble.tga", "marble.tga");
+
+	ndDemoInstanceEntity* const rootEntity = new ndDemoInstanceEntity(geometry);
+	scene->AddEntity(rootEntity);
+
+	ndFloat32 step = 4.0f;
+	for (ndInt32 j = 0; j < count; j ++)
+	{
+		for (ndInt32 k = 0; k < count; k++)
+		{
+			for (ndInt32 i = 0; i < count; i++)
+			{
+				ndVector posit(step * (i - count/2), step * j, step * (k - count / 2), 0.0f);
+				ndQuaternion rotation(dGaussianRandom(1.0f), dGaussianRandom(1.0f), dGaussianRandom(1.0f), dGaussianRandom(1.0f) + 0.1f);
+				ndMatrix location(rotation, origin + posit);
+				AddShape(scene, location, rootEntity, shape, 10.0f, density);
+			}
+		}
+	}
+
+	geometry->Release();
+}
 
 void ndBasicGpuRigidBody(ndDemoEntityManager* const scene)
 {
 	// build a floor
 	BuildFloorBox(scene, dGetIdentityMatrix());
 
-	AddBox(scene, dVector(0.0f, 0.0f, -3.0f, 1.0f), 0.6f, 5.0f, 0.5f, 3.0f);
+	//ndInt32 count = 50;
+	//ndInt32 count = 40;
+	ndInt32 count = 32;
+	//ndInt32 count = 28;
+	//ndInt32 count = 10;
+	//ndInt32 count = 8;
+	//ndInt32 count = 7;
+	//ndInt32 count = 6;
+	//ndInt32 count = 5;
+	//ndInt32 count = 4;
+	//ndInt32 count = 1;
+	AddBox(scene, ndVector(0.0f, 0.5f, -3.0f, 1.0f), 1.0f, count);
 
-	dQuaternion rot;
-	dVector origin(-20.0f, 5.0f, 0.0f, 0.0f);
+	ndQuaternion rot;
+	ndVector origin(-15.0f - 5.0f * count, 10.0f, 0.0f, 0.0f);
 	scene->SetCameraMatrix(rot, origin);
 }

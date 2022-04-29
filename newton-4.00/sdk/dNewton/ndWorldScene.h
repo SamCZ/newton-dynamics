@@ -22,34 +22,22 @@
 #include "ndNewtonStdafx.h"
 #include "ndWorld.h"
 
-template<class scene>
-class ndWorldScene: public scene
+class ndWorldScene : public ndScene
 {
 	public:
-	ndWorldScene(ndWorld* const world)
-		:scene()
-		,m_world(world)
-	{
-	}
+	D_NEWTON_API ndWorldScene(ndWorld* const world);
+	D_NEWTON_API ndWorldScene(const ndWorldScene& src);
+	D_NEWTON_API virtual ~ndWorldScene();
 
-	ndWorld* GetWorld() const
-	{
-		return m_world;
-	}
+	protected:
+	virtual void ThreadFunction();
+
+	virtual ndWorld* GetWorld() const;
 
 	ndWorld* m_world;
 };
 
-class ndWorldDefaultScene: public ndWorldScene<ndScene>
+inline ndWorld* ndWorldScene::GetWorld() const
 {
-	public:
-	ndWorldDefaultScene(ndWorld* const world)
-		:ndWorldScene<ndScene>(world)
-	{
-	}
-
-	void ThreadFunction()
-	{
-		m_world->ThreadFunction();
-	}
-};
+	return m_world;
+}

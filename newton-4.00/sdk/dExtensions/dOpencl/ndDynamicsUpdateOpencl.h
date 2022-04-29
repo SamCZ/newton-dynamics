@@ -30,7 +30,7 @@ class ndOpenclSystem;
 class ndDynamicsUpdateOpencl : public ndDynamicsUpdate
 {
 	public:
-	ndDynamicsUpdateOpencl(ndWorld* const world, dInt32 driverNumber);
+	ndDynamicsUpdateOpencl(ndWorld* const world, ndInt32 driverNumber);
 	virtual ~ndDynamicsUpdateOpencl();
 
 	virtual const char* GetStringId() const;
@@ -57,7 +57,6 @@ class ndDynamicsUpdateOpencl : public ndDynamicsUpdate
 	void IntegrateUnconstrainedBodies();
 
 	void DetermineSleepStates();
-	void UpdateIslandState(const ndIsland& island);
 	void GetJacobianDerivatives(ndConstraint* const joint);
 
 	ndOpenclSystem* m_opencl;

@@ -9,13 +9,8 @@
 * freely
 */
 
-// ndJointKinematicController.h: interface for the ndJointKinematicController class.
-//
-//////////////////////////////////////////////////////////////////////
-
-#ifndef __D_JOINT_KINEMATIC_CONTROLLER_H__
-#define __D_JOINT_KINEMATIC_CONTROLLER_H__
-
+#ifndef __ND_JOINT_KINEMATIC_CONTROLLER_H__
+#define __ND_JOINT_KINEMATIC_CONTROLLER_H__
 
 #include "ndNewtonStdafx.h"
 #include "ndJointBilateralConstraint.h"
@@ -33,37 +28,38 @@ class ndJointKinematicController: public ndJointBilateralConstraint
 	};
 
 	D_CLASS_REFLECTION(ndJointKinematicController);
-	D_NEWTON_API ndJointKinematicController(const dLoadSaveBase::dLoadDescriptor& desc);
-	D_NEWTON_API ndJointKinematicController(ndBodyKinematic* const referenceBody, ndBodyKinematic* const body, const dVector& attachmentPointInGlobalSpace);
-	D_NEWTON_API ndJointKinematicController(ndBodyKinematic* const referenceBody, ndBodyKinematic* const body, const dMatrix& attachmentMatrixInGlobalSpace);
+	D_NEWTON_API ndJointKinematicController(const ndLoadSaveBase::ndLoadDescriptor& desc);
+	D_NEWTON_API ndJointKinematicController(ndBodyKinematic* const referenceBody, ndBodyKinematic* const body, const ndVector& attachmentPointInGlobalSpace);
+	D_NEWTON_API ndJointKinematicController(ndBodyKinematic* const referenceBody, ndBodyKinematic* const body, const ndMatrix& attachmentMatrixInGlobalSpace);
 	D_NEWTON_API virtual ~ndJointKinematicController();
 
 	virtual bool IsBilateral() const;
 	void SetControlMode(ndControlModes mode);
-	void SetMaxSpeed(dFloat32 speedInMetersPerSeconds);
-	void SetMaxOmega(dFloat32 speedInRadiansPerSeconds);
-	void SetMaxLinearFriction(dFloat32 force);
-	void SetMaxAngularFriction(dFloat32 torque);
-	void SetAngularViscuosFrictionCoefficient(dFloat32 coefficient);
+	void SetMaxSpeed(ndFloat32 speedInMetersPerSeconds);
+	void SetMaxOmega(ndFloat32 speedInRadiansPerSeconds);
+	void SetMaxLinearFriction(ndFloat32 force);
+	void SetMaxAngularFriction(ndFloat32 torque);
+	void SetAngularViscousFrictionCoefficient(ndFloat32 coefficient);
 
-	dMatrix GetTargetMatrix() const;
-	void SetTargetPosit(const dVector& posit);
-	void SetTargetMatrix(const dMatrix& matrix);
-	void SetTargetRotation(const dQuaternion& rotation);
+	ndMatrix GetTargetMatrix() const;
+	void SetTargetPosit(const ndVector& posit);
+	void SetTargetRotation(const ndQuaternion& rotation);
+
+	D_NEWTON_API void SetTargetMatrix(const ndMatrix& matrix);
 
 	protected:
-	void Init(const dMatrix& matrix);
+	void Init(const ndMatrix& matrix);
 
 	D_NEWTON_API void CheckSleep() const;
 	D_NEWTON_API void JacobianDerivative(ndConstraintDescritor& desc);
-	D_NEWTON_API void Save(const dLoadSaveBase::dSaveDescriptor& desc) const;
+	D_NEWTON_API void Save(const ndLoadSaveBase::ndSaveDescriptor& desc) const;
 
-	dFloat32 m_maxSpeed;
-	dFloat32 m_maxOmega;
-	dFloat32 m_maxLinearFriction;
-	dFloat32 m_maxAngularFriction;
+	ndFloat32 m_maxSpeed;
+	ndFloat32 m_maxOmega;
+	ndFloat32 m_maxLinearFriction;
+	ndFloat32 m_maxAngularFriction;
 
-	dFloat32 m_angularFrictionCoefficient;
+	ndFloat32 m_angularFrictionCoefficient;
 	ndControlModes m_controlMode;
 	bool m_autoSleepState;
 };
@@ -73,56 +69,49 @@ inline void ndJointKinematicController::SetControlMode(ndControlModes mode)
 	m_controlMode = mode;
 }
 
-inline void ndJointKinematicController::SetMaxSpeed(dFloat32 speedInMetersPerSeconds)
+inline void ndJointKinematicController::SetMaxSpeed(ndFloat32 speedInMetersPerSeconds)
 {
 	m_maxSpeed = dAbs(speedInMetersPerSeconds);
 }
 
-inline void ndJointKinematicController::SetMaxLinearFriction(dFloat32 frictionForce)
+inline void ndJointKinematicController::SetMaxLinearFriction(ndFloat32 frictionForce)
 {
 	m_maxLinearFriction = dAbs(frictionForce);
 }
 
-inline void ndJointKinematicController::SetMaxAngularFriction(dFloat32 frictionTorque)
+inline void ndJointKinematicController::SetMaxAngularFriction(ndFloat32 frictionTorque)
 {
 	m_maxAngularFriction = dAbs(frictionTorque);
 }
 
-inline void ndJointKinematicController::SetMaxOmega(dFloat32 speedInRadiansPerSeconds)
+inline void ndJointKinematicController::SetMaxOmega(ndFloat32 speedInRadiansPerSeconds)
 {
 	m_maxOmega = dAbs(speedInRadiansPerSeconds);
 }
 
-inline void ndJointKinematicController::SetAngularViscuosFrictionCoefficient(dFloat32 coefficient)
+inline void ndJointKinematicController::SetAngularViscousFrictionCoefficient(ndFloat32 coefficient)
 {
-	dVector mass (GetBody0()->GetMassMatrix());
+	ndVector mass (GetBody0()->GetMassMatrix());
 	m_angularFrictionCoefficient = dAbs(coefficient) * dMax(mass.m_x, dMax(mass.m_y, mass.m_z));
 }
 
-inline void ndJointKinematicController::SetTargetPosit(const dVector& posit)
+inline void ndJointKinematicController::SetTargetPosit(const ndVector& posit)
 {
-	m_localMatrix1.m_posit = posit;
-	dAssert(m_localMatrix1.m_posit.m_w == dFloat32(1.0f));
-	CheckSleep();
+	ndMatrix matrix(m_localMatrix1);
+	matrix.m_posit = posit;
+	SetTargetMatrix(matrix);
 }
 
-inline void ndJointKinematicController::SetTargetMatrix(const dMatrix& matrix)
+inline void ndJointKinematicController::SetTargetRotation(const ndQuaternion& rotation)
 {
-	m_localMatrix1 = matrix;
-	CheckSleep();
+	ndMatrix matrix(rotation, m_localMatrix1.m_posit);
+	SetTargetMatrix(matrix);
 }
 
-inline dMatrix ndJointKinematicController::GetTargetMatrix() const
+inline ndMatrix ndJointKinematicController::GetTargetMatrix() const
 {
 	dAssert(0);
 	return m_localMatrix0;
-}
-
-inline void ndJointKinematicController::SetTargetRotation(const dQuaternion& rotation)
-{
-	m_localMatrix1 = dMatrix(rotation, m_localMatrix1.m_posit);
-	dAssert(m_localMatrix1.m_posit.m_w == dFloat32(1.0f));
-	CheckSleep();
 }
 
 inline bool ndJointKinematicController::IsBilateral() const

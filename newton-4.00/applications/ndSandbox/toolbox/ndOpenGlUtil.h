@@ -17,7 +17,7 @@
 #define OFFSETOF(s,m) ((size_t)&(((s*)0)->m))
 
 #ifdef D_NEWTON_USE_DOUBLE
-	inline void glMaterialParam(GLenum face, GLenum pname, const dFloat32 *params)
+	inline void glMaterialParam(GLenum face, GLenum pname, const ndFloat32 *params)
 	{
 		GLfloat tmp[4] = { GLfloat(params[0]), GLfloat(params[1]), GLfloat(params[2]), GLfloat(params[3]) };
 		glMaterialfv(face, pname, &tmp[0]);
@@ -49,31 +49,31 @@ class glVector3
 		m_data[2] = GLfloat(0.0f);
 	}
 
-	glVector3(dFloat32 x, dFloat32 y, dFloat32 z)
+	glVector3(ndFloat32 x, ndFloat32 y, ndFloat32 z)
 	{
 		m_data[0] = GLfloat(x);
 		m_data[1] = GLfloat(y);
 		m_data[2] = GLfloat(z);
 	}
 
-	glVector3(const dVector& v)
+	glVector3(const ndVector& v)
 	{
 		m_data[0] = GLfloat(v[0]);
 		m_data[1] = GLfloat(v[1]);
 		m_data[2] = GLfloat(v[2]);
 	}
 
-	GLfloat& operator[] (dInt32 i)
+	GLfloat& operator[] (ndInt32 i)
 	{
 		dAssert(i >= 0);
-		dAssert(i < dInt32(sizeof(m_data) / sizeof(m_data[0])));
+		dAssert(i < ndInt32(sizeof(m_data) / sizeof(m_data[0])));
 		return m_data[i];
 	}
 
-	const GLfloat& operator[] (dInt32 i) const
+	const GLfloat& operator[] (ndInt32 i) const
 	{
 		dAssert(i >= 0);
-		dAssert(i < dInt32(sizeof(m_data) / sizeof(m_data[0])));
+		dAssert(i < ndInt32(sizeof(m_data) / sizeof(m_data[0])));
 		return m_data[i];
 	}
 	union
@@ -99,7 +99,7 @@ class glVector4
 		m_data[3] = GLfloat(0.0f);
 	}
 
-	glVector4(dFloat32 x, dFloat32 y, dFloat32 z, dFloat32 w)
+	glVector4(ndFloat32 x, ndFloat32 y, ndFloat32 z, ndFloat32 w)
 	{
 		m_data[0] = GLfloat(x);
 		m_data[1] = GLfloat(y);
@@ -107,7 +107,7 @@ class glVector4
 		m_data[3] = GLfloat(w);
 	}
 
-	glVector4(const dVector& v)
+	glVector4(const ndVector& v)
 	{
 		m_data[0] = GLfloat(v[0]);
 		m_data[1] = GLfloat(v[1]);
@@ -115,17 +115,17 @@ class glVector4
 		m_data[3] = GLfloat(v[3]);
 	}
 
-	GLfloat& operator[] (dInt32 i)
+	GLfloat& operator[] (ndInt32 i)
 	{
 		dAssert(i >= 0);
-		dAssert(i < dInt32 (sizeof (m_data) / sizeof(m_data[0])));
+		dAssert(i < ndInt32 (sizeof (m_data) / sizeof(m_data[0])));
 		return m_data[i];
 	}
 
-	const GLfloat& operator[] (dInt32 i) const
+	const GLfloat& operator[] (ndInt32 i) const
 	{
 		dAssert(i >= 0);
-		dAssert(i < dInt32 (sizeof (m_data) / sizeof(m_data[0])));
+		dAssert(i < ndInt32 (sizeof (m_data) / sizeof(m_data[0])));
 		return m_data[i];
 	}
 
@@ -145,25 +145,25 @@ class glVector4
 class glMatrix
 {
 	public:
-	glMatrix(const dMatrix& matrix)
+	glMatrix(const ndMatrix& matrix)
 	{
-		for (dInt32 i = 0; i < 4; i++)
+		for (ndInt32 i = 0; i < 4; i++)
 		{
 			m_data[i] = matrix[i];
 		}
 	}
 
-	glVector4& operator[] (dInt32 i)
+	glVector4& operator[] (ndInt32 i)
 	{
 		dAssert(i >= 0);
-		dAssert(i < dInt32 (sizeof (m_data) / sizeof(m_data[0])));
+		dAssert(i < ndInt32 (sizeof (m_data) / sizeof(m_data[0])));
 		return m_data[i];
 	}
 
-	const glVector4& operator[] (dInt32 i) const
+	const glVector4& operator[] (ndInt32 i) const
 	{
 		dAssert(i >= 0);
-		dAssert(i < dInt32(sizeof (m_data)/sizeof (m_data[0])));
+		dAssert(i < ndInt32(sizeof (m_data)/sizeof (m_data[0])));
 		return m_data[i];
 	}
 
@@ -193,12 +193,12 @@ class glPositionNormalUV : public glPositionNormal
 class dMOUSE_POINT
 {
 	public:
-	dInt32 x;
-	dInt32 y;
+	ndInt32 x;
+	ndInt32 y;
 };
 
 void GetCursorPos(dMOUSE_POINT& point);
-void ShowMousePicking (const dVector& p0, const dVector& p1, const dVector& originColor = dVector (1.0f, 1.0f, 0.0f, 0.0f), const dVector& lineColor =  dVector (1.0f, 1.0f, 1.0f, 0.0f)); 
+void ShowMousePicking (const ndVector& p0, const ndVector& p1, const ndVector& originColor = ndVector (1.0f, 1.0f, 0.0f, 0.0f), const ndVector& lineColor =  ndVector (1.0f, 1.0f, 1.0f, 0.0f)); 
 
 #endif 
 
